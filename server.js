@@ -35,35 +35,24 @@ const transporter = nodemailer.createTransport({
 
 //회원가입 및 이메일 발송 API
 app.post('/api/register', (req, res) => {
-    const { student_id, email, name, nickname , department, password } = req.body;
-    if (!email.endsWith('@daegu.ac.kr')) {
-        return res.status(400).json({ message: '대구대학교 이메일만 가입 가능합니다.' });
-    }
-    app.post('/api/register', (req, res) => {
-    // 🚩 이 로그를 추가하면 버튼 클릭 시 Render 로그에 바로 글씨가 뜹니다!
+    // 🚩 로그 추가 (이제 Render 로그에 이 글씨가 바로 뜰 겁니다!)
     console.log("--- 회원가입 요청 들어옴! 학번:", req.body.student_id); 
     
     const { student_id, email, name, nickname , department, password } = req.body;
-    
 
-    // 1. 6자리 랜덤 인증번호 생성 (예: 839201)
+    // 1. 대구대 메일인지 확인
+    if (!email.endsWith('@daegu.ac.kr')) {
+        return res.status(400).json({ message: '대구대학교 이메일만 가입 가능합니다.' });
+    }
+
+    // 2. 6자리 랜덤 인증번호 생성
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 2. DB에 정보 저장 (is_verified는 FALSE, 방금 만든 인증번호도 같이 저장)
+    // 3. DB에 정보 저장
     const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-//   순서를 DB 컬럼 순서와 100% 일치시킵니다.
-    const values = [
-        student_id,      // 1
-        password,        // 2
-        name,            // 3
-        nickname,        // 4
-        department,      // 5
-        email,           // 6
-        false,           // 7 (is_verified)
-        verifyCode       // 8 (verification_code)
-    ];
+    const values = [student_id, password, name, nickname, department, email, false, verifyCode];
     
     db.query(sql, values, (err, result) => {
         if (err) {
