@@ -6,7 +6,6 @@ require('dotenv').config();
 
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
-
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -24,10 +23,14 @@ const db = mysql.createConnection({
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    //  [핵심] DNS 조회를 건너뛰고 IPv4 주소 체계만 사용하도록 강제합니다.
+    family: 4, 
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     }
 });
 
@@ -46,17 +49,17 @@ app.post('/api/register', (req, res) => {
     const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-// 🚩 순서를 DB 컬럼 순서와 100% 일치시킵니다.
-const values = [
-    student_id,      // 1
-    password,        // 2
-    name,            // 3
-    nickname,        // 4
-    department,      // 5
-    email,           // 6
-    false,           // 7 (is_verified)
-    verifyCode       // 8 (verification_code)
-];
+//   순서를 DB 컬럼 순서와 100% 일치시킵니다.
+    const values = [
+        student_id,      // 1
+        password,        // 2
+        name,            // 3
+        nickname,        // 4
+        department,      // 5
+        email,           // 6
+        false,           // 7 (is_verified)
+        verifyCode       // 8 (verification_code)
+    ];
     
     db.query(sql, values, (err, result) => {
         if (err) {
