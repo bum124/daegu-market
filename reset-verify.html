@@ -131,7 +131,7 @@
       submitBtn.textContent = '인증 확인 중...';
 
       // 🚩 /api/verify-reset API 호출 (단순 채점)
-      fetch('http://localhost:3000/api/verify-reset', {
+      fetch('https://daegu-market-api.onrender.com/api/verify-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -228,5 +228,5 @@ app.get('/api/users', (req, res) => {
 
 // 3. 서버 켜기 (3000번 포트 사용)
 app.listen(3000, () => {
-    console.log('서버가 http://localhost:3000 에서 돌아가고 있습니다.');
+    console.log('서버가 https://daegu-market-api.onrender.com 에서 돌아가고 있습니다.');
 });

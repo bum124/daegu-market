@@ -178,7 +178,7 @@
       submitBtn.textContent = '인증 중...';
 
       // 🚩 [수정] 데모 코드를 지우고 진짜 서버와 통신합니다.
-      fetch('http://localhost:3000/api/verify', {
+      fetch('https://daegu-market-api.onrender.com/api/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -212,7 +212,7 @@
   resendBtn.innerHTML = `발송 중...`;
 
   // 🚩 진짜 서버로 재발송 요청!
-  fetch('http://localhost:3000/api/resend', {
+  fetch('https://daegu-market-api.onrender.com/api/resend', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: pendingEmail })
