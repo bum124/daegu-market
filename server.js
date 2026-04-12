@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
@@ -39,7 +40,7 @@ app.post('/api/register', (req, res) => {
 
     // 2. DB에 정보 저장 (is_verified는 FALSE, 방금 만든 인증번호도 같이 저장)
     const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
-                 VALUES (?, ?, ?, ?, ?, FALSE, ?)`;
+             VALUES (?, ?, ?, ?, ?, ?, FALSE, ?)`; // 물음표 7개 + FALSE 직접 입력
     
     db.query(sql, [student_id, password, name, nickname, department, email, verifyCode], (err, result) => {
         if (err) {
@@ -227,6 +228,6 @@ app.get('/api/users', (req, res) => {
 });
 
 // 3. 서버 켜기 (3000번 포트 사용)
-app.listen(3000, () => {
-    console.log('서버가 https://daegu-market-api.onrender.com 에서 돌아가고 있습니다.');
+app.listen(PORT, () => {
+    console.log(`서버가 ${PORT}번 포트에서 돌아가고 있습니다.`);
 });
