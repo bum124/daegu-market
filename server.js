@@ -24,10 +24,9 @@ const db = mysql.createConnection({
 // 이메일 설정 (금고에서 꺼내 쓰기)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    //  [핵심] DNS 조회를 건너뛰고 IPv4 주소 체계만 사용하도록 강제합니다.
-    family: 4, 
+    port: 587,               // 465 대신 587 사용
+    secure: false,           // 587 포트는 false로 설정해야 함
+    family: 4,               // IPv4 강제 고정
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
@@ -40,6 +39,11 @@ app.post('/api/register', (req, res) => {
     if (!email.endsWith('@daegu.ac.kr')) {
         return res.status(400).json({ message: '대구대학교 이메일만 가입 가능합니다.' });
     }
+    app.post('/api/register', (req, res) => {
+    // 🚩 이 로그를 추가하면 버튼 클릭 시 Render 로그에 바로 글씨가 뜹니다!
+    console.log("--- 회원가입 요청 들어옴! 학번:", req.body.student_id); 
+    
+    const { student_id, email, name, nickname , department, password } = req.body;
     
 
     // 1. 6자리 랜덤 인증번호 생성 (예: 839201)
