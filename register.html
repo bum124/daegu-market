@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원가입 - 대구대 마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <!-- Header -->
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <a href="login.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </a>
+      <h1 class="ml-2 text-lg font-semibold">회원가입</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="flex flex-1 flex-col items-center px-4 py-8">
+      <div class="w-full max-w-sm space-y-6">
+        <!-- Info -->
+        <div class="rounded-lg bg-primary/10 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="mt-0.5 h-5 w-5 text-primary flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            <div class="text-sm">
+              <p class="font-medium text-foreground">대구대 이메일 인증</p>
+              <p class="mt-1 text-muted-foreground">
+                @daegu.ac.kr 이메일로만 가입할 수 있습니다.
+                가입 후 이메일 인증을 완료해주세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert (hidden by default) -->
+        <div id="errorAlert" class="hidden rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div class="flex items-center gap-2 text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <span id="errorMessage" class="text-sm"></span>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form id="registerForm" class="space-y-4">
+          <!-- Email -->
+          <div class="space-y-2">
+            <label for="studentId" class="text-sm font-medium">학번</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+              </svg>
+              <input
+                id="studentId"
+                type="text"
+                placeholder="예: 20201234"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="email" class="text-sm font-medium">학교 이메일</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              <input
+                id="email"
+                type="email"
+                placeholder="아이디@daegu.ac.kr"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- Name -->
+          <div class="space-y-2">
+            <label for="name" class="text-sm font-medium">이름</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <input
+                id="name"
+                type="text"
+                placeholder="닉네임을 입력하세요"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- Department -->
+          <div class="space-y-2">
+            <label for="department" class="text-sm font-medium">학과</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+              </svg>
+              <select
+                id="department"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none cursor-pointer"
+              >
+                <option value="">학과를 선택하세요</option>
+                <option value="컴퓨터공학과">컴퓨터공학과</option>
+                <option value="소프트웨어공학과">소프트웨어공학과</option>
+                <option value="정보통신공학과">정보통신공학과</option>
+                <option value="전자공학과">전자공학과</option>
+                <option value="기계공학과">기계공학과</option>
+                <option value="경영학과">경영학과</option>
+                <option value="경제학과">경제학과</option>
+                <option value="회계학과">회계학과</option>
+                <option value="국어국문학과">국어국문학과</option>
+                <option value="영어영문학과">영어영문학과</option>
+                <option value="심리학과">심리학과</option>
+                <option value="사회학과">사회학과</option>
+                <option value="체육학과">체육학과</option>
+                <option value="미술학과">미술학과</option>
+                <option value="음악학과">음악학과</option>
+                <option value="간호학과">간호학과</option>
+                <option value="물리치료학과">물리치료학과</option>
+                <option value="식품영양학과">식품영양학과</option>
+                <option value="화학공학과">화학공학과</option>
+                <option value="건축학과">건축학과</option>
+                <option value="디자인학과">디자인학과</option>
+                <option value="기타">기타</option>
+              </select>
+              <svg class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="space-y-2">
+            <label for="password" class="text-sm font-medium">비밀번호</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                id="password"
+                type="password"
+                placeholder="8자 이상 입력하세요"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="space-y-2">
+            <label for="confirmPassword" class="text-sm font-medium">비밀번호 확인</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                id="confirmPassword"
+                type="password"
+                placeholder="비밀번호를 다시 입력하세요"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="submitBtn"
+            class="w-full h-10 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            회원가입
+          </button>
+        </form>
+
+        <!-- Links -->
+        <div class="text-center text-sm">
+          <span class="text-muted-foreground">이미 계정이 있으신가요? </span>
+          <a href="login.html" class="font-medium text-primary hover:underline">
+            로그인
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const studentIdInput = document.getElementById('studentId');
+    const emailInput = document.getElementById('email');
+    const nameInput = document.getElementById('name');
+    const departmentSelect = document.getElementById('department');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorAlert.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideError() {
+      errorAlert.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const studentId = studentIdInput.value;
+      const email = emailInput.value;
+      const name = nameInput.value;
+      const department = departmentSelect.value;
+      const password = passwordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (!email.endsWith('@daegu.ac.kr')) {
+        showError('대구대학교 이메일(@daegu.ac.kr)만 사용 가능합니다.');
+        return;
+      }
+
+      if (password.length < 8) {
+        showError('비밀번호는 8자 이상이어야 합니다.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+
+      if (!department) {
+        showError('학과를 선택해주세요.');
+        return;
+      }
+
+      // 진짜 서버 통신 시작!
+      submitBtn.disabled = true;
+      submitBtn.textContent = '메일 발송 중... (잠시만 기다려주세요)';
+
+      const userData = {
+          student_id: studentId,
+          email: email,
+          name: name,
+          department: department,
+          password: password
+      };
+      //추가
+      fetch('http://localhost:3000/api/register', { 
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+      })
+      .then(response => {
+          // 서버에서 에러(400, 500 등)를 보냈는지 확인
+          if (!response.ok) {
+              return response.json().then(err => { throw new Error(err.message) });
+          }
+          return response.json();
+      })
+      .then(data => {
+          // 성공적으로 메일이 발송되었을 때
+          alert('인증 메일이 발송되었습니다! 웹메일함을 확인해주세요.');
+          localStorage.setItem('pendingEmail', email); // 인증 화면을 위해 이메일 기억해두기
+          window.location.href = 'verify.html'; 
+      })
+      .catch(error => {
+          // 에러가 났을 때 (예: 중복된 학번)
+          showError(error.message || '서버와 연결할 수 없습니다. 서버가 켜져 있는지 확인하세요.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '회원가입';
+      });
+    }); // 닫는 괄호 주의!
+  </script>
+</body>
+</html>

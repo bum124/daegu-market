@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품 검색 - 대구대 중고장터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+        .filter-sheet { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+        .filter-sheet.active { transform: translateX(0); }
+        .badge-active { background-color: #1d4ed8 !important; color: white !important; border-color: #1d4ed8 !important; }
+        /* 스크롤바 숨기기 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="mx-auto max-w-6xl px-4 py-6">
+        <div class="mb-6 flex gap-2">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="search-input" placeholder="검색어를 입력하세요" 
+                    class="w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button onclick="toggleFilter(true)" class="relative flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 hover:bg-gray-50">
+                <i data-lucide="sliders-horizontal" class="h-4 w-4 text-gray-600"></i>
+                <span class="hidden sm:inline font-medium text-gray-700">필터</span>
+                <span id="filter-dot" class="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">!</span>
+            </button>
+        </div>
+
+        <div id="active-filters" class="mb-4 hidden flex flex-wrap items-center gap-2">
+            <span class="text-sm text-gray-500">적용된 필터:</span>
+            <div id="filter-badges" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="mb-4">
+            <p class="text-sm text-gray-500">검색 결과 <span id="result-count" class="font-bold">0</span>개</p>
+        </div>
+
+        <div id="product-grid" class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            </div>
+
+        <div id="empty-state" class="hidden py-20 text-center">
+            <p class="text-gray-
