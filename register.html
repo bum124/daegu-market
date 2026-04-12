@@ -101,7 +101,6 @@
             </div>
           </div>
 
-          <!-- Name -->
           <div class="space-y-2">
             <label for="name" class="text-sm font-medium">이름</label>
             <div class="relative">
@@ -111,7 +110,23 @@
               <input
                 id="name"
                 type="text"
-                placeholder="닉네임을 입력하세요"
+                placeholder="본인의 실명을 입력하세요"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="nickname" class="text-sm font-medium">닉네임</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <input
+                id="nickname"
+                type="text"
+                placeholder="사용할 닉네임을 입력하세요"
                 required
                 class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
@@ -125,38 +140,13 @@
               <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
               </svg>
-              <select
+              <input
                 id="department"
+                type="text"
+                placeholder="학과명을 정확히 입력하세요 (예: 소프트웨어공학과)"
                 required
-                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none cursor-pointer"
-              >
-                <option value="">학과를 선택하세요</option>
-                <option value="컴퓨터공학과">컴퓨터공학과</option>
-                <option value="소프트웨어공학과">소프트웨어공학과</option>
-                <option value="정보통신공학과">정보통신공학과</option>
-                <option value="전자공학과">전자공학과</option>
-                <option value="기계공학과">기계공학과</option>
-                <option value="경영학과">경영학과</option>
-                <option value="경제학과">경제학과</option>
-                <option value="회계학과">회계학과</option>
-                <option value="국어국문학과">국어국문학과</option>
-                <option value="영어영문학과">영어영문학과</option>
-                <option value="심리학과">심리학과</option>
-                <option value="사회학과">사회학과</option>
-                <option value="체육학과">체육학과</option>
-                <option value="미술학과">미술학과</option>
-                <option value="음악학과">음악학과</option>
-                <option value="간호학과">간호학과</option>
-                <option value="물리치료학과">물리치료학과</option>
-                <option value="식품영양학과">식품영양학과</option>
-                <option value="화학공학과">화학공학과</option>
-                <option value="건축학과">건축학과</option>
-                <option value="디자인학과">디자인학과</option>
-                <option value="기타">기타</option>
-              </select>
-              <svg class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
             </div>
           </div>
 
@@ -243,6 +233,7 @@
       const studentId = studentIdInput.value;
       const email = emailInput.value;
       const name = nameInput.value;
+      const nicknameInput = document.getElementById('nickname');
       const department = departmentSelect.value;
       const password = passwordInput.value;
       const confirmPassword = confirmPasswordInput.value;
@@ -275,6 +266,7 @@
           student_id: studentId,
           email: email,
           name: name,
+          nickname: nickname,
           department: department,
           password: password
       };

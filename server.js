@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 
 //회원가입 및 이메일 발송 API
 app.post('/api/register', (req, res) => {
-    const { student_id, email, name, department, password } = req.body;
+    const { student_id, email, name, nickname , department, password } = req.body;
     if (!email.endsWith('@daegu.ac.kr')) {
         return res.status(400).json({ message: '대구대학교 이메일만 가입 가능합니다.' });
     }
@@ -38,10 +38,10 @@ app.post('/api/register', (req, res) => {
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     // 2. DB에 정보 저장 (is_verified는 FALSE, 방금 만든 인증번호도 같이 저장)
-    const sql = `INSERT INTO Users (student_id, password, name, department, email, is_verified, verification_code) 
+    const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
                  VALUES (?, ?, ?, ?, ?, FALSE, ?)`;
     
-    db.query(sql, [student_id, password, name, department, email, verifyCode], (err, result) => {
+    db.query(sql, [student_id, password, name, nickname, department, email, verifyCode], (err, result) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ message: '회원가입 실패 (이미 가입된 학번일 수 있습니다.)' });
