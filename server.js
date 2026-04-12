@@ -40,9 +40,21 @@ app.post('/api/register', (req, res) => {
 
     // 2. DB에 정보 저장 (is_verified는 FALSE, 방금 만든 인증번호도 같이 저장)
     const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
-             VALUES (?, ?, ?, ?, ?, ?, FALSE, ?)`; // 물음표 7개 + FALSE 직접 입력
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+// 🚩 순서를 DB 컬럼 순서와 100% 일치시킵니다.
+const values = [
+    student_id,      // 1
+    password,        // 2
+    name,            // 3
+    nickname,        // 4
+    department,      // 5
+    email,           // 6
+    false,           // 7 (is_verified)
+    verifyCode       // 8 (verification_code)
+];
     
-    db.query(sql, [student_id, password, name, nickname, department, email, verifyCode], (err, result) => {
+    db.query(sql, values, (err, result) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ message: '회원가입 실패 (이미 가입된 학번일 수 있습니다.)' });
