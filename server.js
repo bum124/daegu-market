@@ -59,7 +59,7 @@ app.post('/api/register', (req, res) => {
     to: email, 
     from: {
         name: '대구대 마켓',
-        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
     },
     subject: "[대구대 마켓] 회원가입 인증번호입니다.",
     // text 대신 html을 사용해 보세요
@@ -160,7 +160,7 @@ app.post('/api/resend', (req, res) => {
 
         // 메일 다시 쏘기 (기존 nodemailer 로직 활용)
         const msg = {
-            from: '"대구대 마켓" <hye70301@daegu.ac.kr>',
+            from: '"대구대 마켓" <hye70301@gmail.com>',
             to: email,
             subject: "[대구대 마켓] 인증번호가 재발송되었습니다.",
             text: `새로운 인증번호: [ ${verifyCode} ]`
@@ -190,7 +190,7 @@ app.post('/api/forgot-password', (req, res) => {
     to: email, 
     from: {
         name: '대구대 마켓',
-        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
     },
     subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
     // text 대신 html을 사용해 보세요
