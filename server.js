@@ -4,6 +4,9 @@ const cors = require('cors');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -17,7 +20,8 @@ const db = mysql.createConnection({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT,
+    ssl: { rejectUnauthorized: false }
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
@@ -52,13 +56,26 @@ app.post('/api/register', (req, res) => {
         }
 
         const msg = {
-        to: email, 
-    // ⬇️ 여기를 인증받으신 대구대 이메일 주소로 꼭 바꿔주세요!
-        from: 'hye70301@daegu.ac.kr', 
-        subject: "[대구대 마켓] 회원가입 인증번호입니다.",
-        text: `${name}님, 대구대 마켓 가입을 환영합니다!\n\n인증번호: [ ${verifyCode} ]\n\n화면에 인증번호를 입력해주세요.`
-};
-
+    to: email, 
+    from: {
+        name: '대구대 마켓',
+        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+    },
+    subject: "[대구대 마켓] 회원가입 인증번호입니다.",
+    // text 대신 html을 사용해 보세요
+    html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
+            <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
+            <p>안녕하세요, <strong>${name}</strong>님!</p>
+            <p>요청하신 회원가입 인증번호는 아래와 같습니다.</p>
+            <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+                ${verifyCode}
+            </div>
+            <p>이 번호를 가입 화면에 입력해 주세요.</p>
+            <hr>
+            <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다. 문의사항은 관리자에게 연락 바랍니다.</p>
+        </div>
+    `};
         sgMail.send(msg)
             .then(() => {
                 res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
@@ -170,11 +187,27 @@ app.post('/api/forgot-password', (req, res) => {
             if (updateErr) return res.status(500).json({ message: '인증번호 저장 실패' });
 
             const msg = {
-                from: '"대구대 마켓" <hye70301@daegu.ac.kr>',
-                to: email,
-                subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
-                text: `비밀번호 재설정을 위한 인증번호: [ ${verifyCode} ]\n\n화면에 번호를 입력해주세요.`
-            };
+    to: email, 
+    from: {
+        name: '대구대 마켓',
+        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+    },
+    subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
+    // text 대신 html을 사용해 보세요
+    html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
+            <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
+            <p>안녕하세요, <strong>${name}</strong>님!</p>
+            <p>요청하신 비밀번호 재설정을 위한 인증번호는 아래와 같습니다.</p>
+            <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+                ${verifyCode}
+            </div>
+            <p>이 번호를 가입 화면에 입력해 주세요.</p>
+            <hr>
+            <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다. 문의사항은 관리자에게 연락 바랍니다.</p>
+        </div>
+    `
+};
 
             sgMail.send(msg)
                 .then(() => res.json({ message: '인증번호가 메일로 발송되었습니다.' }))
