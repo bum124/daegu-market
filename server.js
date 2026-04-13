@@ -1,7 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
 const dns = require('dns');
@@ -22,16 +22,25 @@ const db = mysql.createConnection({
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,               // 465 대신 587 사용
-    secure: false,           // 587 포트는 false로 설정해야 함
-    family: 4,               // IPv4 강제 고정
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
-    }
-});
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// 회원가입 API 내부의 메일 발송 부분
+const msg = {
+    to: email, // 가입자가 입력한 대구대 메일
+    from: 'hye70301@gmail.com', // SendGrid에서 인증받은 본인 메일
+    subject: '[대구대 마켓] 회원가입 인증번호입니다.',
+    text: `인증번호: [ ${verifyCode} ]`
+};
+
+sgMail.send(msg)
+    .then(() => {
+        res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
+    })
+    .catch((error) => {
+        console.error(error);
+        res.status(500).json({ message: '메일 전송 실패' });
+    });
 
 //회원가입 및 이메일 발송 API
 app.post('/api/register', (req, res) => {
