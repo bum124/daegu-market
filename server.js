@@ -4,13 +4,12 @@ const cors = require('cors');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json());
+
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
 const db = mysql.createConnection({
@@ -22,25 +21,8 @@ const db = mysql.createConnection({
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
-const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// 회원가입 API 내부의 메일 발송 부분
-const msg = {
-    to: email, // 가입자가 입력한 대구대 메일
-    from: 'hye70301@gmail.com', // SendGrid에서 인증받은 본인 메일
-    subject: '[대구대 마켓] 회원가입 인증번호입니다.',
-    text: `인증번호: [ ${verifyCode} ]`
-};
-
-sgMail.send(msg)
-    .then(() => {
-        res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
-    })
-    .catch((error) => {
-        console.error(error);
-        res.status(500).json({ message: '메일 전송 실패' });
-    });
 
 //회원가입 및 이메일 발송 API
 app.post('/api/register', (req, res) => {
@@ -69,21 +51,22 @@ app.post('/api/register', (req, res) => {
             return res.status(500).json({ message: '회원가입 실패 (이미 가입된 학번일 수 있습니다.)' });
         }
 
-        // 3. DB 저장이 끝났으면 진짜 이메일을 쏩니다!
-        const mailOptions = {
-            from: '"대구대 마켓" <hye70301@gmail.com>', // 보내는 사람
-            to: email, // 가입자가 폼에 적은 대구대 이메일
-            subject: "[대구대 마켓] 회원가입 인증번호입니다.",
-            text: `${name}님, 대구대 마켓 가입을 환영합니다!\n\n인증번호: [ ${verifyCode} ]\n\n화면에 인증번호를 입력해주세요.`
-        };
+        const msg = {
+        to: email, 
+    // ⬇️ 여기를 인증받으신 대구대 이메일 주소로 꼭 바꿔주세요!
+        from: 'hye70301@daegu.ac.kr', 
+        subject: "[대구대 마켓] 회원가입 인증번호입니다.",
+        text: `${name}님, 대구대 마켓 가입을 환영합니다!\n\n인증번호: [ ${verifyCode} ]\n\n화면에 인증번호를 입력해주세요.`
+};
 
-        transporter.sendMail(mailOptions, (mailErr, info) => {
-            if (mailErr) {
+        sgMail.send(msg)
+            .then(() => {
+                res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
+            })
+            .catch((mailErr) => {
                 console.error('메일 전송 에러:', mailErr);
-                return res.status(500).json({ message: '메일 전송에 실패했습니다.' });
-            }
-            res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
-        });
+                res.status(500).json({ message: '메일 전송에 실패했습니다.' });
+            });
     });
 });
 
@@ -159,17 +142,16 @@ app.post('/api/resend', (req, res) => {
         if (err) return res.status(500).json({ message: 'DB 에러' });
 
         // 메일 다시 쏘기 (기존 nodemailer 로직 활용)
-        const mailOptions = {
-            from: '"대구대 마켓" <hye70301@gmail.com>',
+        const msg = {
+            from: '"대구대 마켓" <hye70301@daegu.ac.kr>',
             to: email,
             subject: "[대구대 마켓] 인증번호가 재발송되었습니다.",
             text: `새로운 인증번호: [ ${verifyCode} ]`
         };
 
-        transporter.sendMail(mailOptions, (mailErr) => {
-            if (mailErr) return res.status(500).json({ message: '메일 발송 실패' });
-            res.json({ message: '인증번호가 메일로 재발송되었습니다!' });
-        });
+        sgMail.send(msg)
+            .then(() => res.json({ message: '인증번호가 메일로 재발송되었습니다!' }))
+            .catch((mailErr) => res.status(500).json({ message: '메일 발송 실패' }));
     });
 });
 // 1단계: 학번/이메일 확인 후 인증번호 메일 발송
@@ -187,17 +169,16 @@ app.post('/api/forgot-password', (req, res) => {
         db.query(updateSql, [verifyCode, email], (updateErr) => {
             if (updateErr) return res.status(500).json({ message: '인증번호 저장 실패' });
 
-            const mailOptions = {
-                from: '"대구대 마켓" <hye70301@gmail.com>',
+            const msg = {
+                from: '"대구대 마켓" <hye70301@daegu.ac.kr>',
                 to: email,
                 subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
                 text: `비밀번호 재설정을 위한 인증번호: [ ${verifyCode} ]\n\n화면에 번호를 입력해주세요.`
             };
 
-            transporter.sendMail(mailOptions, (mailErr) => {
-                if (mailErr) return res.status(500).json({ message: '메일 발송 실패' });
-                res.json({ message: '인증번호가 메일로 발송되었습니다.' });
-            });
+            sgMail.send(msg)
+                .then(() => res.json({ message: '인증번호가 메일로 발송되었습니다.' }))
+                .catch((mailErr) => res.status(500).json({ message: '메일 발송 실패' }));
         });
     });
 });
