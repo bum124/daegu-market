@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 - 대구대 마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <!-- Header -->
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <a href="index.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </a>
+      <h1 class="ml-2 text-lg font-semibold">로그인</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="flex flex-1 flex-col items-center justify-center px-4">
+      <div class="w-full max-w-sm space-y-8">
+        <!-- Logo -->
+        <div class="text-center">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
+            <span class="text-2xl font-bold text-primary-foreground">DM</span>
+          </div>
+          <h2 class="mt-4 text-2xl font-bold text-foreground">대구대 마켓</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            대구대학교 학생들을 위한 중고거래 플랫폼
+          </p>
+        </div>
+
+        <!-- Error Alert (hidden by default) -->
+        <div id="errorAlert" class="hidden rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div class="flex items-center gap-2 text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <span id="errorMessage" class="text-sm"></span>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form id="loginForm" class="space-y-4">
+          <div class="space-y-2">
+            <label for="email" class="text-sm font-medium">학교 이메일</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              <input
+                id="email"
+                type="email"
+                placeholder="아이디@daegu.ac.kr"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="password" class="text-sm font-medium">비밀번호</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                id="password"
+                type="password"
+                placeholder="비밀번호를 입력하세요"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="submitBtn"
+            class="w-full h-10 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            로그인
+          </button>
+        </form>
+
+        <!-- Links -->
+        <div class="flex flex-col items-center gap-4 text-sm mt-4">
+          <a href="find-password.html" class="text-muted-foreground hover:text-foreground underline underline-offset-4">
+            비밀번호를 잊으셨나요?
+          </a>
+          <div>
+          <span class="text-muted-foreground">계정이 없으신가요? </span>
+          <a href="register.html" class="font-medium text-primary hover:underline">
+            회원가입
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorAlert.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorAlert.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const email = emailInput.value;
+      const password = passwordInput.value;
+
+      if (!email.endsWith('@daegu.ac.kr')) {
+        showError('대구대학교 이메일(@daegu.ac.kr)만 사용 가능합니다.');
+        return;
+      }
+
+      // Simulate loading
+      submitBtn.disabled = true;
+      submitBtn.textContent = '로그인 중...';
+
+      // 추가
+      fetch('https://daegu-market-api.onrender.com/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+      })
+      .then(response => {
+      if (!response.ok) return response.json().then(err => { throw new Error(err.message) });
+      return response.json();
+      })
+      .then(data => {
+      alert(data.message); // "로그인 성공!"
+    
+      // ★ 핵심: 브라우저에 내 정보를 문자열로 바꿔서 영구 저장합니다.
+      localStorage.setItem('loggedInUser', JSON.stringify(data.user));
+    
+      // 메인 화면으로 이동!
+     window.location.href = 'index.html'; 
+      })
+      .catch(error => {
+      showError(error.message);
+      });
+      });    
+  </script>
+</body>
+</html>

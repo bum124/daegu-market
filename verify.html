@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이메일 인증 - 대구대 마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <!-- Header -->
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <a href="register.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </a>
+      <h1 class="ml-2 text-lg font-semibold">이메일 인증</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="flex flex-1 flex-col items-center justify-center px-4">
+      <div class="w-full max-w-sm space-y-8 text-center">
+        <!-- Icon -->
+        <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <svg class="h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+
+        <!-- Text -->
+        <div>
+          <h2 class="text-xl font-bold text-foreground">인증 코드를 입력해주세요</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            <span id="userEmail">your@daegu.ac.kr</span>로<br />
+            6자리 인증 코드를 발송했습니다.
+          </p>
+        </div>
+
+        <!-- Code Input -->
+        <form id="verifyForm" class="space-y-6">
+          <div class="flex justify-center gap-2">
+            <input type="text" id="code-0" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input type="text" id="code-1" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input type="text" id="code-2" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input type="text" id="code-3" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input type="text" id="code-4" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input type="text" id="code-5" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="h-14 w-12 rounded-lg border border-border bg-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          </div>
+
+          <button
+            type="submit"
+            id="submitBtn"
+            disabled
+            class="w-full h-10 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            인증하기
+          </button>
+        </form>
+
+        <!-- Resend -->
+        <div class="space-y-2">
+          <p class="text-sm text-muted-foreground">
+            인증 코드를 받지 못하셨나요?
+          </p>
+          <button
+            id="resendBtn"
+            class="inline-flex items-center gap-2 text-primary font-medium hover:underline"
+          >
+            인증 코드 다시 보내기
+          </button>
+        </div>
+
+        <!-- Demo Notice -->
+        <div class="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+          <p class="font-medium">데모 안내</p>
+          <p class="mt-1">
+            아무 6자리 숫자를 입력하면 인증이 완료됩니다.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('verifyForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resendBtn = document.getElementById('resendBtn');
+    const userEmailSpan = document.getElementById('userEmail');
+    const inputs = [];
+
+    // Get stored email
+    const pendingEmail = localStorage.getItem('pendingEmail') || 'your@daegu.ac.kr';
+    userEmailSpan.textContent = pendingEmail;
+
+    // Initialize code inputs
+    for (let i = 0; i < 6; i++) {
+      inputs.push(document.getElementById(`code-${i}`));
+    }
+
+    function getFullCode() {
+      return inputs.map(input => input.value).join('');
+    }
+
+    function updateSubmitButton() {
+      const code = getFullCode();
+      submitBtn.disabled = code.length !== 6;
+    }
+
+    inputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        let value = e.target.value;
+        
+        // Only allow numbers
+        value = value.replace(/[^0-9]/g, '');
+        
+        if (value.length > 1) {
+          value = value.slice(-1);
+        }
+        
+        e.target.value = value;
+        
+        // Auto focus next input
+        if (value && index < 5) {
+          inputs[index + 1].focus();
+        }
+
+        updateSubmitButton();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          inputs[index - 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+        
+        for (let i = 0; i < pastedData.length && i < 6; i++) {
+          inputs[i].value = pastedData[i];
+        }
+
+        if (pastedData.length > 0) {
+          inputs[Math.min(pastedData.length, 5)].focus();
+        }
+
+        updateSubmitButton();
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const code = getFullCode();
+      if (code.length !== 6) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '인증 중...';
+
+      // 🚩 [수정] 데모 코드를 지우고 진짜 서버와 통신합니다.
+      fetch('https://daegu-market-api.onrender.com/api/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            email: pendingEmail, // 위에서 정의한 변수 사용
+            code: code 
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw new Error(err.message) });
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 드디어 서버가 DB를 1로 바꾼 뒤 보내는 성공 응답!
+        alert(data.message); 
+        localStorage.removeItem('pendingEmail'); // 임시 이메일 삭제
+        window.location.href = 'login.html'; // 인증 성공했으니 로그인하러 가기
+      })
+      .catch(error => {
+        alert(error.message || '인증에 실패했습니다.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '인증하기';
+      });
+    });
+
+    resendBtn.addEventListener('click', async () => {
+  resendBtn.disabled = true;
+  resendBtn.innerHTML = `발송 중...`;
+
+  // 🚩 진짜 서버로 재발송 요청!
+  fetch('https://daegu-market-api.onrender.com/api/resend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: pendingEmail })
+  })
+  .then(response => response.json())
+  .then(data => {
+    alert(data.message);
+    resendBtn.disabled = false;
+    resendBtn.textContent = '인증 코드 다시 보내기';
+  })
+  .catch(error => {
+    alert('재발송 실패: ' + error.message);
+    resendBtn.disabled = false;
+  });
+});
+
+    // Focus first input on load
+    inputs[0].focus();
+  </script>
+</body>
+</html>

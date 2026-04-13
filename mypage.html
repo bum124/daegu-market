@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지 - 대구대 중고장터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-trigger.active { 
+            background-color: white; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mx-auto max-w-2xl px-4 py-6">
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-xl font-bold">
+                오
+            </div>
+            <div class="flex-1">
+                <div class="flex items-center gap-2">
+                    <h1 id="user-name" class="text-xl font-bold text-gray-900">오범석</h1>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        <i data-lucide="check-circle" class="h-3 w-3"></i> 인증됨
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500">컴퓨터소프트웨어공학전공</p>
+                <p class="text-sm text-gray-500">beomseok@daegu.ac.kr</p>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-3 gap-4 border-t border-gray-100 pt-6">
+            <div class="text-center">
+                <p class="text-2xl font-bold text-gray-900">3</p>
+                <p class="text-sm text-gray-500">판매상품</p>
+            </div>
+            <div class="text-center">
+                <p class="text-2xl font-bold text-gray-900">5</p>
+                <p class="text-sm text-gray-500">거래완료</p>
+            </div>
+            <div class="text-center">
+                <p class="text-2xl font-bold text-gray-900">12</p>
+                <p class="text-sm text-gray-500">관심상품</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="mt-6 rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <div class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                    <i data-lucide="shopping-bag" class="h-5 w-5 text-gray-600"></i>
+                </div>
+                <span class="font-medium text-gray-900">구매 내역</span>
+            </div>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400"></i>
+        </div>
+        <div class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                    <i data-lucide="heart" class="h-5 w-5 text-gray-600"></i>
+                </div>
+                <span class="font-medium text-gray-900">관심 목록</span>
+            </div>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400"></i>
+        </div>
+        <div class="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                    <i data-lucide="settings" class="h-5 w-5 text-gray-600"></i>
+                </div>
+                <span class="font-medium text-gray-900">설정</span>
+            </div>
+            <i data-lucide="chevron-right" class="h-5 w-5 text-gray-400"></i>
+        </div>
+    </section>
+
+    <section class="mt-6">
+        <div class="flex w-full rounded-lg bg-gray-100 p-1 mb-4">
+            <button onclick="showTab('selling')" id="tab-selling" class="tab-trigger flex-1 flex items-center justify-center py-1.5 text-sm font-medium text-gray-500 rounded-md active">
+                <i data-lucide="package" class="mr-2 h-4 w-4"></i> 판매중
+            </button>
+            <button onclick="showTab('sold')" id="tab-sold" class="tab-trigger flex-1 flex items-center justify-center py-1.5 text-sm font-medium text-gray-500 rounded-md">
+                <i data-lucide="check-circle" class="mr-2 h-4 w-4"></i> 판매완료
+            </button>
+            <button onclick="showTab('liked')" id="tab-liked" class="tab-trigger flex-1 flex items-center justify-center py-1.5 text-sm font-medium text-gray-500 rounded-md">
+                <i data-lucide="heart" class="mr-2 h-4 w-4"></i> 관심목록
+            </button>
+        </div>
+
+        <div id="content-selling" class="tab-content active space-y-3">
+            <div class="flex gap-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                    <img src="https://via.placeholder.com/80" class="object-cover w-full h-full">
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-900">전공 서적 팝니다</h3>
+                            <p class="mt-1 font-bold text-gray-900">15,000원</p>
+                        </div>
+                        <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">판매중</span>
+                    </div>
+                    <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                        <span class="flex items-center gap-1"><i data-lucide="heart" class="h-3 w-3"></i> 5</span>
+                        <span class="flex items-center gap-1"><i data-lucide="clock" class="h-3 w-3"></i> 42</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-sold" class="tab-content py-12 text-center text-gray-500">
+            <i data-lucide="check-circle" class="mx-auto h-12 w-12 opacity-20"></i>
+            <p class="mt-4">판매 완료된 상품이 없습니다.</p>
+        </div>
+
+        <div id="content-liked" class="tab-content py-12 text-center text-gray-500">
+            <i data-lucide="heart" class="mx-auto h-12 w-12 opacity-20"></i>
+            <p class="mt-4">관심 상품이 없습니다.</p>
+        </div>
+    </section>
+
+    <section class="mt-6">
+        <button class="flex w-full items-center justify-center rounded-lg border border-red-200 py-3 text-sm font-medium text-red-600 hover:bg-red-50">
+            <i data-lucide="log-out" class="mr-2 h-4 w-4"></i> 로그아웃
+        </button>
+    </section>
+</div>
+
+<script>
+    // 아이콘 초기화
+    lucide.createIcons();
+
+    // 탭 전환 함수
+    function showTab(tabId) {
+        // 모든 컨텐츠 숨기기
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        // 모든 버튼 비활성화
+        document.querySelectorAll('.tab-trigger').forEach(trigger => trigger.classList.remove('active'));
+        
+        // 선택한 컨텐츠 및 버튼 활성화
+        document.getElementById('content-' + tabId).classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+</script>
+</body>
+</html>
