@@ -120,10 +120,12 @@
             <option value="">선택</option>
             <option value="전자기기">전자기기</option>
             <option value="도서/문구">도서/문구</option>
+            <option value="전공서적">전공서적</option>
             <option value="의류/잡화">의류/잡화</option>
             <option value="생활용품">생활용품</option>
             <option value="가구/인테리어">가구/인테리어</option>
             <option value="스포츠/레저">스포츠/레저</option>
+            <option value="전자상품권/쿠폰">전자상품권/쿠폰</option>
             <option value="뷰티/미용">뷰티/미용</option>
             <option value="기타">기타</option>
           </select>
@@ -197,25 +199,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <select
-            id="location"
-            name="location"
-            class="w-full h-10 pl-9 pr-8 rounded-lg border border-input bg-white text-sm focus:border-primary appearance-none cursor-pointer"
-            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23737373%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;"
-          >
-            <option value="">거래 희망 장소를 선택하세요</option>
-            <option value="중앙도서관 앞">중앙도서관 앞</option>
-            <option value="학생회관">학생회관</option>
-            <option value="정문">정문</option>
-            <option value="후문">후문</option>
-            <option value="기숙사 앞">기숙사 앞</option>
-            <option value="체육관">체육관</option>
-            <option value="공학관">공학관</option>
-            <option value="경상관">경상관</option>
-            <option value="예술대학">예술대학</option>
-            <option value="대구역">대구역</option>
-            <option value="기타 (협의)">기타 (협의)</option>
-          </select>
+          <input
+  type="text"
+  id="location"
+  name="location"
+  placeholder="거래 희망 장소를 입력하세요 (예: 창파도서관 앞)"
+  class="w-full h-10 pl-9 pr-3 rounded-lg border border-input bg-white text-sm placeholder:text-muted-foreground focus:border-primary"
+/>
         </div>
         <p class="mt-1 text-sm text-destructive hidden" id="locationError">거래 희망 장소를 선택해주세요.</p>
       </div>
@@ -394,10 +384,34 @@
       submitBtn.disabled = true;
       submitBtn.textContent = '등록 중...';
       
-      setTimeout(() => {
-        alert('상품이 등록되었습니다!');
-        window.location.href = 'index.html';
-      }, 1500);
+      const productData = {
+  title: document.getElementById('title').value,
+  category: document.getElementById('category').value,
+  condition: document.getElementById('condition').value,
+  price: parseInt(priceInput.value.replace(/[^0-9]/g, '')),
+  description: document.getElementById('description').value,
+  location: document.getElementById('location').value,
+
+  images: uploadedImages // 👈 핵심 (여기 한 줄로 끝)
+};
+
+fetch('http://localhost:3000/products', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(productData)
+})
+.then(res => res.json())
+.then(data => {
+  alert('상품 등록 완료!');
+  window.location.href = '/';
+})
+.catch(err => {
+  console.error(err);
+  alert('등록 실패');
+  submitBtn.disabled = false;
+});
     });
   </script>
 </body>
