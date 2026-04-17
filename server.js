@@ -59,7 +59,7 @@ app.post('/api/register', (req, res) => {
     to: email, 
     from: {
         name: '대구대 마켓',
-        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
     },
     subject: "[대구대 마켓] 회원가입 인증번호입니다.",
     // text 대신 html을 사용해 보세요
@@ -160,7 +160,7 @@ app.post('/api/resend', (req, res) => {
 
         // 메일 다시 쏘기 (기존 nodemailer 로직 활용)
         const msg = {
-            from: '"대구대 마켓" <hye70301@daegu.ac.kr>',
+            from: '"대구대 마켓" <hye70301@gmail.com>',
             to: email,
             subject: "[대구대 마켓] 인증번호가 재발송되었습니다.",
             text: `새로운 인증번호: [ ${verifyCode} ]`
@@ -190,14 +190,14 @@ app.post('/api/forgot-password', (req, res) => {
     to: email, 
     from: {
         name: '대구대 마켓',
-        email: 'hye70301@daegu.ac.kr' // SendGrid에서 인증받은 메일
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
     },
     subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
     // text 대신 html을 사용해 보세요
     html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
             <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
-            <p>안녕하세요, <strong>${name}</strong>님!</p>
+            <p>안녕하세요, <strong>${user.name}</strong>님!</p>
             <p>요청하신 비밀번호 재설정을 위한 인증번호는 아래와 같습니다.</p>
             <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
                 ${verifyCode}
@@ -240,6 +240,135 @@ app.post('/api/change-password', (req, res) => {
         res.json({ message: '비밀번호가 성공적으로 변경되었습니다! 새 비밀번호로 로그인해주세요.' });
     });
 });
+
+app.post('/products', (req, res) => {
+  const { 
+    title, 
+    category, 
+    condition, 
+    price, 
+    description, 
+    location, 
+    images   // 👈 여기 바뀜
+  } = req.body;
+
+  const sql = `
+    INSERT INTO products (title, category, \`condition\`, price, description, location, images)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql, 
+    [
+      title, 
+      category, 
+      condition, 
+      price, 
+      description, 
+      location, 
+      JSON.stringify(images) // 👈 핵심
+    ], 
+    (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('DB 오류');
+      }
+
+      res.json({ message: '등록 완료' });
+    }
+  );
+});
+
+app.get('/products', (req, res) => {
+  db.query('SELECT * FROM products ORDER BY id DESC', (err, results) => {
+    if (err) return res.status(500).send(err);
+    res.json(results);
+  });
+});
+
+app.get('/products/:id', (req, res) => {
+  const id = req.params.id;
+
+  db.query(
+    'SELECT * FROM products WHERE id = ?',
+    [id],
+    (err, result) => {
+      if (err) return res.status(500).send(err);
+      res.json(result[0]);
+    }
+  );
+});
+
+app.listen(3000, () => {
+  console.log('서버 실행: http://localhost:3000');
+});
+
+function getTimeAgo(dateString) {
+  const now = new Date();
+  const past = new Date(dateString);
+  const diff = Math.floor((now - past) / 1000); // 초 단위
+
+  if (diff < 60) return '방금 전';
+
+  const minutes = Math.floor(diff / 60);
+  if (minutes < 60) return minutes + '분 전';
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + '시간 전';
+
+  const days = Math.floor(hours / 24);
+  return days + '일 전';
+}
+
+app.put('/products/:id/views', (req, res) => {
+  const id = req.params.id;
+
+  const sql = `
+    UPDATE products 
+    SET views = views + 1 
+    WHERE id = ?
+  `;
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('조회수 증가 실패');
+    }
+
+    res.json({ message: '조회수 증가 완료' });
+  });
+});
+
+app.put('/products/:id/like', (req, res) => {
+  const id = req.params.id;
+
+  const sql = `
+    UPDATE products 
+    SET likes = likes + 1 
+    WHERE id = ?
+  `;
+
+  db.query(sql, [id], (err) => {
+    if (err) return res.status(500).send(err);
+    res.json({ message: '좋아요 증가' });
+  });
+});
+
+app.put('/products/:id/unlike', (req, res) => {
+  const id = req.params.id;
+
+  const sql = `
+    UPDATE products 
+    SET likes = likes - 1 
+    WHERE id = ? AND likes > 0
+  `;
+
+  db.query(sql, [id], (err) => {
+    if (err) return res.status(500).send(err);
+    res.json({ message: '좋아요 감소' });
+  });
+});
+
 // DB 연결 테스트
 db.connect((err) => {
     if (err) {
@@ -251,8 +380,8 @@ db.connect((err) => {
 
 // 2. 길(API) 터주기: 이 주소로 접속하면 DB에서 데이터를 꺼내줌
 app.get('/api/users', (req, res) => {
-    const sql = 'SELECT * FROM Users'; 
-    
+    const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users';
+
     db.query(sql, (err, results) => {
         if (err) {
             res.status(500).send('데이터 가져오기 에러');

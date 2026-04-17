@@ -1,8 +1,5 @@
--- 'daegu_market'이라는 이름의 데이터베이스 생성
-CREATE DATABASE daegu_market DEFAULT CHARACTER SET utf8mb4;
+USE defaultdb;
 
--- 지금부터 이 데이터베이스를 사용하겠다고 선언
-USE daegu_market;
 
 -- 1. 회원 정보 (Users)
 CREATE TABLE Users (
@@ -66,23 +63,21 @@ CREATE TABLE Messages (
     FOREIGN KEY (sender_id) REFERENCES Users(student_id)
 );
 
--- 오범석 유저 등록 테스트
-INSERT INTO Users (student_id, password, name, department, email, is_verified) 
-VALUES ('20201111', '12345678', '오범석', '컴퓨터소프트웨어공학', 'beomseok@daegu.ac.kr', TRUE);
-
--- 잘 들어갔는지 확인
-SELECT * FROM Users;
-
-USE daegu_market;
-
 -- Users 테이블에 verification_code(인증번호) 칸 추가
 ALTER TABLE Users ADD verification_code VARCHAR(10);
 
-USE daegu_market;
+USE defaultdb;
 
--- 내 이메일로 가입된 데이터만 콕 집어서 삭제합니다.
-DELETE FROM Users WHERE student_id = 'hye70301';
+-- 이미 nickname 칸이 있다면 ADD 대신 MODIFY를 써야 에러가 안 납니다!
+ALTER TABLE Users 
+MODIFY COLUMN nickname VARCHAR(50) NOT NULL DEFAULT '임시닉네임' AFTER name;
 
 SELECT * FROM Users;
+DELETE FROM Users WHERE student_id = '22105555';
+
+USE defaultdb;
+ALTER TABLE Users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+
+
 
 
