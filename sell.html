@@ -390,15 +390,52 @@
       
       if (hasError) return;
       
-      // Submit
+      // 🌟 1. 로그인 검사 및 내 정보(판매자 id) 꺼내기
+      const userStr = localStorage.getItem('loggedInUser');
+      if (!userStr) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = 'login.html';
+        return;
+      }
+      const user = JSON.parse(userStr);
+
+      // Submit 버튼 텍스트 변경
       submitBtn.disabled = true;
       submitBtn.textContent = '등록 중...';
       
-      setTimeout(() => {
-        alert('상품이 등록되었습니다!');
+      // 🌟 2. 서버로 보낼 진짜 데이터 포장 (seller_id 포함)
+      const productData = {
+        seller_id: user.user_id,
+        title: document.getElementById('title').value,
+        category: document.getElementById('category').value,
+        condition: document.getElementById('condition').value,
+        price: parseInt(priceInput.value.replace(/[^0-9]/g, '')),
+        description: document.getElementById('description').value,
+        location: document.getElementById('location').value,
+        images: uploadedImages
+      };
+
+      // 🌟 3. 실제 서버로 데이터 쏘기
+      fetch('https://daegu-market-api.onrender.com/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('서버 등록 에러');
+        return response.json();
+      })
+      .then(data => {
+        alert('상품이 성공적으로 등록되었습니다!');
         window.location.href = 'index.html';
-      }, 1500);
-    });
+      })
+      .catch(error => {
+        console.error(error);
+        alert('상품 등록에 실패했습니다. 서버 상태를 확인해주세요.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '상품 등록하기';
+      });
+    }); // 폼 제출 이벤트 끝나는 괄호
   </script>
 </body>
 </html>

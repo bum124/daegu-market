@@ -241,52 +241,35 @@ app.post('/api/change-password', (req, res) => {
     });
 });
 
-app.post('/products', (req, res) => {
-  const { 
-    title, 
-    category, 
-    condition, 
-    price, 
-    description, 
-    location, 
-    images   // 👈 여기 바뀜
-  } = req.body;
+app.post('/api/products', (req, res) => {
+  const { seller_id, title, category, condition, price, description, location, images } = req.body;
 
   const sql = `
-    INSERT INTO products (title, category, \`condition\`, price, description, location, images)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO products (seller_id, title, category, \`condition\`, price, description, location, images)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     sql, 
-    [
-      title, 
-      category, 
-      condition, 
-      price, 
-      description, 
-      location, 
-      JSON.stringify(images) // 👈 핵심
-    ], 
+    [seller_id, title, category, condition, price, description, location, JSON.stringify(images)], 
     (err, result) => {
       if (err) {
         console.error(err);
         return res.status(500).send('DB 오류');
       }
-
       res.json({ message: '등록 완료' });
     }
   );
 });
 
-app.get('/products', (req, res) => {
+app.get('/api/products', (req, res) => {
   db.query('SELECT * FROM products ORDER BY id DESC', (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
   });
 });
 
-app.get('/products/:id', (req, res) => {
+app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
   db.query(
@@ -299,9 +282,6 @@ app.get('/products/:id', (req, res) => {
   );
 });
 
-app.listen(3000, () => {
-  console.log('서버 실행: http://localhost:3000');
-});
 
 function getTimeAgo(dateString) {
   const now = new Date();
@@ -320,7 +300,7 @@ function getTimeAgo(dateString) {
   return days + '일 전';
 }
 
-app.put('/products/:id/views', (req, res) => {
+app.put('/api/products/:id/views', (req, res) => {
   const id = req.params.id;
 
   const sql = `
@@ -339,7 +319,7 @@ app.put('/products/:id/views', (req, res) => {
   });
 });
 
-app.put('/products/:id/like', (req, res) => {
+app.put('/api/products/:id/like', (req, res) => {
   const id = req.params.id;
 
   const sql = `
@@ -354,7 +334,7 @@ app.put('/products/:id/like', (req, res) => {
   });
 });
 
-app.put('/products/:id/unlike', (req, res) => {
+app.put('/api/products/:id/unlike', (req, res) => {
   const id = req.params.id;
 
   const sql = `
