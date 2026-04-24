@@ -374,7 +374,7 @@
 
   if (isLiked) {
     // 👉 DB 증가
-    fetch('https://daegu-market-api.onrender.com/api/products/${id}/like', {
+    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
       method: 'PUT'
     });
 
@@ -393,7 +393,7 @@
 
   } else {
     // 👉 DB 감소
-    fetch('https://daegu-market-api.onrender.com/api/products/${id}/unlike', {
+    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/unlike`, {
       method: 'PUT'
     });
 
@@ -448,11 +448,11 @@ function getTimeAgo(dateString) {
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
 
-fetch('https://daegu-market-api.onrender.com/api/products/${id}/views', {
+fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
   method: 'PUT'
-});
+})
 
-fetch('https://daegu-market-api.onrender.com/api/products/${id}')
+fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
   .then(res => res.json())
   .then(item => {
 

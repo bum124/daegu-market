@@ -180,6 +180,8 @@ app.post('/api/forgot-password', (req, res) => {
         if (err) return res.status(500).json({ message: 'DB 에러' });
         if (results.length === 0) return res.status(404).json({ message: '일치하는 회원 정보가 없습니다.' });
 
+        const user = results[0];
+
         const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
         const updateSql = 'UPDATE Users SET verification_code = ? WHERE email = ?';
 
