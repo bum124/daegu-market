@@ -172,7 +172,10 @@
      window.location.href = 'index.html'; 
       })
       .catch(error => {
-      showError(error.message);
+        showError(error.message);
+        // 🌟 에러가 났을 때 버튼을 원래대로 되돌려주는 코드 추가!
+        submitBtn.disabled = false;
+        submitBtn.textContent = '로그인';
       });
       });    
   </script>
