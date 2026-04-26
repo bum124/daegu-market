@@ -1,6 +1,7 @@
 ﻿const state = {
   activeTab: 'selling',
-  data: null
+  data: null,
+  currentUserId: null
 };
 
 const tabLabels = {
@@ -253,6 +254,15 @@ function renderItems() {
           <span>관심 ${item.likes}</span>
           <span>조회 ${item.views}</span>
         </div>
+        ${state.activeTab !== 'liked' ? `
+          <button
+            type="button"
+            data-delete-id="${item.id}"
+            class="mt-3 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+          >
+            삭제
+          </button>
+        ` : ''}
       </div>
     </article>
   `).join('');
@@ -286,6 +296,8 @@ async function loadMyPage() {
     throw new Error('로그인 사용자 ID를 확인하지 못했습니다.');
   }
 
+  state.currentUserId = userId;
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/mypage?userId=${encodeURIComponent(userId)}`);
 
@@ -313,6 +325,14 @@ tabButtons.forEach(button => {
 });
 
 itemList.addEventListener('click', event => {
+  const deleteButton = event.target.closest('[data-delete-id]');
+
+  if (deleteButton) {
+    event.stopPropagation();
+    deleteMyProduct(deleteButton.dataset.deleteId);
+    return;
+  }
+
   const card = event.target.closest('[data-product-id]');
 
   if (!card) {
@@ -332,6 +352,42 @@ itemList.addEventListener('keydown', event => {
   event.preventDefault();
   navigateToProduct(card.dataset.productId);
 });
+
+async function deleteMyProduct(productId) {
+  if (!state.currentUserId) {
+    alert('로그인 정보를 확인하지 못했습니다.');
+    return;
+  }
+
+  if (!confirm('이 상품을 삭제할까요?')) {
+    return;
+  }
+
+  const userStr = localStorage.getItem('loggedInUser');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const response = await fetch(`${API_BASE_URL}/api/products/${encodeURIComponent(productId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seller_id: state.currentUserId,
+      seller_email: user.email
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '상품 삭제에 실패했습니다.');
+    return;
+  }
+
+  state.data.selling = state.data.selling.filter(item => String(item.id) !== String(productId));
+  state.data.sold = state.data.sold.filter(item => String(item.id) !== String(productId));
+  state.data.stats.sellingCount = state.data.selling.length;
+  state.data.stats.soldCount = state.data.sold.length;
+  renderProfile(state.data);
+  renderItems();
+}
 
 initializeTabFromUrl();
 syncTabs();

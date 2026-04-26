@@ -400,6 +400,53 @@ app.put('/api/products/:id/unlike', (req, res) => {
   });
 });
 
+app.delete('/api/products/:id', (req, res) => {
+  const productId = req.params.id;
+  const { seller_id, seller_email } = req.body || {};
+
+  const deleteProduct = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
+    }
+
+    db.query(
+      'DELETE FROM products WHERE id = ? AND seller_id = ?',
+      [productId, resolvedSellerId],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: '상품 삭제 중 DB 오류가 발생했습니다.' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(403).json({ message: '본인이 등록한 상품만 삭제할 수 있습니다.' });
+        }
+
+        res.json({ message: '상품이 삭제되었습니다.' });
+      }
+    );
+  };
+
+  if (seller_id) {
+    deleteProduct(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    deleteProduct(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: '사용자 확인 중 DB 오류가 발생했습니다.' });
+    }
+
+    deleteProduct(results[0] && results[0].user_id);
+  });
+});
+
 // DB 연결 테스트
 db.connect((err) => {
     if (err) {
