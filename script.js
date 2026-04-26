@@ -206,6 +206,9 @@ let products = [];
 let isLoading = true;
 let hasLoadError = false;
 
+const API_BASE_URL = "https://daegu-market-api.onrender.com";
+const PLACEHOLDER_IMAGE = "https://via.placeholder.com/800x800?text=Product";
+
 function setDataStatus({ loading = false, error = false, message = "" } = {}) {
   isLoading = loading;
   hasLoadError = error;
@@ -303,11 +306,75 @@ function resetFilters() {
 }
 
 function formatPrice(price) {
-  return `${price.toLocaleString("ko-KR")}원`;
+  return `${Number(price || 0).toLocaleString("ko-KR")}원`;
+}
+
+function parseImages(images) {
+  if (Array.isArray(images)) {
+    return images;
+  }
+
+  if (typeof images !== "string" || !images.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(images);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [images];
+  }
+}
+
+function getTimeAgo(dateString) {
+  const createdAt = new Date(dateString).getTime();
+
+  if (!createdAt) {
+    return "방금 전";
+  }
+
+  const diffMinutes = Math.floor((Date.now() - createdAt) / (1000 * 60));
+
+  if (diffMinutes < 1) {
+    return "방금 전";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}분 전`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  }
+
+  return `${Math.floor(diffHours / 24)}일 전`;
+}
+
+function normalizeProduct(product) {
+  const images = parseImages(product.images);
+  const createdAt = product.createdAt || product.created_at || new Date().toISOString();
+
+  return {
+    id: product.id,
+    title: product.title || "제목 없음",
+    category: product.category || "기타",
+    college: product.college || "단과대 미지정",
+    price: Number(product.price || 0),
+    location: product.location || "위치 미정",
+    posted: product.posted || getTimeAgo(createdAt),
+    likes: Number(product.likes || 0),
+    views: Number(product.views || 0),
+    seller: product.seller || product.seller_name || (product.seller_id ? `판매자 ${product.seller_id}` : "판매자"),
+    image: product.image || product.image_url || images[0] || PLACEHOLDER_IMAGE,
+    status: product.status || product.condition || "판매중",
+    createdAt
+  };
 }
 
 function createCategoryButtons() {
-  const categories = ["전체", ...new Set(products.map(product => product.category))];
+  const categories = ["전체", ...new Set(products.map(product => product.category).filter(Boolean))];
 
   categoryContainer.innerHTML = categories.map(category => {
     const isActive = category === state.activeCategory;
@@ -372,8 +439,8 @@ function getFilteredProducts() {
   const filtered = products.filter(product => {
     const matchesCategory = state.activeCategory === "전체" || product.category === state.activeCategory;
     const matchesCollege = state.activeCollege === "전체" || product.college === state.activeCollege;
-    const matchesKeyword = !keyword || [product.title, product.category, product.location, product.seller]
-      .some(value => value.toLowerCase().includes(keyword));
+    const matchesKeyword = !keyword || [product.title, product.category, product.college, product.location, product.seller]
+      .some(value => String(value || "").toLowerCase().includes(keyword));
 
     return matchesCategory && matchesCollege && matchesKeyword;
   });
@@ -395,18 +462,18 @@ function getFilteredProducts() {
 
 async function loadProducts() {
   try {
-    // 🌟 주방장(Render 서버)의 정확한 주소로 요청(fetch)을 보냅니다!
-    const response = await fetch('https://daegu-market-api.onrender.com/api/products');
+    const response = await fetch(`${API_BASE_URL}/api/products`);
 
     if (!response.ok) {
       throw new Error('Failed to load products');
     }
 
-    products = await response.json();
+    const data = await response.json();
+    products = Array.isArray(data) ? data.map(normalizeProduct) : [];
   } catch (error) {
     console.error('상품 데이터를 불러오지 못해 샘플 데이터를 사용합니다.', error);
     hasLoadError = true;
-    products = fallbackProductData;
+    products = fallbackProductData.map(normalizeProduct);
   }
 }
 function renderProducts() {
