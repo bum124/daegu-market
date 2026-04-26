@@ -1,48 +1,174 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>채팅 목록 - 대구대 중고장터</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>채팅 목록 - 대구대 중고장터</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-background text-foreground">
 
-    <div class="mx-auto max-w-2xl min-h-screen bg-white shadow-sm">
-        <header class="sticky top-0 z-30 border-b border-gray-100 bg-white/95 px-4 py-4 backdrop-blur">
-            <h1 class="text-xl font-bold text-gray-900">채팅</h1>
-        </header>
+  <div class="mx-auto min-h-screen max-w-2xl bg-white shadow-sm">
+    <header class="sticky top-0 z-30 border-b border-border bg-white/95 backdrop-blur">
+      <div class="px-4 py-4">
+        <h1 class="text-xl font-bold">채팅</h1>
+      </div>
 
-        <div class="divide-y divide-gray-100">
-            <a href="chat_detail.html" class="flex gap-4 px-4 py-4 transition-colors hover:bg-gray-50">
-                <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                    <img src="https://via.placeholder.com/100" alt="product" class="object-cover w-full h-full">
-                </div>
+      <!-- 1) 상단 탭 메뉴 -->
+      <div class="px-4">
+        <div class="flex gap-6 border-t border-border">
+          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-primary border-b-2 border-primary" data-filter="all">전체</button>
+          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-muted-foreground border-b-2 border-transparent hover:text-foreground" data-filter="market">중고거래</button>
+          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-muted-foreground border-b-2 border-transparent hover:text-foreground" data-filter="club">동아리</button>
+        </div>
+      </div>
+    </header>
 
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="font-medium text-gray-900">김철수</span>
-                                <span class="text-xs text-gray-400">오후 2:30</span>
-                            </div>
-                            <p class="mt-0.5 truncate text-sm text-gray-500">네, 직거래 가능합니다! 정문 앞에서 뵐까요?</p>
-                        </div>
-                        <span class="flex-shrink-0 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">2</span>
-                    </div>
-                    
-                    <div class="mt-2 flex items-center gap-2">
-                        <span class="truncate text-xs text-gray-400">2024 맥북 에어 M3</span>
-                        <span class="text-xs font-medium text-gray-900">1,200,000원</span>
-                    </div>
-                </div>
-            </a>
+    <div id="chatList" class="divide-y divide-border">
+      <!-- 2) 중고거래 채팅: 상품 이미지 + 가격 유지 -->
+      <a data-type="market" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
+        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+          <img src="https://via.placeholder.com/200x200?text=Item" alt="상품 이미지" class="h-full w-full object-cover">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">김철수</span>
+                <span class="text-xs text-muted-foreground">오후 2:30</span>
+              </div>
+              <p class="mt-0.5 truncate text-sm text-muted-foreground">네, 직거래 가능합니다! 정문 앞에서 뵐까요?</p>
+            </div>
+            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">2</span>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="truncate text-xs text-muted-foreground">2024 맥북 에어 M3</span>
+            <span class="text-xs font-semibold">1,200,000원</span>
+          </div>
+        </div>
+      </a>
 
-            <a href="chat_detail.html" class="flex gap-4 px-4 py-4 transition-colors hover:bg-gray-50">
-                <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                    <img src="https://
+      <a data-type="market" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
+        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+          <img src="https://via.placeholder.com/200x200?text=Item" alt="상품 이미지" class="h-full w-full object-cover">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">이영희</span>
+                <span class="text-xs text-muted-foreground">오전 11:10</span>
+              </div>
+              <p class="mt-0.5 truncate text-sm text-muted-foreground">상태 좋아요. 오늘 저녁에 확인 가능할까요?</p>
+            </div>
+            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">1</span>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="truncate text-xs text-muted-foreground">아이패드 프로 12.9</span>
+            <span class="text-xs font-semibold">850,000원</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 2) 동아리 채팅: 로고(원형) + 동아리명 강조 -->
+      <a data-type="club" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
+        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+          <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Run" alt="동아리 로고" class="h-full w-full object-cover">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">오범석(회장)</span>
+                <span class="text-xs text-muted-foreground">어제</span>
+              </div>
+              <p class="mt-0.5 truncate text-sm text-muted-foreground">오늘 번개 뛰실 분? 9시에 잔디광장에서 모여요!</p>
+            </div>
+            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">3</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="truncate text-xs text-muted-foreground">동아리</span>
+            <span class="text-xs font-semibold">대구대 러닝크루</span>
+          </div>
+        </div>
+      </a>
+
+      <a data-type="club" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
+        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+          <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Band" alt="동아리 로고" class="h-full w-full object-cover">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">대구대 밴드부</span>
+                <span class="text-xs text-muted-foreground">3일 전</span>
+              </div>
+              <p class="mt-0.5 truncate text-sm text-muted-foreground">버스킹 홍보 포스터 수정본 확인 부탁드려요!</p>
+            </div>
+            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">1</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="truncate text-xs text-muted-foreground">동아리</span>
+            <span class="text-xs font-semibold">대구대 밴드부</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // 3) 필터링 스크립트
+    const tabs = Array.from(document.querySelectorAll('.chat-tab'));
+    const items = Array.from(document.querySelectorAll('.chat-item'));
+
+    function setActiveTab(active) {
+      tabs.forEach((tab) => {
+        const isActive = tab === active;
+        tab.classList.toggle('text-primary', isActive);
+        tab.classList.toggle('border-primary', isActive);
+        tab.classList.toggle('text-muted-foreground', !isActive);
+        tab.classList.toggle('border-transparent', !isActive);
+      });
+    }
+
+    function applyFilter(filter) {
+      items.forEach((item) => {
+        const type = item.getAttribute('data-type');
+        const visible = filter === 'all' || type === filter;
+        item.classList.toggle('hidden', !visible);
+      });
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const filter = tab.getAttribute('data-filter');
+        setActiveTab(tab);
+        applyFilter(filter);
+      });
+    });
+
+    applyFilter('all');
+  </script>
+</body>
+</html>
