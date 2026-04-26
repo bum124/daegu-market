@@ -554,20 +554,11 @@ async function loadLikeState() {
 function openSellerProfile() {
   const seller = window.currentSeller;
 
-  if (!seller) {
+  if (!seller || !seller.id) {
     alert('판매자 정보를 아직 불러오는 중입니다.');
     return;
   }
-
-  const user = getLoggedInUser();
-  const currentUserId = user && (user.user_id || user.id);
-
-  if (currentUserId && seller.id && String(currentUserId) === String(seller.id)) {
-    window.location.href = 'mypage.html';
-    return;
-  }
-
-  alert(`${seller.name}\n${seller.department}`);
+  window.location.href = `profile.html?userId=${encodeURIComponent(seller.id)}`;
 }
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
