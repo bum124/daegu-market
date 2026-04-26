@@ -1,6 +1,7 @@
 ﻿const state = {
   activeTab: 'selling',
-  data: null
+  data: null,
+  currentUserId: null
 };
 
 const tabLabels = {
@@ -28,6 +29,9 @@ const emptyState = document.getElementById('empty-state');
 const tabTitle = document.getElementById('tab-title');
 const tabButtons = document.querySelectorAll('.tab-trigger');
 
+const API_BASE_URL = 'https://daegu-market-api.onrender.com';
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x800?text=Product';
+
 function navigateToProduct(productId) {
   window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
 }
@@ -49,6 +53,148 @@ function initializeTabFromUrl() {
 
 function formatPrice(price) {
   return `${Number(price).toLocaleString('ko-KR')}원`;
+}
+
+function parseImages(images) {
+  if (Array.isArray(images)) {
+    return images;
+  }
+
+  if (typeof images !== 'string' || !images.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(images);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [images];
+  }
+}
+
+function getTimeAgo(dateString) {
+  const createdAt = new Date(dateString).getTime();
+
+  if (!createdAt) {
+    return '방금 전';
+  }
+
+  const diffMinutes = Math.floor((Date.now() - createdAt) / (1000 * 60));
+
+  if (diffMinutes < 1) {
+    return '방금 전';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}분 전`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  }
+
+  return `${Math.floor(diffHours / 24)}일 전`;
+}
+
+function normalizeProduct(item) {
+  const images = parseImages(item.images);
+  const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+
+  return {
+    id: item.id,
+    title: item.title || '제목 없음',
+    category: item.category || '기타',
+    college: item.college || item.seller_department || '단과대 미지정',
+    price: Number(item.price || 0),
+    location: item.location || '위치 미정',
+    posted: item.posted || getTimeAgo(createdAt),
+    likes: Number(item.likes || 0),
+    views: Number(item.views || 0),
+    seller: item.seller || item.seller_nickname || item.seller_name || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자'),
+    image: item.image || item.image_url || images[0] || PLACEHOLDER_IMAGE,
+    status: item.status || item.condition || '판매중',
+    createdAt,
+    sellerId: item.seller_id || item.sellerId || null
+  };
+}
+
+function normalizeMyPageData(data, loggedInUser) {
+  if (!data || !data.user || !data.stats) {
+    throw new Error('Invalid mypage response');
+  }
+
+  return {
+    user: {
+      id: data.user.id || loggedInUser.user_id || loggedInUser.id || '',
+      name: data.user.name || loggedInUser.name || loggedInUser.nickname || '사용자',
+      department: data.user.department || loggedInUser.department || '학과 미지정',
+      email: data.user.email || loggedInUser.email || '',
+      verified: Boolean(data.user.verified ?? true)
+    },
+    stats: {
+      sellingCount: Number(data.stats.sellingCount || 0),
+      soldCount: Number(data.stats.soldCount || 0),
+      likedCount: Number(data.stats.likedCount || 0)
+    },
+    selling: Array.isArray(data.selling) ? data.selling.map(normalizeProduct) : [],
+    sold: Array.isArray(data.sold) ? data.sold.map(normalizeProduct) : [],
+    liked: Array.isArray(data.liked) ? data.liked.map(normalizeProduct) : []
+  };
+}
+
+async function loadProductFallback(loggedInUser) {
+  const response = await fetch(`${API_BASE_URL}/api/products`);
+
+  if (!response.ok) {
+    throw new Error('Failed to load product fallback');
+  }
+
+  const products = (await response.json()).map(normalizeProduct);
+  const userId = loggedInUser.user_id || loggedInUser.id || null;
+  const selling = userId
+    ? products.filter(product => String(product.sellerId || '') === String(userId))
+    : [];
+
+  return {
+    user: {
+      id: userId || '',
+      name: loggedInUser.name || loggedInUser.nickname || '사용자',
+      department: loggedInUser.department || '학과 미지정',
+      email: loggedInUser.email || '',
+      verified: true
+    },
+    stats: {
+      sellingCount: selling.length,
+      soldCount: 0,
+      likedCount: 0
+    },
+    selling,
+    sold: [],
+    liked: []
+  };
+}
+
+async function resolveUserId(user) {
+  if (user.user_id || user.id) {
+    return user.user_id || user.id;
+  }
+
+  if (!user.email) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/users`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const users = await response.json();
+  const matchedUser = users.find(item => item.email === user.email);
+
+  return matchedUser ? matchedUser.user_id : null;
 }
 
 function renderProfile(data) {
@@ -108,6 +254,15 @@ function renderItems() {
           <span>관심 ${item.likes}</span>
           <span>조회 ${item.views}</span>
         </div>
+        ${state.activeTab !== 'liked' ? `
+          <button
+            type="button"
+            data-delete-id="${item.id}"
+            class="mt-3 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+          >
+            삭제
+          </button>
+        ` : ''}
       </div>
     </article>
   `).join('');
@@ -127,27 +282,34 @@ function syncTabs() {
 async function loadMyPage() {
   renderItems();
 
-  // 🌟 1. 로그인한 유저 정보 확인하기 (범석 님 코드 활용)
   const userStr = localStorage.getItem('loggedInUser');
   if (!userStr) {
     alert('로그인이 필요한 서비스입니다.');
-    window.location.href = 'login.html'; // 로그인 안 했으면 로그인 창으로 보내기
+    window.location.href = 'login.html';
     return;
   }
+
   const user = JSON.parse(userStr);
+  const userId = await resolveUserId(user);
 
-  // 🌟 2. 하드코딩된 주소 대신 진짜 서버 주소와 실제 user_id 사용하기
-  // 기존: fetch('/api/mypage?userId=1');
-  const response = await fetch(`https://daegu-market-api.onrender.com/api/mypage?userId=${user.user_id}`);
-
-  if (!response.ok) {
-    throw new Error('Failed to load mypage');
+  if (!userId) {
+    throw new Error('로그인 사용자 ID를 확인하지 못했습니다.');
   }
 
-  state.data = await response.json();
-  
-  // 만약 닉네임이나 이름 등을 DB 데이터로 덮어씌우고 싶다면 아래처럼 수정 가능합니다.
-  // data.user.name = user.name; 
+  state.currentUserId = userId;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/mypage?userId=${encodeURIComponent(userId)}`);
+
+    if (!response.ok) {
+      throw new Error('Failed to load mypage');
+    }
+
+    state.data = normalizeMyPageData(await response.json(), user);
+  } catch (error) {
+    console.warn('마이페이지 API가 없어 상품 API 기반 임시 데이터로 표시합니다.', error);
+    state.data = await loadProductFallback(user);
+  }
 
   renderProfile(state.data);
   syncTabs();
@@ -163,6 +325,14 @@ tabButtons.forEach(button => {
 });
 
 itemList.addEventListener('click', event => {
+  const deleteButton = event.target.closest('[data-delete-id]');
+
+  if (deleteButton) {
+    event.stopPropagation();
+    deleteMyProduct(deleteButton.dataset.deleteId);
+    return;
+  }
+
   const card = event.target.closest('[data-product-id]');
 
   if (!card) {
@@ -182,6 +352,42 @@ itemList.addEventListener('keydown', event => {
   event.preventDefault();
   navigateToProduct(card.dataset.productId);
 });
+
+async function deleteMyProduct(productId) {
+  if (!state.currentUserId) {
+    alert('로그인 정보를 확인하지 못했습니다.');
+    return;
+  }
+
+  if (!confirm('이 상품을 삭제할까요?')) {
+    return;
+  }
+
+  const userStr = localStorage.getItem('loggedInUser');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const response = await fetch(`${API_BASE_URL}/api/products/${encodeURIComponent(productId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seller_id: state.currentUserId,
+      seller_email: user.email
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '상품 삭제에 실패했습니다.');
+    return;
+  }
+
+  state.data.selling = state.data.selling.filter(item => String(item.id) !== String(productId));
+  state.data.sold = state.data.sold.filter(item => String(item.id) !== String(productId));
+  state.data.stats.sellingCount = state.data.selling.length;
+  state.data.stats.soldCount = state.data.sold.length;
+  renderProfile(state.data);
+  renderItems();
+}
 
 initializeTabFromUrl();
 syncTabs();

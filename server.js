@@ -13,6 +13,55 @@ const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json());
 
+function resolveUserId(payload, callback) {
+  const { user_id, id, email, user_email } = payload || {};
+  const directUserId = user_id || id;
+
+  if (directUserId) {
+    callback(null, directUserId);
+    return;
+  }
+
+  const lookupEmail = email || user_email;
+
+  if (!lookupEmail) {
+    callback(null, null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [lookupEmail], (err, results) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    callback(null, results[0] && results[0].user_id);
+  });
+}
+
+function ensureProductLikesTable(callback) {
+  db.query(
+    `CREATE TABLE IF NOT EXISTS product_likes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      product_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_user_product (user_id, product_id)
+    )`,
+    callback
+  );
+}
+
+function refreshProductLikeCount(productId, callback) {
+  db.query(
+    `UPDATE products
+     SET likes = (SELECT COUNT(*) FROM product_likes WHERE product_id = ?)
+     WHERE id = ?`,
+    [productId, productId],
+    callback
+  );
+}
+
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
 const db = mysql.createConnection({
@@ -140,7 +189,10 @@ app.post('/api/login', (req, res) => {
         res.json({ 
             message: '로그인 성공!', 
             user: { 
+                user_id: user.user_id,
+                id: user.user_id,
                 name: user.name, 
+                nickname: user.nickname,
                 department: user.department,
                 email: user.email
             } 
@@ -244,28 +296,66 @@ app.post('/api/change-password', (req, res) => {
 });
 
 app.post('/api/products', (req, res) => {
-  const { seller_id, title, category, condition, price, description, location, images } = req.body;
+  const { seller_id, seller_email, title, category, condition, price, description, location, images } = req.body;
 
-  const sql = `
+  const insertProduct = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다. 다시 로그인해주세요.' });
+    }
+
+    const sql = `
     INSERT INTO products (seller_id, title, category, \`condition\`, price, description, location, images)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(
-    sql, 
-    [seller_id, title, category, condition, price, description, location, JSON.stringify(images)], 
-    (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send('DB 오류');
+    db.query(
+      sql,
+      [resolvedSellerId, title, category, condition, price, description, location, JSON.stringify(images)],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send('DB 오류');
+        }
+
+        res.json({ message: '등록 완료', product_id: result.insertId });
       }
-      res.json({ message: '등록 완료' });
+    );
+  };
+
+  if (seller_id) {
+    insertProduct(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    insertProduct(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('DB 오류');
     }
-  );
+
+    insertProduct(results[0] && results[0].user_id);
+  });
 });
 
 app.get('/api/products', (req, res) => {
-  db.query('SELECT * FROM products ORDER BY id DESC', (err, results) => {
+  const sql = `
+    SELECT
+      p.*,
+      u.name AS seller_name,
+      u.nickname AS seller_nickname,
+      u.department AS seller_department,
+      u.email AS seller_email
+    FROM products p
+    LEFT JOIN Users u ON u.user_id = p.seller_id
+    ORDER BY p.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
   });
@@ -275,7 +365,15 @@ app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
   db.query(
-    'SELECT * FROM products WHERE id = ?',
+    `SELECT
+      p.*,
+      u.name AS seller_name,
+      u.nickname AS seller_nickname,
+      u.department AS seller_department,
+      u.email AS seller_email
+     FROM products p
+     LEFT JOIN Users u ON u.user_id = p.seller_id
+     WHERE p.id = ?`,
     [id],
     (err, result) => {
       if (err) return res.status(500).send(err);
@@ -351,6 +449,144 @@ app.put('/api/products/:id/unlike', (req, res) => {
   });
 });
 
+app.get('/api/products/:id/like', (req, res) => {
+  const productId = req.params.id;
+
+  ensureProductLikesTable((tableErr) => {
+    if (tableErr) return res.status(500).json({ message: '관심목록 준비 실패' });
+
+    resolveUserId(req.query, (userErr, userId) => {
+      if (userErr) return res.status(500).json({ message: '사용자 확인 실패' });
+      if (!userId) return res.json({ liked: false });
+
+      db.query(
+        'SELECT id FROM product_likes WHERE user_id = ? AND product_id = ?',
+        [userId, productId],
+        (err, rows) => {
+          if (err) return res.status(500).json({ message: '관심 상태 확인 실패' });
+          res.json({ liked: rows.length > 0 });
+        }
+      );
+    });
+  });
+});
+
+app.post('/api/products/:id/like', (req, res) => {
+  const productId = req.params.id;
+
+  ensureProductLikesTable((tableErr) => {
+    if (tableErr) return res.status(500).json({ message: '관심목록 준비 실패' });
+
+    resolveUserId(req.body, (userErr, userId) => {
+      if (userErr) return res.status(500).json({ message: '사용자 확인 실패' });
+      if (!userId) return res.status(400).json({ message: '로그인이 필요합니다.' });
+
+      db.query(
+        'INSERT IGNORE INTO product_likes (user_id, product_id) VALUES (?, ?)',
+        [userId, productId],
+        (err) => {
+          if (err) return res.status(500).json({ message: '관심 등록 실패' });
+
+          refreshProductLikeCount(productId, (countErr) => {
+            if (countErr) return res.status(500).json({ message: '관심 수 갱신 실패' });
+            res.json({ message: '관심 등록 완료' });
+          });
+        }
+      );
+    });
+  });
+});
+
+app.delete('/api/products/:id/like', (req, res) => {
+  const productId = req.params.id;
+
+  ensureProductLikesTable((tableErr) => {
+    if (tableErr) return res.status(500).json({ message: '관심목록 준비 실패' });
+
+    resolveUserId(req.body, (userErr, userId) => {
+      if (userErr) return res.status(500).json({ message: '사용자 확인 실패' });
+      if (!userId) return res.status(400).json({ message: '로그인이 필요합니다.' });
+
+      db.query(
+        'DELETE FROM product_likes WHERE user_id = ? AND product_id = ?',
+        [userId, productId],
+        (err) => {
+          if (err) return res.status(500).json({ message: '관심 해제 실패' });
+
+          refreshProductLikeCount(productId, (countErr) => {
+            if (countErr) return res.status(500).json({ message: '관심 수 갱신 실패' });
+            res.json({ message: '관심 해제 완료' });
+          });
+        }
+      );
+    });
+  });
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  const productId = req.params.id;
+  const { seller_id, seller_email } = req.body || {};
+
+  const deleteProduct = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
+    }
+
+    db.query(
+      'DELETE FROM products WHERE id = ? AND seller_id = ?',
+      [productId, resolvedSellerId],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: '상품 삭제 중 DB 오류가 발생했습니다.' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(403).json({ message: '본인이 등록한 상품만 삭제할 수 있습니다.' });
+        }
+
+        res.json({ message: '상품이 삭제되었습니다.' });
+      }
+    );
+  };
+
+  if (seller_id) {
+    deleteProduct(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    deleteProduct(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: '사용자 확인 중 DB 오류가 발생했습니다.' });
+    }
+
+    deleteProduct(results[0] && results[0].user_id);
+  });
+});
+
+app.delete('/api/products/legacy/orphans', (req, res) => {
+  const cleanupKey = req.headers['x-cleanup-key'];
+
+  if (cleanupKey !== 'delete-orphan-products') {
+    return res.status(403).json({ message: '정리 권한이 없습니다.' });
+  }
+
+  db.query('DELETE FROM products WHERE seller_id IS NULL', (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: '기존 상품 정리 실패' });
+    }
+
+    res.json({ message: '기존 상품을 정리했습니다.', deletedCount: result.affectedRows });
+  });
+});
+
 // DB 연결 테스트
 db.connect((err) => {
     if (err) {
@@ -373,7 +609,137 @@ app.get('/api/users', (req, res) => {
     });
 });
 
+app.get('/api/users/:id', (req, res) => {
+    const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users WHERE user_id = ?';
+
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).send('데이터 가져오기 에러');
+        if (results.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+        res.json(results[0]);
+    });
+});
+
+app.put('/api/users/:id', (req, res) => {
+    const { name, nickname, department, currentPassword, newPassword } = req.body;
+    const values = [name, nickname, department];
+    let sql = 'UPDATE Users SET name = ?, nickname = ?, department = ?';
+
+    if (newPassword) {
+        if (!currentPassword) {
+            return res.status(400).json({ message: '현재 비밀번호를 입력해주세요.' });
+        }
+
+        db.query(
+            'SELECT password FROM Users WHERE user_id = ?',
+            [req.params.id],
+            (selectErr, users) => {
+                if (selectErr) return res.status(500).json({ message: '사용자 확인 실패' });
+                if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+                if (users[0].password !== currentPassword) {
+                    return res.status(400).json({ message: '현재 비밀번호가 일치하지 않습니다.' });
+                }
+
+                db.query(
+                    'UPDATE Users SET name = ?, nickname = ?, department = ?, password = ? WHERE user_id = ?',
+                    [name, nickname, department, newPassword, req.params.id],
+                    (updateErr) => {
+                        if (updateErr) return res.status(500).json({ message: '계정 정보 수정 실패' });
+                        res.json({ message: '계정 정보가 수정되었습니다.' });
+                    }
+                );
+            }
+        );
+        return;
+    }
+
+    sql += ' WHERE user_id = ?';
+    values.push(req.params.id);
+
+    db.query(sql, values, (err) => {
+        if (err) return res.status(500).json({ message: '계정 정보 수정 실패' });
+        res.json({ message: '계정 정보가 수정되었습니다.' });
+    });
+});
+
 // 3. 서버 켜기 (3000번 포트 사용)
 app.listen(PORT, () => {
     console.log(`서버가 ${PORT}번 포트에서 돌아가고 있습니다.`);
+});
+
+app.get('/api/mypage', (req, res) => {
+  const userId = Number(req.query.userId);
+
+  if (!userId) {
+    return res.status(400).json({ message: 'userId가 필요합니다.' });
+  }
+
+  db.query(
+    'SELECT user_id, email, name, nickname, department FROM Users WHERE user_id = ?',
+    [userId],
+    (userErr, users) => {
+      if (userErr) return res.status(500).send(userErr);
+      if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+
+      const user = users[0];
+      const productSql = `
+        SELECT
+          p.*,
+          u.name AS seller_name,
+          u.nickname AS seller_nickname,
+          u.department AS seller_department,
+          u.email AS seller_email
+        FROM products p
+        LEFT JOIN Users u ON u.user_id = p.seller_id
+        WHERE p.seller_id = ?
+        ORDER BY p.id DESC
+      `;
+
+      db.query(productSql, [userId], (productErr, products) => {
+        if (productErr) return res.status(500).send(productErr);
+
+        ensureProductLikesTable((tableErr) => {
+          if (tableErr) return res.status(500).json({ message: '관심목록 준비 실패' });
+
+          const likedSql = `
+            SELECT
+              p.*,
+              u.name AS seller_name,
+              u.nickname AS seller_nickname,
+              u.department AS seller_department,
+              u.email AS seller_email
+            FROM product_likes l
+            JOIN products p ON p.id = l.product_id
+            LEFT JOIN Users u ON u.user_id = p.seller_id
+            WHERE l.user_id = ?
+            ORDER BY l.created_at DESC
+          `;
+
+          db.query(likedSql, [userId], (likedErr, liked) => {
+            if (likedErr) return res.status(500).send(likedErr);
+
+            const selling = products.filter(product => product.status !== '판매완료');
+            const sold = products.filter(product => product.status === '판매완료');
+
+            res.json({
+              user: {
+                id: user.user_id,
+                name: user.nickname || user.name,
+                department: user.department,
+                email: user.email,
+                verified: true
+              },
+              stats: {
+                sellingCount: selling.length,
+                soldCount: sold.length,
+                likedCount: liked.length
+              },
+              selling,
+              sold,
+              liked
+            });
+          });
+        });
+      });
+    }
+  );
 });

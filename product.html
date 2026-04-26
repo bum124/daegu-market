@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>맥북 프로 14인치 M3 - 대구대 마켓</title>
+  <title>상품 상세 - 대구대 마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -140,11 +140,11 @@
                 </svg>
               </div>
               <div>
-                <p class="font-medium text-gray-900">김대구</p>
-                <p class="text-sm text-gray-500">컴퓨터공학과</p>
+                <p id="sellerName" class="font-medium text-gray-900">판매자 정보를 불러오는 중...</p>
+                <p id="sellerDepartment" class="text-sm text-gray-500">대구대 마켓</p>
               </div>
             </div>
-            <button class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+            <button id="profileButton" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
               프로필 보기
             </button>
           </div>
@@ -192,13 +192,13 @@
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
-                조회 <span id="views"></span>
+                조회 <span id="views">0</span>
               </div>
               <div class="flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
                 </svg>
-                관심 <span id="likes"></span>
+                관심 <span id="likes">0</span>
               </div>
             </div>
           </div>
@@ -228,6 +228,13 @@
                 <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
               </svg>
               채팅으로 거래하기
+            </button>
+            <button
+              id="desktopDeleteBtn"
+              onclick="deleteProduct()"
+              class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              삭제
             </button>
           </div>
         </div>
@@ -321,21 +328,35 @@
         </svg>
         채팅으로 거래하기
       </button>
+      <button
+        id="mobileDeleteBtn"
+        onclick="deleteProduct()"
+        class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+      >
+        삭제
+      </button>
     </div>
   </div>
 
   <script>
     // Image Gallery
     
-    let currentIndex = 0;
+    window.images = window.images || [];
+    window.currentIndex = 0;
+    window.currentProductTitle = '대구대 마켓 상품';
+    window.currentSeller = null;
 
     function updateImage() {
-      document.getElementById('mainImage').src = images[currentIndex];
+      if (!window.images.length) {
+        return;
+      }
+
+      document.getElementById('mainImage').src = window.images[window.currentIndex];
       
       // Update dots
       const dots = document.getElementById('imageDots').children;
       for (let i = 0; i < dots.length; i++) {
-        if (i === currentIndex) {
+        if (i === window.currentIndex) {
           dots[i].className = 'h-2 w-2 rounded-full bg-primary';
         } else {
           dots[i].className = 'h-2 w-2 rounded-full bg-white/60';
@@ -344,78 +365,94 @@
     }
 
     function prevImage() {
-      currentIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+      if (!window.images.length) {
+        return;
+      }
+
+      window.currentIndex = window.currentIndex === 0 ? window.images.length - 1 : window.currentIndex - 1;
       updateImage();
     }
 
     function nextImage() {
-      currentIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
+      if (!window.images.length) {
+        return;
+      }
+
+      window.currentIndex = window.currentIndex === window.images.length - 1 ? 0 : window.currentIndex + 1;
       updateImage();
     }
 
     function goToImage(index) {
-      currentIndex = index;
+      window.currentIndex = index;
       updateImage();
     }
 
     // Like functionality
     let isLiked = false;
 
-    function toggleLike() {
-  isLiked = !isLiked;
+    function syncLikeButton() {
+      const mobileIcon = document.getElementById('mobileHeartIcon');
+      const desktopIcon = document.getElementById('desktopHeartIcon');
+      const desktopText = document.getElementById('desktopLikeText');
+      const mobileBtn = document.getElementById('mobileLikeBtn');
+      const desktopBtn = document.getElementById('desktopLikeBtn');
 
-  const id = new URLSearchParams(location.search).get('id');
+      if (isLiked) {
+        mobileIcon.setAttribute('fill', '#ef4444');
+        mobileIcon.setAttribute('stroke', '#ef4444');
+        desktopIcon.setAttribute('fill', '#ef4444');
+        desktopIcon.setAttribute('stroke', '#ef4444');
+        desktopText.textContent = '관심 해제';
+        mobileBtn.classList.add('text-red-500', 'border-red-500');
+        desktopBtn.classList.add('text-red-500', 'border-red-500');
+      } else {
+        mobileIcon.setAttribute('fill', 'none');
+        mobileIcon.setAttribute('stroke', 'currentColor');
+        desktopIcon.setAttribute('fill', 'none');
+        desktopIcon.setAttribute('stroke', 'currentColor');
+        desktopText.textContent = '관심 등록';
+        mobileBtn.classList.remove('text-red-500', 'border-red-500');
+        desktopBtn.classList.remove('text-red-500', 'border-red-500');
+      }
+    }
 
-  const mobileIcon = document.getElementById('mobileHeartIcon');
-  const desktopIcon = document.getElementById('desktopHeartIcon');
-  const desktopText = document.getElementById('desktopLikeText');
-  const mobileBtn = document.getElementById('mobileLikeBtn');
-  const desktopBtn = document.getElementById('desktopLikeBtn');
+    async function toggleLike() {
+      const user = getLoggedInUser();
+      const userId = await resolveUserId(user);
 
-  if (isLiked) {
-    // 👉 DB 증가
-    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
-      method: 'PUT'
-    });
+      if (!userId) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = 'login.html';
+        return;
+      }
 
-    // 👉 UI 변경
-    mobileIcon.setAttribute('fill', '#ef4444');
-    mobileIcon.setAttribute('stroke', '#ef4444');
-    desktopIcon.setAttribute('fill', '#ef4444');
-    desktopIcon.setAttribute('stroke', '#ef4444');
-    desktopText.textContent = '관심 해제';
-    mobileBtn.classList.add('text-red-500', 'border-red-500');
-    desktopBtn.classList.add('text-red-500', 'border-red-500');
+      const nextLiked = !isLiked;
+      const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
+        method: nextLiked ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          user_email: user && user.email
+        })
+      });
 
-    // 👉 숫자 증가
-    document.getElementById('likes').innerText =
-      parseInt(document.getElementById('likes').innerText) + 1;
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        alert(result.message || '관심 등록 처리에 실패했습니다.');
+        return;
+      }
 
-  } else {
-    // 👉 DB 감소
-    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/unlike`, {
-      method: 'PUT'
-    });
-
-    // 👉 UI 원래대로
-    mobileIcon.setAttribute('fill', 'none');
-    mobileIcon.setAttribute('stroke', 'currentColor');
-    desktopIcon.setAttribute('fill', 'none');
-    desktopIcon.setAttribute('stroke', 'currentColor');
-    desktopText.textContent = '관심 등록';
-    mobileBtn.classList.remove('text-red-500', 'border-red-500');
-    desktopBtn.classList.remove('text-red-500', 'border-red-500');
-
-    // 👉 숫자 감소
-    document.getElementById('likes').innerText =
-      parseInt(document.getElementById('likes').innerText) - 1;
-  }
-}
+      const likesElement = document.getElementById('likes');
+      const currentLikes = Number(likesElement.innerText || 0);
+      isLiked = nextLiked;
+      likesElement.innerText = Math.max(0, currentLikes + (isLiked ? 1 : -1));
+      syncLikeButton();
+    }
     // Share functionality
     async function handleShare() {
       if (navigator.share) {
         await navigator.share({
-          title: '맥북 프로 14인치 M3 Pro 실버 급처합니다',
+          title: window.currentProductTitle,
           text: '대구대 마켓에서 판매중인 상품입니다.',
           url: window.location.href
         });
@@ -445,58 +482,230 @@ function getTimeAgo(dateString) {
   return days + '일 전';
 }
 
+function parseImages(images) {
+  if (Array.isArray(images)) {
+    return images;
+  }
+
+  if (typeof images !== 'string' || !images.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(images);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [images];
+  }
+}
+
+function formatPrice(price) {
+  return Number(price || 0).toLocaleString('ko-KR') + '원';
+}
+
+function getLoggedInUser() {
+  try {
+    return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+async function resolveUserId(user) {
+  if (!user) {
+    return null;
+  }
+
+  if (user.user_id || user.id) {
+    return user.user_id || user.id;
+  }
+
+  if (!user.email) {
+    return null;
+  }
+
+  const response = await fetch('https://daegu-market-api.onrender.com/api/users');
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const users = await response.json();
+  const matchedUser = users.find(item => item.email === user.email);
+
+  return matchedUser ? matchedUser.user_id : null;
+}
+
+async function updateOwnerActions() {
+  const user = getLoggedInUser();
+  const currentUserId = await resolveUserId(user);
+  const sellerId = window.currentSeller && window.currentSeller.id;
+  const isOwner = currentUserId && sellerId && String(currentUserId) === String(sellerId);
+
+  document.querySelectorAll('.owner-action').forEach(button => {
+    button.classList.toggle('hidden', !isOwner);
+  });
+}
+
+async function loadLikeState() {
+  const user = getLoggedInUser();
+  const userId = await resolveUserId(user);
+
+  if (!userId || !id) {
+    isLiked = false;
+    syncLikeButton();
+    return;
+  }
+
+  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like?user_id=${encodeURIComponent(userId)}`);
+
+  if (!response.ok) {
+    return;
+  }
+
+  const data = await response.json();
+  isLiked = Boolean(data.liked);
+  syncLikeButton();
+}
+
+function openSellerProfile() {
+  const seller = window.currentSeller;
+
+  if (!seller) {
+    alert('판매자 정보를 아직 불러오는 중입니다.');
+    return;
+  }
+
+  const user = getLoggedInUser();
+  const currentUserId = user && (user.user_id || user.id);
+
+  if (currentUserId && seller.id && String(currentUserId) === String(seller.id)) {
+    window.location.href = 'mypage.html';
+    return;
+  }
+
+  alert(`${seller.name}\n${seller.department}`);
+}
+
+document.getElementById('profileButton').addEventListener('click', openSellerProfile);
+
+async function deleteProduct() {
+  const seller = window.currentSeller;
+  const user = getLoggedInUser();
+  const sellerId = await resolveUserId(user);
+
+  if (!seller || !seller.id || !sellerId || String(seller.id) !== String(sellerId)) {
+    alert('본인이 등록한 상품만 삭제할 수 있습니다.');
+    return;
+  }
+
+  if (!confirm('이 상품을 삭제할까요?')) {
+    return;
+  }
+
+  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seller_id: sellerId,
+      seller_email: user && user.email
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '상품 삭제에 실패했습니다.');
+    return;
+  }
+
+  alert(result.message || '상품이 삭제되었습니다.');
+  window.location.href = 'mypage.html';
+}
+
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
 
-fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
-  method: 'PUT'
-})
+if (!id) {
+  document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
+  document.getElementById('description').innerText = '상품 ID가 없습니다. 메인 페이지에서 상품을 다시 선택해주세요.';
+} else {
+  fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
+    method: 'PUT'
+  });
 
-fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
+  fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
   .then(res => res.json())
   .then(item => {
 
     console.log(item);
 
-    if (!item) return;
+    if (!item) {
+      document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
+      document.getElementById('description').innerText = '삭제되었거나 존재하지 않는 상품입니다.';
+      return;
+    }
 
-    // 👉 이미지 배열 가져오기
-    const images = JSON.parse(item.images || '[]');
+    const images = parseImages(item.images);
+    const fallbackImage = 'https://via.placeholder.com/800x800?text=Product';
 
-    // 👉 전역 변수 먼저 세팅 (중요)
-    window.images = images;
+    // 전역 갤러리 상태 세팅
+    window.images = images.length ? images : [fallbackImage];
     window.currentIndex = 0;
+    window.currentProductTitle = item.title || '대구대 마켓 상품';
 
-    // 👉 dot 생성
+    document.title = `${window.currentProductTitle} - 대구대 마켓`;
+
+    // dot 생성
     const dotsContainer = document.getElementById('imageDots');
     dotsContainer.innerHTML = '';
 
-    images.forEach((_, index) => {
+    window.images.forEach((_, index) => {
       const dot = document.createElement('button');
 
-      dot.className = 'h-2 w-2 rounded-full bg-white/60';
+      dot.className = index === 0 ? 'h-2 w-2 rounded-full bg-primary' : 'h-2 w-2 rounded-full bg-white/60';
       dot.onclick = () => goToImage(index);
 
       dotsContainer.appendChild(dot);
     });
 
-    // 👉 첫 이미지 표시
-    document.getElementById('mainImage').src = images[0] || '';
+    // 첫 이미지 표시
+    document.getElementById('mainImage').src = window.images[0];
+    document.getElementById('mainImage').alt = window.currentProductTitle;
 
-    // 👉 상품 정보
-    document.getElementById('title').innerText = item.title;
-    document.getElementById('price').innerText = item.price + '원';
-    document.getElementById('condition').innerText = item.condition;
-    document.getElementById('category').innerText = item.category;
-    document.getElementById('description').innerText = item.description;
-    document.getElementById('location').innerText = item.location;
-    document.getElementById('views').innerText = item.views;
-    document.getElementById('likes').innerText = item.likes;
+    // 상품 정보
+    document.getElementById('title').innerText = item.title || '제목 없음';
+    document.getElementById('price').innerText = formatPrice(item.price);
+    document.getElementById('condition').innerText = item.condition || item.status || '판매중';
+    document.getElementById('category').innerText = item.category || '기타';
+    document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
+    document.getElementById('location').innerText = item.location || '위치 미정';
+    document.getElementById('views').innerText = Number(item.views || 0);
+    document.getElementById('likes').innerText = Number(item.likes || 0);
+    const sellerName = item.seller_nickname || item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
+    const sellerDepartment = item.seller_department || item.department || item.college || '판매자 정보 미제공';
 
-    // 👉 시간 표시
-    document.getElementById('createdAt').innerText = getTimeAgo(item.created_at);
+    window.currentSeller = {
+      id: item.seller_id || null,
+      name: sellerName,
+      department: sellerDepartment
+    };
 
+    document.getElementById('sellerName').innerText = sellerName;
+    document.getElementById('sellerDepartment').innerText = sellerDepartment;
+    updateOwnerActions();
+    loadLikeState();
+
+    // 시간 표시
+    document.getElementById('createdAt').innerText = getTimeAgo(item.created_at || item.createdAt);
+
+  })
+  .catch(error => {
+    console.error('상품 상세 로딩 실패:', error);
+    document.getElementById('title').innerText = '상품 정보를 불러오지 못했습니다.';
+    document.getElementById('description').innerText = '잠시 후 다시 시도해주세요.';
   });
+}
 
 </script>
 </body>
