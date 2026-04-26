@@ -140,7 +140,10 @@ app.post('/api/login', (req, res) => {
         res.json({ 
             message: '로그인 성공!', 
             user: { 
+                user_id: user.user_id,
+                id: user.user_id,
                 name: user.name, 
+                nickname: user.nickname,
                 department: user.department,
                 email: user.email
             } 
@@ -265,7 +268,19 @@ app.post('/api/products', (req, res) => {
 });
 
 app.get('/api/products', (req, res) => {
-  db.query('SELECT * FROM products ORDER BY id DESC', (err, results) => {
+  const sql = `
+    SELECT
+      p.*,
+      u.name AS seller_name,
+      u.nickname AS seller_nickname,
+      u.department AS seller_department,
+      u.email AS seller_email
+    FROM products p
+    LEFT JOIN Users u ON u.user_id = p.seller_id
+    ORDER BY p.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
   });
@@ -275,7 +290,15 @@ app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
   db.query(
-    'SELECT * FROM products WHERE id = ?',
+    `SELECT
+      p.*,
+      u.name AS seller_name,
+      u.nickname AS seller_nickname,
+      u.department AS seller_department,
+      u.email AS seller_email
+     FROM products p
+     LEFT JOIN Users u ON u.user_id = p.seller_id
+     WHERE p.id = ?`,
     [id],
     (err, result) => {
       if (err) return res.status(500).send(err);

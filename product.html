@@ -144,7 +144,7 @@
                 <p id="sellerDepartment" class="text-sm text-gray-500">대구대 마켓</p>
               </div>
             </div>
-            <button class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+            <button id="profileButton" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
               프로필 보기
             </button>
           </div>
@@ -330,6 +330,7 @@
     window.images = window.images || [];
     window.currentIndex = 0;
     window.currentProductTitle = '대구대 마켓 상품';
+    window.currentSeller = null;
 
     function updateImage() {
       if (!window.images.length) {
@@ -480,6 +481,35 @@ function formatPrice(price) {
   return Number(price || 0).toLocaleString('ko-KR') + '원';
 }
 
+function getLoggedInUser() {
+  try {
+    return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+function openSellerProfile() {
+  const seller = window.currentSeller;
+
+  if (!seller) {
+    alert('판매자 정보를 아직 불러오는 중입니다.');
+    return;
+  }
+
+  const user = getLoggedInUser();
+  const currentUserId = user && (user.user_id || user.id);
+
+  if (currentUserId && seller.id && String(currentUserId) === String(seller.id)) {
+    window.location.href = 'mypage.html';
+    return;
+  }
+
+  alert(`${seller.name}\n${seller.department}`);
+}
+
+document.getElementById('profileButton').addEventListener('click', openSellerProfile);
+
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
 
@@ -539,8 +569,17 @@ if (!id) {
     document.getElementById('location').innerText = item.location || '위치 미정';
     document.getElementById('views').innerText = Number(item.views || 0);
     document.getElementById('likes').innerText = Number(item.likes || 0);
-    document.getElementById('sellerName').innerText = item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
-    document.getElementById('sellerDepartment').innerText = item.department || item.college || '판매자 정보 미제공';
+    const sellerName = item.seller_nickname || item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
+    const sellerDepartment = item.seller_department || item.department || item.college || '판매자 정보 미제공';
+
+    window.currentSeller = {
+      id: item.seller_id || null,
+      name: sellerName,
+      department: sellerDepartment
+    };
+
+    document.getElementById('sellerName').innerText = sellerName;
+    document.getElementById('sellerDepartment').innerText = sellerDepartment;
 
     // 시간 표시
     document.getElementById('createdAt').innerText = getTimeAgo(item.created_at || item.createdAt);
