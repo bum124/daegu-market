@@ -436,6 +436,9 @@
       // 🌟 2. 서버로 보낼 진짜 데이터 포장 (seller_id 포함)
       const productData = {
         seller_id: sellerId,
+        seller_email: user.email,
+        seller_name: user.name,
+        seller_department: user.department,
         title: document.getElementById('title').value,
         category: document.getElementById('category').value,
         condition: document.getElementById('condition').value,

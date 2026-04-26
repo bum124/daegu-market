@@ -175,6 +175,27 @@ async function loadProductFallback(loggedInUser) {
   };
 }
 
+async function resolveUserId(user) {
+  if (user.user_id || user.id) {
+    return user.user_id || user.id;
+  }
+
+  if (!user.email) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/users`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const users = await response.json();
+  const matchedUser = users.find(item => item.email === user.email);
+
+  return matchedUser ? matchedUser.user_id : null;
+}
+
 function renderProfile(data) {
   userName.textContent = data.user.name;
   userDepartment.textContent = data.user.department;
@@ -259,7 +280,11 @@ async function loadMyPage() {
   }
 
   const user = JSON.parse(userStr);
-  const userId = user.user_id || user.id || 1;
+  const userId = await resolveUserId(user);
+
+  if (!userId) {
+    throw new Error('로그인 사용자 ID를 확인하지 못했습니다.');
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/mypage?userId=${encodeURIComponent(userId)}`);

@@ -247,24 +247,50 @@ app.post('/api/change-password', (req, res) => {
 });
 
 app.post('/api/products', (req, res) => {
-  const { seller_id, title, category, condition, price, description, location, images } = req.body;
+  const { seller_id, seller_email, title, category, condition, price, description, location, images } = req.body;
 
-  const sql = `
+  const insertProduct = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다. 다시 로그인해주세요.' });
+    }
+
+    const sql = `
     INSERT INTO products (seller_id, title, category, \`condition\`, price, description, location, images)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(
-    sql, 
-    [seller_id, title, category, condition, price, description, location, JSON.stringify(images)], 
-    (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send('DB 오류');
+    db.query(
+      sql,
+      [resolvedSellerId, title, category, condition, price, description, location, JSON.stringify(images)],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send('DB 오류');
+        }
+
+        res.json({ message: '등록 완료', product_id: result.insertId });
       }
-      res.json({ message: '등록 완료' });
+    );
+  };
+
+  if (seller_id) {
+    insertProduct(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    insertProduct(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('DB 오류');
     }
-  );
+
+    insertProduct(results[0] && results[0].user_id);
+  });
 });
 
 app.get('/api/products', (req, res) => {
@@ -399,4 +425,60 @@ app.get('/api/users', (req, res) => {
 // 3. 서버 켜기 (3000번 포트 사용)
 app.listen(PORT, () => {
     console.log(`서버가 ${PORT}번 포트에서 돌아가고 있습니다.`);
+});
+
+app.get('/api/mypage', (req, res) => {
+  const userId = Number(req.query.userId);
+
+  if (!userId) {
+    return res.status(400).json({ message: 'userId가 필요합니다.' });
+  }
+
+  db.query(
+    'SELECT user_id, email, name, nickname, department FROM Users WHERE user_id = ?',
+    [userId],
+    (userErr, users) => {
+      if (userErr) return res.status(500).send(userErr);
+      if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+
+      const user = users[0];
+      const productSql = `
+        SELECT
+          p.*,
+          u.name AS seller_name,
+          u.nickname AS seller_nickname,
+          u.department AS seller_department,
+          u.email AS seller_email
+        FROM products p
+        LEFT JOIN Users u ON u.user_id = p.seller_id
+        WHERE p.seller_id = ?
+        ORDER BY p.id DESC
+      `;
+
+      db.query(productSql, [userId], (productErr, products) => {
+        if (productErr) return res.status(500).send(productErr);
+
+        const selling = products.filter(product => product.status !== '판매완료');
+        const sold = products.filter(product => product.status === '판매완료');
+
+        res.json({
+          user: {
+            id: user.user_id,
+            name: user.nickname || user.name,
+            department: user.department,
+            email: user.email,
+            verified: true
+          },
+          stats: {
+            sellingCount: selling.length,
+            soldCount: sold.length,
+            likedCount: 0
+          },
+          selling,
+          sold,
+          liked: []
+        });
+      });
+    }
+  );
 });
