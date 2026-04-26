@@ -85,6 +85,7 @@
       </div>
 
       <nav class="hidden items-center gap-2 md:flex">
+        <a href="club-main.html" class="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">동아리</a>
         <a href="sell.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
           판매하기
         </a>
@@ -121,6 +122,7 @@
           <span class="rounded-full bg-white px-3 py-2 shadow-sm">학교 이메일 인증</span>
           <span class="rounded-full bg-white px-3 py-2 shadow-sm">카테고리 필터</span>
           <span class="rounded-full bg-white px-3 py-2 shadow-sm">실시간 채팅 거래</span>
+          <span class="rounded-full bg-white px-3 py-2 shadow-sm">인증 동아리 모임</span>
         </div>
       </div>
     </section>
@@ -174,11 +176,25 @@
 
   <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden">
     <div class="flex h-16 items-center justify-around">
-      <a href="index.html" class="flex flex-col items-center gap-1 px-3 py-2 text-primary">
-        <span class="text-xs font-medium">홈</span>
-      </a>
       <a href="search.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <div class="flex h-6 w-6 items-center justify-center text-muted-foreground" aria-hidden="true">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+          </svg>
+        </div>
         <span class="text-xs">검색</span>
+      </a>
+      <a href="club-main.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <div class="flex h-6 w-6 items-center justify-center text-muted-foreground" aria-hidden="true">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <span class="text-xs">동아리</span>
       </a>
       <a href="sell.html" class="flex flex-col items-center gap-1">
         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">

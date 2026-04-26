@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>소식 작성하기 - 대구마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <!-- 1) 상단 네비게이션: register.html 구조 재사용 -->
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <a href="club-admin.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </a>
+      <h1 class="ml-2 text-lg font-semibold">소식 작성하기 ✍️</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="flex flex-1 flex-col items-center px-4 py-8">
+      <div class="w-full max-w-sm space-y-6">
+        <!-- 안내 -->
+        <div class="rounded-lg bg-primary/10 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="mt-0.5 h-5 w-5 text-primary flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v14"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/>
+            </svg>
+            <div class="text-sm">
+              <p class="font-medium text-foreground">동아리 소식은 캠퍼스 분위기를 만들어요</p>
+              <p class="mt-1 text-muted-foreground">
+                공연/전시/번개모임/정보까지, 짧고 임팩트 있게 작성해보세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 에러/경고 알림 -->
+        <div id="errorAlert" class="hidden rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div class="flex items-center gap-2 text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <span id="errorMessage" class="text-sm"></span>
+          </div>
+        </div>
+
+        <!-- 2) 작성 폼 -->
+        <form id="writeForm" class="space-y-4">
+          <!-- 게시 유형 선택 -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">게시 유형 선택</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer rounded-lg border border-border bg-white p-3 hover:bg-muted transition-colors">
+                <div class="flex items-start gap-2">
+                  <input type="radio" name="postType" value="PUBLIC" class="mt-1" checked>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold">전체 홍보(광장용)</p>
+                    <p class="mt-1 text-xs text-muted-foreground">캠퍼스 소식통에 노출</p>
+                  </div>
+                </div>
+              </label>
+              <label class="cursor-pointer rounded-lg border border-border bg-white p-3 hover:bg-muted transition-colors">
+                <div class="flex items-start gap-2">
+                  <input type="radio" name="postType" value="INTERNAL" class="mt-1">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold">내부 공지(부원용)</p>
+                    <p class="mt-1 text-xs text-muted-foreground">부원에게만 공유</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 카테고리 선택 (select) -->
+          <div class="space-y-2">
+            <label for="category" class="text-sm font-medium">카테고리 선택</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>
+              </svg>
+              <select
+                id="category"
+                required
+                class="w-full h-10 appearance-none rounded-lg border border-border bg-white pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">카테고리를 선택하세요</option>
+                <option value="운동">운동</option>
+                <option value="음악">음악</option>
+                <option value="게임">게임</option>
+                <option value="IT">IT</option>
+                <option value="학술">학술</option>
+                <option value="기타">기타</option>
+              </select>
+              <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 제목 입력 -->
+          <div class="space-y-2">
+            <label for="title" class="text-sm font-medium">제목 입력</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h7"/>
+              </svg>
+              <input
+                id="title"
+                type="text"
+                placeholder="예: 이번 주 금요일, 봄밤 버스킹!"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- 본문 입력 -->
+          <div class="space-y-2">
+            <label for="content" class="text-sm font-medium">본문 입력</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+              </svg>
+              <textarea
+                id="content"
+                rows="6"
+                placeholder="활동 내용, 장소, 시간, 준비물, 참여 방법을 적어주세요."
+                required
+                class="w-full min-h-[140px] rounded-lg border border-border bg-white pl-10 pr-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- 이미지 첨부(업로드 영역 Placeholder) -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">이미지 첨부</label>
+            <div class="rounded-lg border border-dashed border-border bg-white p-4">
+              <div class="flex items-start gap-3">
+                <svg class="mt-0.5 h-5 w-5 text-muted-foreground flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5a2 2 0 0 0-2.83 0L7 19"/><path d="m14 14 1.5 1.5"/>
+                </svg>
+                <div class="min-w-0 text-sm">
+                  <p class="font-medium">사진을 끌어다 놓거나 클릭해서 선택</p>
+                  <p class="mt-1 text-muted-foreground">
+                    (현재는 UI만 제공됩니다. 추후 실제 업로드 로직을 연결할 수 있어요.)
+                  </p>
+                </div>
+              </div>
+              <input id="images" type="file" accept="image/*" multiple class="mt-4 w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-muted/70">
+            </div>
+          </div>
+
+          <!-- 3) 하단 버튼 -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              id="cancelBtn"
+              class="h-10 rounded-lg border border-border bg-white text-sm font-medium hover:bg-muted transition-colors"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              id="submitBtn"
+              class="h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              등록하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('writeForm');
+    const categorySelect = document.getElementById('category');
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorAlert.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideError() {
+      errorAlert.classList.add('hidden');
+    }
+
+    // 4) 권한 제어 스크립트: 로드시 회장만 접근
+    window.addEventListener('DOMContentLoaded', () => {
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+      } catch (e) {
+        user = null;
+      }
+
+      if (!user || user.role !== 'PRESIDENT') {
+        alert('📢 동아리 회장님만 작성 권한이 있습니다.');
+        window.location.href = 'club-main.html';
+        return;
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.location.href = 'club-admin.html';
+    });
+
+    // '등록하기' 가짜 로직
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hideError();
+
+      const postType = (new FormData(form)).get('postType');
+      const category = categorySelect.value;
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (!postType) {
+        showError('게시 유형을 선택해주세요.');
+        return;
+      }
+      if (!category) {
+        showError('카테고리를 선택해주세요.');
+        return;
+      }
+      if (!title) {
+        showError('제목을 입력해주세요.');
+        return;
+      }
+      if (title.length < 4) {
+        showError('제목은 4자 이상으로 입력해주세요.');
+        return;
+      }
+      if (!content) {
+        showError('본문을 입력해주세요.');
+        return;
+      }
+
+      alert('소식이 등록되었습니다! (데모)');
+      window.location.href = 'club-board.html';
+    });
+  </script>
+</body>
+</html>
+

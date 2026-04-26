@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>캠퍼스 소식통 - 대구마켓</title>
+  <meta name="description" content="대구대학교 전체 동아리 활동 소식 피드">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // index.html과 동일한 Tailwind 테마
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#22c55e",
+            foreground: "#171717",
+            background: "#fafafa",
+            muted: "#f5f5f5",
+            "muted-foreground": "#737373",
+            card: "#ffffff",
+            border: "#e5e5e5"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground antialiased">
+
+  <!-- 1) 상단 헤더 -->
+  <header class="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+      <a href="club-main.html" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="뒤로가기">
+        ‹
+      </a>
+
+      <div class="min-w-0 flex-1 px-3 text-center">
+        <h1 class="truncate text-base font-bold sm:text-lg">캠퍼스 소식통 📣</h1>
+        <p class="hidden text-xs text-muted-foreground sm:block">대구대 전체 동아리 활동 피드</p>
+      </div>
+
+      <button type="button" onclick="handleWriteAccess()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-green-600">
+        글쓰기
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-10">
+
+    <!-- 3) 필터링 탭(선택 사항) -->
+    <section class="mb-5">
+      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <button type="button" class="feed-chip inline-flex flex-shrink-0 items-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">전체</button>
+        <button type="button" class="feed-chip inline-flex flex-shrink-0 items-center rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">공연</button>
+        <button type="button" class="feed-chip inline-flex flex-shrink-0 items-center rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">전시</button>
+        <button type="button" class="feed-chip inline-flex flex-shrink-0 items-center rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">번개모임</button>
+        <button type="button" class="feed-chip inline-flex flex-shrink-0 items-center rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">정보</button>
+      </div>
+    </section>
+
+    <!-- 2) 메인 피드 레이아웃(카드 형태) -->
+    <section id="feed" class="space-y-4">
+      <!-- 카드 1 -->
+      <a href="club-post-detail.html" class="feed-card group block overflow-hidden rounded-2xl border border-border bg-white hover:bg-muted" data-category="공연">
+        <!-- 헤더 -->
+        <div class="flex items-center justify-between gap-3 p-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-background">
+              <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Band" alt="동아리 로고" class="h-full w-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold">대구대 밴드부</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">2시간 전</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">공연</span>
+        </div>
+
+        <!-- 본문 -->
+        <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80" aria-label="사진 크게 보기">
+          <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80" alt="공연 사진" class="h-72 w-full object-cover sm:h-96">
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
+          <div class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground opacity-0 shadow-sm transition group-hover:opacity-100">
+            <span aria-hidden="true">🔍</span>
+            크게 보기
+          </div>
+        </button>
+
+        <div class="p-4">
+          <p class="text-base font-bold leading-snug">봄밤 버스킹, 이번 주 금요일!</p>
+          <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">
+            동성로 버스킹처럼 캠퍼스에서도! 잔디광장에서 함께 즐기는 라이브 무대, 놀러 오세요.
+          </p>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
+          <button type="button" class="like-btn inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted" aria-pressed="false">
+            <span class="like-icon text-base" aria-hidden="true">♡</span>
+            <span class="like-count text-sm">관심 38</span>
+          </button>
+          <span class="text-sm text-muted-foreground">댓글 12</span>
+        </div>
+      </a>
+
+      <!-- 카드 2 -->
+      <a href="club-post-detail.html" class="feed-card group block overflow-hidden rounded-2xl border border-border bg-white hover:bg-muted" data-category="전시">
+        <div class="flex items-center justify-between gap-3 p-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-background">
+              <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Art" alt="동아리 로고" class="h-full w-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold">시각예술 동아리</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">어제</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">전시</span>
+        </div>
+
+        <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=1200&q=80" aria-label="사진 크게 보기">
+          <img src="https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=1200&q=80" alt="전시 사진" class="h-72 w-full object-cover sm:h-96">
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
+          <div class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground opacity-0 shadow-sm transition group-hover:opacity-100">
+            <span aria-hidden="true">🔍</span>
+            크게 보기
+          </div>
+        </button>
+
+        <div class="p-4">
+          <p class="text-base font-bold leading-snug">졸업전시 프리뷰 오픈</p>
+          <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">
+            이번 학기 작업물 프리뷰를 먼저 공개합니다. 전시장 동선과 작품 설명도 같이 확인해요.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
+          <button type="button" class="like-btn inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted" aria-pressed="false">
+            <span class="like-icon text-base" aria-hidden="true">♡</span>
+            <span class="like-count text-sm">관심 21</span>
+          </button>
+          <span class="text-sm text-muted-foreground">댓글 6</span>
+        </div>
+      </a>
+
+      <!-- 카드 3 -->
+      <a href="club-post-detail.html" class="feed-card group block overflow-hidden rounded-2xl border border-border bg-white hover:bg-muted" data-category="번개모임">
+        <div class="flex items-center justify-between gap-3 p-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-background">
+              <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Run" alt="동아리 로고" class="h-full w-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold">대구대 러닝크루</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">3일 전</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">번개모임</span>
+        </div>
+
+        <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80" aria-label="사진 크게 보기">
+          <img src="https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80" alt="러닝 사진" class="h-72 w-full object-cover sm:h-96">
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
+          <div class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground opacity-0 shadow-sm transition group-hover:opacity-100">
+            <span aria-hidden="true">🔍</span>
+            크게 보기
+          </div>
+        </button>
+
+        <div class="p-4">
+          <p class="text-base font-bold leading-snug">오늘 밤 9시, 잔디광장 3km 번개</p>
+          <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">
+            가볍게 뛰고 스트레칭까지! 러닝 처음이어도 같이 걸어도 괜찮아요.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
+          <button type="button" class="like-btn inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted" aria-pressed="false">
+            <span class="like-icon text-base" aria-hidden="true">♡</span>
+            <span class="like-count text-sm">관심 54</span>
+          </button>
+          <span class="text-sm text-muted-foreground">댓글 18</span>
+        </div>
+      </a>
+
+      <!-- 카드 4 -->
+      <a href="club-post-detail.html" class="feed-card group block overflow-hidden rounded-2xl border border-border bg-white hover:bg-muted" data-category="정보">
+        <div class="flex items-center justify-between gap-3 p-4">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-border bg-background">
+              <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Info" alt="동아리 로고" class="h-full w-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold">취업 스터디 연합</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">1주 전</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">정보</span>
+        </div>
+
+        <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80" aria-label="사진 크게 보기">
+          <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80" alt="스터디 사진" class="h-72 w-full object-cover sm:h-96">
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
+          <div class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground opacity-0 shadow-sm transition group-hover:opacity-100">
+            <span aria-hidden="true">🔍</span>
+            크게 보기
+          </div>
+        </button>
+
+        <div class="p-4">
+          <p class="text-base font-bold leading-snug">자소서/면접 꿀팁 공유 세션</p>
+          <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">
+            전공 무관! 최근 합격 후기 기반으로 질문 리스트와 답변 구조를 같이 정리합니다.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
+          <button type="button" class="like-btn inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted" aria-pressed="false">
+            <span class="like-icon text-base" aria-hidden="true">♡</span>
+            <span class="like-count text-sm">관심 17</span>
+          </button>
+          <span class="text-sm text-muted-foreground">댓글 2</span>
+        </div>
+      </a>
+    </section>
+  </main>
+
+  <!-- 사진 크게 보기 모달 -->
+  <div id="image-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative mx-auto flex h-full max-w-3xl items-center justify-center p-4">
+      <div class="w-full overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-border px-4 py-3">
+          <p class="text-sm font-semibold">사진 보기</p>
+          <button type="button" id="modal-close" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="닫기">
+            ✕
+          </button>
+        </div>
+        <div class="bg-black/5">
+          <img id="modal-image" src="" alt="확대 이미지" class="max-h-[75vh] w-full object-contain">
+        </div>
+        <div class="flex items-center justify-between gap-3 px-4 py-3">
+          <p class="text-xs text-muted-foreground">팁: 배경 또는 ESC를 눌러 닫을 수 있어요.</p>
+          <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">#22c55e</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 칩 선택 UI(선택 사항)
+    const chips = Array.from(document.querySelectorAll(".feed-chip"));
+    const cards = Array.from(document.querySelectorAll(".feed-card"));
+
+    function setChipActive(activeChip) {
+      chips.forEach((chip) => {
+        const isActive = chip === activeChip;
+        chip.classList.toggle("bg-primary", isActive);
+        chip.classList.toggle("text-white", isActive);
+        chip.classList.toggle("border", !isActive);
+        chip.classList.toggle("border-border", !isActive);
+        chip.classList.toggle("bg-white", !isActive);
+        chip.classList.toggle("font-semibold", isActive);
+        chip.classList.toggle("font-medium", !isActive);
+      });
+    }
+
+    function applyFilter(label) {
+      cards.forEach((card) => {
+        const category = card.getAttribute("data-category");
+        const isVisible = label === "전체" || category === label;
+        card.classList.toggle("hidden", !isVisible);
+      });
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const label = chip.textContent.trim();
+        setChipActive(chip);
+        applyFilter(label);
+      });
+    });
+
+    // 4) 인터랙션: 사진 클릭 시 모달(카드 이동 전파 차단)
+    const modal = document.getElementById("image-modal");
+    const modalImage = document.getElementById("modal-image");
+    const modalClose = document.getElementById("modal-close");
+
+    function openModal(src) {
+      modalImage.src = src;
+      modal.classList.remove("hidden");
+      document.body.classList.add("overflow-hidden");
+    }
+
+    function closeModal() {
+      modal.classList.add("hidden");
+      modalImage.src = "";
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    document.querySelectorAll("[data-open-image]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const src = btn.getAttribute("data-open-image");
+        if (src) openModal(src);
+      });
+    });
+
+    modalClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal || e.target === modal.firstElementChild) closeModal();
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+    });
+
+    // 좋아요(관심) 토글(데모용)
+    document.querySelectorAll(".like-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const pressed = btn.getAttribute("aria-pressed") === "true";
+        btn.setAttribute("aria-pressed", String(!pressed));
+        const icon = btn.querySelector(".like-icon");
+        if (icon) icon.textContent = pressed ? "♡" : "♥";
+        btn.classList.toggle("text-primary", !pressed);
+        btn.classList.toggle("border-green-200", !pressed);
+        btn.classList.toggle("bg-green-50", !pressed);
+      });
+    });
+
+    function handleWriteAccess() {
+      const userStr = localStorage.getItem("loggedInUser");
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      if (!user) {
+        alert("로그인이 필요한 서비스입니다.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      if (user.role === "PRESIDENT") {
+        window.location.href = "club-write.html";
+        return;
+      }
+
+      alert("📢 동아리 회장님만 공지 및 홍보글을 작성할 수 있습니다. 일반 부원은 댓글로 참여해 주세요!");
+    }
+  </script>
+</body>
+</html>
+

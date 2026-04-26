@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동아리 커뮤니티 - 대구마켓</title>
+  <meta name="description" content="대구대학교 동아리 커뮤니티 메인">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // index.html과 동일한 Tailwind 테마
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#22c55e",
+            foreground: "#171717",
+            background: "#fafafa",
+            muted: "#f5f5f5",
+            "muted-foreground": "#737373",
+            card: "#ffffff",
+            border: "#e5e5e5"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground antialiased">
+
+  <!-- 1) 상단 네비게이션 -->
+  <header class="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <span class="text-lg font-bold text-white">DM</span>
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-base font-bold">동아리 커뮤니티</p>
+          <p class="hidden text-xs text-muted-foreground sm:block">대구대 동아리 소식을 한눈에</p>
+        </div>
+      </div>
+
+      <a href="index.html" class="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
+        <span aria-hidden="true">🛍️</span>
+        <span>중고장터</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-10">
+
+    <!-- 2) 내 동아리 (최상단) -->
+    <section class="mb-6">
+      <div class="mb-3 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold">내 동아리</h2>
+          <p class="mt-1 text-sm text-muted-foreground">가입한 동아리를 빠르게 확인해요</p>
+        </div>
+        <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">가로 스크롤</span>
+      </div>
+
+      <div class="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <!-- 회장 동아리: 👑 표시 + club-admin.html 이동 -->
+        <a href="club-admin.html" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted">
+          <div class="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
+            <span class="text-xl" aria-hidden="true">🏃</span>
+            <span class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-white" title="회장" aria-label="회장">👑</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold">러닝크루</p>
+            <p class="mt-0.5 truncate text-xs text-muted-foreground">관리 페이지</p>
+          </div>
+          <span class="text-muted-foreground group-hover:text-foreground" aria-hidden="true">›</span>
+        </a>
+
+        <a href="club-detail.html" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted">
+          <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
+            <span class="text-xl" aria-hidden="true">🎸</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold">밴드부</p>
+            <p class="mt-0.5 truncate text-xs text-muted-foreground">연습 & 공연</p>
+          </div>
+          <span class="text-muted-foreground group-hover:text-foreground" aria-hidden="true">›</span>
+        </a>
+
+        <a href="club-detail.html" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted">
+          <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
+            <span class="text-xl" aria-hidden="true">♟️</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold">체스</p>
+            <p class="mt-0.5 truncate text-xs text-muted-foreground">초보 환영</p>
+          </div>
+          <span class="text-muted-foreground group-hover:text-foreground" aria-hidden="true">›</span>
+        </a>
+
+        <a href="club-detail.html" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted">
+          <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
+            <span class="text-xl" aria-hidden="true">📚</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold">독서모임</p>
+            <p class="mt-0.5 truncate text-xs text-muted-foreground">주 1회</p>
+          </div>
+          <span class="text-muted-foreground group-hover:text-foreground" aria-hidden="true">›</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- 3) [핵심] 캠퍼스 이벤트 보드 전용 배너 -->
+    <section class="mb-6">
+      <a href="club-board.html"
+         class="group relative block overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-green-100 via-lime-50 to-white p-6 md:p-10">
+        <div class="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-2xl"></div>
+        <div class="absolute -left-16 -bottom-16 h-40 w-40 rounded-full bg-green-400/10 blur-2xl"></div>
+        <div class="relative max-w-3xl">
+          <p class="mb-3 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-green-700 shadow-sm">
+            캠퍼스 이벤트 보드
+          </p>
+          <h2 class="text-2xl font-bold leading-tight md:text-4xl">
+            지금 대구대 동아리는 무엇을 할까요? 🎡
+          </h2>
+          <p class="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
+            공연, 전시, 번개 모임까지! 우리 학교 동아리 소식을 한눈에 구경하세요.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <span class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white group-hover:bg-green-600">
+              전체 활동 보러가기
+            </span>
+            <span class="text-sm text-muted-foreground">클릭하면 `club-board.html`로 이동</span>
+          </div>
+        </div>
+      </a>
+    </section>
+
+    <!-- 4) 카테고리 필터 -->
+    <section class="mb-6">
+      <div class="mb-3">
+        <h2 class="text-lg font-semibold">카테고리</h2>
+        <p class="mt-1 text-sm text-muted-foreground">관심 분야로 동아리를 골라봐요</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="inline-flex items-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-green-600">운동</button>
+        <button type="button" class="inline-flex items-center rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground hover:bg-muted">문과</button>
+        <button type="button" class="inline-flex items-center rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground hover:bg-muted">이과</button>
+        <button type="button" class="inline-flex items-center rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground hover:bg-muted">음악</button>
+        <button type="button" class="inline-flex items-center rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground hover:bg-muted">게임</button>
+        <button type="button" class="inline-flex items-center rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground hover:bg-muted">기타</button>
+      </div>
+    </section>
+
+    <!-- 5) 신규/모집 중 동아리 리스트 -->
+    <section class="mb-6">
+      <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">신규 / 모집 중 동아리</h2>
+          <p class="mt-1 text-sm text-muted-foreground">지금 바로 지원할 수 있는 동아리</p>
+        </div>
+        <span class="text-sm text-muted-foreground">카드를 클릭하면 `club-detail.html`</span>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">⚽</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">캠퍼스 풋살</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">운동 · 초보 환영</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            주 1~2회 풋살 경기! 팀원 매칭부터 친선전까지 같이 즐겨요.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">정기 경기</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">주말</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">친목</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-5</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">🧪</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">실험실 투어</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">이과 · 탐방/세미나</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            연구실/랩 투어, 교수님 미니 세미나, 진로 Q&A까지 알차게!
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">세미나</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">진로</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">네트워킹</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-12</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">🎮</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">게임 개발 소모임</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">게임 · 협업 프로젝트</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            한 학기 1개 팀 프로젝트! 기획/아트/프로그래밍 함께 해요.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">유니티</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">팀빌딩</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">포트폴리오</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-3</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">🎻</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">현악 앙상블</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">음악 · 합주</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            주 1회 합주 + 분기별 연주회. 초급도 환영(파트 배정).
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">합주</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">연주회</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">파트</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-9</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">🗣️</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">토론 클럽</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">문과 · 시사</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            매주 주제 선정 후 자유 토론. 발표 공포증도 같이 극복해요.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">시사</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">발표</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">친목</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-7</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+
+        <a href="club-detail.html" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
+                <span class="text-xl" aria-hidden="true">✨</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-base font-semibold">취미 공방</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">기타 · 만들기</p>
+              </div>
+            </div>
+            <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">모집중</span>
+          </div>
+          <p class="mt-3 line-clamp-2 text-sm text-muted-foreground">
+            비즈/키링/스티커 제작 등 소소한 공예로 스트레스 해소해요.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">공예</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">원데이</span>
+            <span class="rounded-full bg-white px-3 py-2 shadow-sm">친목</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground">마감 D-14</span>
+            <span class="text-sm font-semibold text-primary group-hover:underline">상세 보기</span>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- 6) 우측 하단 FAB -->
+  <a href="club-create.html"
+     class="fixed bottom-20 right-4 z-50 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-primary/40 md:bottom-6"
+     aria-label="동아리 만들기">
+    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-lg leading-none" aria-hidden="true">+</span>
+    <span>동아리 만들기</span>
+  </a>
+
+  <!-- 모바일 하단 여백(다른 페이지 톤 유지용) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white md:hidden">
+    <div class="flex h-16 items-center justify-around">
+      <a href="index.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <span class="text-xs font-medium">홈</span>
+      </a>
+      <a href="search.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <span class="text-xs">검색</span>
+      </a>
+      <a href="club-main.html" class="flex flex-col items-center gap-1 px-3 py-2 text-primary">
+        <span class="text-xs font-medium">동아리</span>
+      </a>
+      <a href="chat.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <span class="text-xs">채팅</span>
+      </a>
+      <a href="mypage.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <span class="text-xs">MY</span>
+      </a>
+    </div>
+  </nav>
+
+</body>
+</html>
+

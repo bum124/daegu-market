@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>새로운 동아리 만들기 - 대구마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <!-- 1) 상단 헤더: register.html 스타일 유지 -->
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <a href="club-main.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </a>
+      <h1 id="pageTitle" class="ml-2 text-lg font-semibold">새로운 동아리 만들기 🏗️</h1>
+    </header>
+
+    <main class="flex flex-1 flex-col items-center px-4 py-8">
+      <div class="w-full max-w-sm space-y-6">
+        <!-- 안내(수정 모드 고려) -->
+        <div class="rounded-lg bg-primary/10 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="mt-0.5 h-5 w-5 text-primary flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M21 7.5V16.5L12 21l-9-4.5V7.5"/>
+            </svg>
+            <div class="text-sm">
+              <p id="pageSubtitle" class="font-medium text-foreground">동아리 상세 페이지 데이터와 1:1로 연결되는 폼입니다.</p>
+              <p class="mt-1 text-muted-foreground">
+                나중에 이 화면을 “동아리 정보 수정”으로 재사용할 수 있도록 항목을 깔끔하게 분리했습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 에러 알림 -->
+        <div id="errorAlert" class="hidden rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div class="flex items-center gap-2 text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <span id="errorMessage" class="text-sm"></span>
+          </div>
+        </div>
+
+        <!-- 2) 상세 입력 항목: club-detail.html 데이터 구조와 1:1 매칭 -->
+        <form id="clubCreateForm" class="space-y-4">
+          <!-- 기본 정보 -->
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold">기본 정보</p>
+            <div class="mt-4 space-y-4">
+              <!-- 동아리 이름 (clubName) -->
+              <div class="space-y-2">
+                <label for="clubName" class="text-sm font-medium">동아리 이름</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/>
+                  </svg>
+                  <input
+                    id="clubName"
+                    name="clubName"
+                    type="text"
+                    placeholder="예: 대구대 러닝크루"
+                    required
+                    class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <!-- 카테고리 (clubCategory) -->
+              <div class="space-y-2">
+                <label for="clubCategory" class="text-sm font-medium">카테고리</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>
+                  </svg>
+                  <select
+                    id="clubCategory"
+                    name="clubCategory"
+                    required
+                    class="w-full h-10 appearance-none rounded-lg border border-border bg-white pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="">선택</option>
+                    <option value="운동">운동</option>
+                    <option value="음악">음악</option>
+                    <option value="게임">게임</option>
+                    <option value="IT">IT</option>
+                    <option value="학술">학술</option>
+                    <option value="기타">기타</option>
+                  </select>
+                  <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 한 줄 홍보 (clubTagline) -->
+          <div class="space-y-2">
+            <label for="clubTagline" class="text-sm font-medium">한 줄 홍보</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+              </svg>
+              <input
+                id="clubTagline"
+                name="clubTagline"
+                type="text"
+                placeholder="예: 초보 환영 · 함께 꾸준히"
+                required
+                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">메인 리스트 카드에 노출되는 짧은 소개글이에요.</p>
+          </div>
+
+          <!-- 활동 이미지 (clubLogo + 활동 이미지) -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">활동 이미지</label>
+            <div class="rounded-lg border border-dashed border-border bg-white p-4">
+              <div class="flex items-start gap-3">
+                <svg class="mt-0.5 h-5 w-5 text-muted-foreground flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5a2 2 0 0 0-2.83 0L7 19"/>
+                </svg>
+                <div class="min-w-0 text-sm">
+                  <p class="font-medium">포스터/대표 사진 업로드</p>
+                  <p class="mt-1 text-muted-foreground">
+                    (현재는 UI만 제공됩니다. 추후 실제 업로드/갤러리로 연결 가능)
+                  </p>
+                </div>
+              </div>
+              <input id="clubImages" name="clubImages" type="file" accept="image/*" multiple class="mt-4 w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-muted/70">
+            </div>
+          </div>
+
+          <!-- 상세 소개 (intro) -->
+          <div class="space-y-2">
+            <label for="intro" class="text-sm font-medium">상세 소개 (Intro)</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5V4.5A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <textarea
+                id="intro"
+                name="intro"
+                rows="6"
+                placeholder="동아리의 목적/비전/분위기를 적어주세요."
+                required
+                class="w-full min-h-[140px] rounded-lg border border-border bg-white pl-10 pr-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- 정기 모임 정보 (clubMeet + clubLocation + meetingInfo) -->
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold">정기 모임 정보</p>
+            <div class="mt-4 space-y-4">
+              <div class="space-y-2">
+                <label for="clubMeet" class="text-sm font-medium">모임 요일/시간</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <input
+                    id="clubMeet"
+                    name="clubMeet"
+                    type="text"
+                    placeholder="예: 매주 화/목 19:30"
+                    required
+                    class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label for="clubLocation" class="text-sm font-medium">모임 장소</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <input
+                    id="clubLocation"
+                    name="clubLocation"
+                    type="text"
+                    placeholder="예: 캠퍼스 잔디광장 / 학생회관 앞"
+                    required
+                    class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label for="meetingInfo" class="text-sm font-medium">정기 모임 상세</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>
+                  </svg>
+                  <textarea
+                    id="meetingInfo"
+                    name="meetingInfo"
+                    rows="5"
+                    placeholder="- 우천 시 대체 장소&#10;- 준비물/회차 운영 방식 등"
+                    class="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 회비 설정 (feeAmount + feeInfo) -->
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold">회비 설정</p>
+            <div class="mt-4 space-y-4">
+              <div class="space-y-2">
+                <label for="feeAmount" class="text-sm font-medium">월 회비 금액</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M12 18V6"/>
+                  </svg>
+                  <input
+                    id="feeAmount"
+                    name="feeAmount"
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="예: 5000"
+                    required
+                    class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">원</span>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label for="feeInfo" class="text-sm font-medium">회비 사용/지원 안내</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/><path d="M12 4h9"/><path d="M4 9h16"/><path d="M4 15h16"/><path d="M4 4h4v16H4z"/>
+                  </svg>
+                  <textarea
+                    id="feeInfo"
+                    name="feeInfo"
+                    rows="5"
+                    placeholder="- 회비: 월 5,000원(간식/물품/대회 참가 지원)&#10;- 지원 자격: 대구대 재학생/휴학생 등"
+                    class="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  ></textarea>
+                </div>
+                <p class="text-xs text-muted-foreground">`club-detail.html`의 “회비 및 지원 자격” 영역(`feeInfo`)에 그대로 들어갈 내용이에요.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 지원 자격 & 추천 (eligibilityAndTips) -->
+          <div class="space-y-2">
+            <label for="eligibilityAndTips" class="text-sm font-medium">지원 자격 & 추천</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+              </svg>
+              <textarea
+                id="eligibilityAndTips"
+                name="eligibilityAndTips"
+                rows="5"
+                placeholder="예: 초보도 환영 / 이런 분 추천: 운동 습관 만들고 싶은 분"
+                required
+                class="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- 3) 하단 버튼 -->
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              id="cancelBtn"
+              class="h-10 rounded-lg border border-border bg-white text-sm font-medium hover:bg-muted transition-colors"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              id="submitBtn"
+              class="h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              동아리 개설하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('clubCreateForm');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorAlert.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideError() {
+      errorAlert.classList.add('hidden');
+    }
+
+    function safeParse(json) {
+      try { return JSON.parse(json); } catch (e) { return null; }
+    }
+
+    // 5) 수정 모드 고려: ?mode=edit 이면 문구만 변경 + (옵션) 초안 로드
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get('mode'); // create | edit
+
+      if (mode === 'edit') {
+        document.getElementById('pageTitle').textContent = '동아리 정보 수정 ✏️';
+        document.getElementById('pageSubtitle').textContent = '기존 동아리 정보를 수정할 수 있어요.';
+        submitBtn.textContent = '수정 내용 저장하기';
+      }
+
+      const draft = safeParse(localStorage.getItem('clubDraft') || 'null');
+      if (draft && typeof draft === 'object') {
+        // club-detail.html과 1:1 매칭되는 키들을 최대한 그대로 사용
+        if (draft.clubName) document.getElementById('clubName').value = draft.clubName;
+        if (draft.clubCategory) document.getElementById('clubCategory').value = draft.clubCategory;
+        if (draft.clubTagline) document.getElementById('clubTagline').value = draft.clubTagline;
+        if (draft.intro) document.getElementById('intro').value = draft.intro;
+        if (draft.clubMeet) document.getElementById('clubMeet').value = draft.clubMeet;
+        if (draft.clubLocation) document.getElementById('clubLocation').value = draft.clubLocation;
+        if (draft.meetingInfo) document.getElementById('meetingInfo').value = draft.meetingInfo;
+        if (draft.feeAmount !== undefined && draft.feeAmount !== null) document.getElementById('feeAmount').value = draft.feeAmount;
+        if (draft.feeInfo) document.getElementById('feeInfo').value = draft.feeInfo;
+        if (draft.eligibilityAndTips) document.getElementById('eligibilityAndTips').value = draft.eligibilityAndTips;
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.location.href = 'club-main.html';
+    });
+
+    // 4) 개설 버튼 로직: 즉시 성공 알림 후 이동(승인 대기 없음)
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hideError();
+
+      const clubName = document.getElementById('clubName').value.trim();
+      const clubCategory = document.getElementById('clubCategory').value;
+      const clubTagline = document.getElementById('clubTagline').value.trim();
+      const intro = document.getElementById('intro').value.trim();
+      const clubMeet = document.getElementById('clubMeet').value.trim();
+      const clubLocation = document.getElementById('clubLocation').value.trim();
+      const feeAmountRaw = document.getElementById('feeAmount').value;
+      const eligibilityAndTips = document.getElementById('eligibilityAndTips').value.trim();
+
+      if (!clubName) return showError('동아리 이름을 입력해주세요.');
+      if (!clubCategory) return showError('카테고리를 선택해주세요.');
+      if (!clubTagline) return showError('한 줄 홍보를 입력해주세요.');
+      if (clubTagline.length < 6) return showError('한 줄 홍보는 6자 이상으로 입력해주세요.');
+      if (!intro) return showError('상세 소개(Intro)를 입력해주세요.');
+      if (!clubMeet) return showError('모임 요일/시간을 입력해주세요.');
+      if (!clubLocation) return showError('모임 장소를 입력해주세요.');
+      if (feeAmountRaw === '' || Number.isNaN(Number(feeAmountRaw)) || Number(feeAmountRaw) < 0) return showError('월 회비 금액을 올바르게 입력해주세요.');
+      if (!eligibilityAndTips) return showError('지원 자격 & 추천을 입력해주세요.');
+
+      // 수정 모드 고려용: 임시로 초안 저장(나중에 실제 API 연결 시 제거/대체)
+      const draft = {
+        clubName,
+        clubCategory,
+        clubTagline,
+        intro,
+        clubMeet,
+        clubLocation,
+        meetingInfo: document.getElementById('meetingInfo').value.trim(),
+        feeAmount: Number(feeAmountRaw),
+        feeInfo: document.getElementById('feeInfo').value.trim(),
+        eligibilityAndTips
+      };
+      localStorage.setItem('clubDraft', JSON.stringify(draft));
+
+      alert('축하합니다! 동아리가 성공적으로 개설되었습니다.');
+      window.location.href = 'club-main.html';
+    });
+  </script>
+</body>
+</html>
+
