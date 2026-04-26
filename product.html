@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>맥북 프로 14인치 M3 - 대구대 마켓</title>
+  <title>상품 상세 - 대구대 마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -140,8 +140,8 @@
                 </svg>
               </div>
               <div>
-                <p class="font-medium text-gray-900">김대구</p>
-                <p class="text-sm text-gray-500">컴퓨터공학과</p>
+                <p id="sellerName" class="font-medium text-gray-900">판매자 정보를 불러오는 중...</p>
+                <p id="sellerDepartment" class="text-sm text-gray-500">대구대 마켓</p>
               </div>
             </div>
             <button class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
@@ -192,13 +192,13 @@
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
-                조회 <span id="views"></span>
+                조회 <span id="views">0</span>
               </div>
               <div class="flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
                 </svg>
-                관심 <span id="likes"></span>
+                관심 <span id="likes">0</span>
               </div>
             </div>
           </div>
@@ -327,15 +327,21 @@
   <script>
     // Image Gallery
     
-    let currentIndex = 0;
+    window.images = window.images || [];
+    window.currentIndex = 0;
+    window.currentProductTitle = '대구대 마켓 상품';
 
     function updateImage() {
-      document.getElementById('mainImage').src = images[currentIndex];
+      if (!window.images.length) {
+        return;
+      }
+
+      document.getElementById('mainImage').src = window.images[window.currentIndex];
       
       // Update dots
       const dots = document.getElementById('imageDots').children;
       for (let i = 0; i < dots.length; i++) {
-        if (i === currentIndex) {
+        if (i === window.currentIndex) {
           dots[i].className = 'h-2 w-2 rounded-full bg-primary';
         } else {
           dots[i].className = 'h-2 w-2 rounded-full bg-white/60';
@@ -344,17 +350,25 @@
     }
 
     function prevImage() {
-      currentIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+      if (!window.images.length) {
+        return;
+      }
+
+      window.currentIndex = window.currentIndex === 0 ? window.images.length - 1 : window.currentIndex - 1;
       updateImage();
     }
 
     function nextImage() {
-      currentIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
+      if (!window.images.length) {
+        return;
+      }
+
+      window.currentIndex = window.currentIndex === window.images.length - 1 ? 0 : window.currentIndex + 1;
       updateImage();
     }
 
     function goToImage(index) {
-      currentIndex = index;
+      window.currentIndex = index;
       updateImage();
     }
 
@@ -415,7 +429,7 @@
     async function handleShare() {
       if (navigator.share) {
         await navigator.share({
-          title: '맥북 프로 14인치 M3 Pro 실버 급처합니다',
+          title: window.currentProductTitle,
           text: '대구대 마켓에서 판매중인 상품입니다.',
           url: window.location.href
         });
@@ -445,58 +459,99 @@ function getTimeAgo(dateString) {
   return days + '일 전';
 }
 
+function parseImages(images) {
+  if (Array.isArray(images)) {
+    return images;
+  }
+
+  if (typeof images !== 'string' || !images.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(images);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [images];
+  }
+}
+
+function formatPrice(price) {
+  return Number(price || 0).toLocaleString('ko-KR') + '원';
+}
+
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
 
-fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
-  method: 'PUT'
-})
+if (!id) {
+  document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
+  document.getElementById('description').innerText = '상품 ID가 없습니다. 메인 페이지에서 상품을 다시 선택해주세요.';
+} else {
+  fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
+    method: 'PUT'
+  });
 
-fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
+  fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
   .then(res => res.json())
   .then(item => {
 
     console.log(item);
 
-    if (!item) return;
+    if (!item) {
+      document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
+      document.getElementById('description').innerText = '삭제되었거나 존재하지 않는 상품입니다.';
+      return;
+    }
 
-    // 👉 이미지 배열 가져오기
-    const images = JSON.parse(item.images || '[]');
+    const images = parseImages(item.images);
+    const fallbackImage = 'https://via.placeholder.com/800x800?text=Product';
 
-    // 👉 전역 변수 먼저 세팅 (중요)
-    window.images = images;
+    // 전역 갤러리 상태 세팅
+    window.images = images.length ? images : [fallbackImage];
     window.currentIndex = 0;
+    window.currentProductTitle = item.title || '대구대 마켓 상품';
 
-    // 👉 dot 생성
+    document.title = `${window.currentProductTitle} - 대구대 마켓`;
+
+    // dot 생성
     const dotsContainer = document.getElementById('imageDots');
     dotsContainer.innerHTML = '';
 
-    images.forEach((_, index) => {
+    window.images.forEach((_, index) => {
       const dot = document.createElement('button');
 
-      dot.className = 'h-2 w-2 rounded-full bg-white/60';
+      dot.className = index === 0 ? 'h-2 w-2 rounded-full bg-primary' : 'h-2 w-2 rounded-full bg-white/60';
       dot.onclick = () => goToImage(index);
 
       dotsContainer.appendChild(dot);
     });
 
-    // 👉 첫 이미지 표시
-    document.getElementById('mainImage').src = images[0] || '';
+    // 첫 이미지 표시
+    document.getElementById('mainImage').src = window.images[0];
+    document.getElementById('mainImage').alt = window.currentProductTitle;
 
-    // 👉 상품 정보
-    document.getElementById('title').innerText = item.title;
-    document.getElementById('price').innerText = item.price + '원';
-    document.getElementById('condition').innerText = item.condition;
-    document.getElementById('category').innerText = item.category;
-    document.getElementById('description').innerText = item.description;
-    document.getElementById('location').innerText = item.location;
-    document.getElementById('views').innerText = item.views;
-    document.getElementById('likes').innerText = item.likes;
+    // 상품 정보
+    document.getElementById('title').innerText = item.title || '제목 없음';
+    document.getElementById('price').innerText = formatPrice(item.price);
+    document.getElementById('condition').innerText = item.condition || item.status || '판매중';
+    document.getElementById('category').innerText = item.category || '기타';
+    document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
+    document.getElementById('location').innerText = item.location || '위치 미정';
+    document.getElementById('views').innerText = Number(item.views || 0);
+    document.getElementById('likes').innerText = Number(item.likes || 0);
+    document.getElementById('sellerName').innerText = item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
+    document.getElementById('sellerDepartment').innerText = item.department || item.college || '판매자 정보 미제공';
 
-    // 👉 시간 표시
-    document.getElementById('createdAt').innerText = getTimeAgo(item.created_at);
+    // 시간 표시
+    document.getElementById('createdAt').innerText = getTimeAgo(item.created_at || item.createdAt);
 
+  })
+  .catch(error => {
+    console.error('상품 상세 로딩 실패:', error);
+    document.getElementById('title').innerText = '상품 정보를 불러오지 못했습니다.';
+    document.getElementById('description').innerText = '잠시 후 다시 시도해주세요.';
   });
+}
 
 </script>
 </body>
