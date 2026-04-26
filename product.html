@@ -68,26 +68,9 @@
         </div>
         <span class="text-xl font-bold text-primary">대구대 마켓</span>
       </a>
-      <nav class="flex items-center gap-2">
-        <a href="sell.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-            <path d="M5 12h14"/>
-            <path d="M12 5v14"/>
-          </svg>
-          판매하기
-        </a>
-        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
-          </svg>
-        </a>
-        <a href="#" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </a>
-      </nav>
+      <a href="index.html" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+        목록으로
+      </a>
     </div>
   </header>
 
@@ -571,20 +554,11 @@ async function loadLikeState() {
 function openSellerProfile() {
   const seller = window.currentSeller;
 
-  if (!seller) {
+  if (!seller || !seller.id) {
     alert('판매자 정보를 아직 불러오는 중입니다.');
     return;
   }
-
-  const user = getLoggedInUser();
-  const currentUserId = user && (user.user_id || user.id);
-
-  if (currentUserId && seller.id && String(currentUserId) === String(seller.id)) {
-    window.location.href = 'mypage.html';
-    return;
-  }
-
-  alert(`${seller.name}\n${seller.department}`);
+  window.location.href = `profile.html?userId=${encodeURIComponent(seller.id)}`;
 }
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);

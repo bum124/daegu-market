@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>판매자 프로필 - 대구마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#16a34a',
+            'primary-foreground': '#ffffff',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; }
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+            <path d="M2 7h20"/>
+            <path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/>
+          </svg>
+        </div>
+        <span class="text-xl font-bold text-primary">대구마켓</span>
+      </a>
+      <a href="index.html" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">목록으로</a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-6">
+    <section class="rounded-xl border border-gray-200 bg-white p-5 md:p-6">
+      <div id="profileLoading" class="py-12 text-center text-gray-500">판매자 정보를 불러오는 중입니다.</div>
+
+      <div id="profileContent" class="hidden">
+        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-4">
+            <div id="profileInitial" class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">?</div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 id="profileName" class="text-2xl font-bold text-gray-900">판매자</h1>
+                <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">학교 인증 완료</span>
+              </div>
+              <p id="profileDepartment" class="mt-1 text-sm text-gray-500">학과 정보 없음</p>
+              <p id="profileEmail" class="mt-1 text-sm text-gray-500"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center md:w-72">
+            <div class="rounded-lg border border-gray-200 px-3 py-3">
+              <p id="sellingCount" class="text-xl font-bold text-gray-900">0</p>
+              <p class="mt-1 text-xs text-gray-500">판매중</p>
+            </div>
+            <div class="rounded-lg border border-gray-200 px-3 py-3">
+              <p id="soldCount" class="text-xl font-bold text-gray-900">0</p>
+              <p class="mt-1 text-xs text-gray-500">판매완료</p>
+            </div>
+            <div class="rounded-lg border border-gray-200 px-3 py-3">
+              <p id="trustCount" class="text-xl font-bold text-gray-900">0</p>
+              <p class="mt-1 text-xs text-gray-500">관심 합계</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-6">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">등록한 상품</h2>
+        <span id="productCountLabel" class="text-sm text-gray-500">0개</span>
+      </div>
+
+      <div id="productsLoading" class="rounded-xl border border-gray-200 bg-white py-12 text-center text-gray-500">상품을 불러오는 중입니다.</div>
+      <div id="productGrid" class="hidden grid grid-cols-2 gap-4 md:grid-cols-4"></div>
+      <div id="emptyProducts" class="hidden rounded-xl border border-gray-200 bg-white py-12 text-center text-gray-500">아직 등록한 상품이 없습니다.</div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = 'https://daegu-market-api.onrender.com';
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('userId') || params.get('id');
+
+    function parseImages(images) {
+      if (Array.isArray(images)) {
+        return images;
+      }
+
+      if (typeof images !== 'string' || !images.trim()) {
+        return [];
+      }
+
+      try {
+        const parsed = JSON.parse(images);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [images];
+      }
+    }
+
+    function formatPrice(price) {
+      return Number(price || 0).toLocaleString('ko-KR') + '원';
+    }
+
+    function getDisplayName(user) {
+      return user.nickname || user.name || '판매자';
+    }
+
+    function getInitial(name) {
+      return String(name || '?').trim().charAt(0) || '?';
+    }
+
+    function maskEmail(email) {
+      if (!email || !email.includes('@')) {
+        return '';
+      }
+
+      const [local, domain] = email.split('@');
+      const visible = local.slice(0, 3);
+      return `${visible}${local.length > 3 ? '***' : ''}@${domain}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function isSold(product) {
+      return product.status === '판매완료' || product.condition === '판매완료';
+    }
+
+    function renderProfile(user, products) {
+      const displayName = getDisplayName(user);
+      const selling = products.filter(product => !isSold(product));
+      const sold = products.filter(isSold);
+      const totalLikes = products.reduce((sum, product) => sum + Number(product.likes || 0), 0);
+
+      document.title = `${displayName} 프로필 - 대구마켓`;
+      document.getElementById('profileInitial').textContent = getInitial(displayName);
+      document.getElementById('profileName').textContent = displayName;
+      document.getElementById('profileDepartment').textContent = user.department || '학과 정보 없음';
+      document.getElementById('profileEmail').textContent = maskEmail(user.email);
+      document.getElementById('sellingCount').textContent = selling.length;
+      document.getElementById('soldCount').textContent = sold.length;
+      document.getElementById('trustCount').textContent = totalLikes;
+      document.getElementById('profileLoading').classList.add('hidden');
+      document.getElementById('profileContent').classList.remove('hidden');
+    }
+
+    function createProductCard(product) {
+      const images = parseImages(product.images);
+      const image = images[0] || 'https://via.placeholder.com/400x400?text=Product';
+      const title = product.title || '제목 없음';
+      const status = isSold(product) ? '판매완료' : (product.condition || product.status || '판매중');
+
+      const card = document.createElement('a');
+      card.href = `product.html?id=${encodeURIComponent(product.id)}`;
+      card.className = 'group block overflow-hidden rounded-xl border border-gray-200 bg-white';
+      card.innerHTML = `
+        <div class="relative aspect-square bg-gray-100">
+          <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" class="h-full w-full object-cover transition-transform group-hover:scale-105">
+          <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-gray-700">${escapeHtml(status)}</span>
+        </div>
+        <div class="p-3">
+          <p class="line-clamp-1 text-sm font-medium text-gray-900">${escapeHtml(title)}</p>
+          <p class="mt-1 font-bold text-gray-900">${formatPrice(product.price)}</p>
+          <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span>조회 ${Number(product.views || 0)}</span>
+            <span>관심 ${Number(product.likes || 0)}</span>
+          </div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function renderProducts(products) {
+      const grid = document.getElementById('productGrid');
+      const empty = document.getElementById('emptyProducts');
+
+      document.getElementById('productsLoading').classList.add('hidden');
+      document.getElementById('productCountLabel').textContent = `${products.length}개`;
+      grid.innerHTML = '';
+
+      if (!products.length) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+
+      products.forEach(product => grid.appendChild(createProductCard(product)));
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+    }
+
+    function showError(message) {
+      document.getElementById('profileLoading').textContent = message;
+      document.getElementById('productsLoading').classList.add('hidden');
+      document.getElementById('emptyProducts').classList.remove('hidden');
+    }
+
+    async function loadProfile() {
+      if (!userId) {
+        showError('판매자 정보가 없습니다.');
+        return;
+      }
+
+      try {
+        const [userResponse, productsResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}`),
+          fetch(`${API_BASE}/api/products`)
+        ]);
+
+        if (!userResponse.ok) {
+          showError('판매자를 찾을 수 없습니다.');
+          return;
+        }
+
+        const user = await userResponse.json();
+        const allProducts = productsResponse.ok ? await productsResponse.json() : [];
+        const products = allProducts.filter(product => String(product.seller_id) === String(userId));
+
+        renderProfile(user, products);
+        renderProducts(products);
+      } catch (error) {
+        console.error('판매자 프로필 로딩 실패:', error);
+        showError('판매자 정보를 불러오지 못했습니다.');
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>
