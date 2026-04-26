@@ -390,56 +390,64 @@
     // Like functionality
     let isLiked = false;
 
-    function toggleLike() {
-  isLiked = !isLiked;
+    function syncLikeButton() {
+      const mobileIcon = document.getElementById('mobileHeartIcon');
+      const desktopIcon = document.getElementById('desktopHeartIcon');
+      const desktopText = document.getElementById('desktopLikeText');
+      const mobileBtn = document.getElementById('mobileLikeBtn');
+      const desktopBtn = document.getElementById('desktopLikeBtn');
 
-  const id = new URLSearchParams(location.search).get('id');
+      if (isLiked) {
+        mobileIcon.setAttribute('fill', '#ef4444');
+        mobileIcon.setAttribute('stroke', '#ef4444');
+        desktopIcon.setAttribute('fill', '#ef4444');
+        desktopIcon.setAttribute('stroke', '#ef4444');
+        desktopText.textContent = '관심 해제';
+        mobileBtn.classList.add('text-red-500', 'border-red-500');
+        desktopBtn.classList.add('text-red-500', 'border-red-500');
+      } else {
+        mobileIcon.setAttribute('fill', 'none');
+        mobileIcon.setAttribute('stroke', 'currentColor');
+        desktopIcon.setAttribute('fill', 'none');
+        desktopIcon.setAttribute('stroke', 'currentColor');
+        desktopText.textContent = '관심 등록';
+        mobileBtn.classList.remove('text-red-500', 'border-red-500');
+        desktopBtn.classList.remove('text-red-500', 'border-red-500');
+      }
+    }
 
-  const mobileIcon = document.getElementById('mobileHeartIcon');
-  const desktopIcon = document.getElementById('desktopHeartIcon');
-  const desktopText = document.getElementById('desktopLikeText');
-  const mobileBtn = document.getElementById('mobileLikeBtn');
-  const desktopBtn = document.getElementById('desktopLikeBtn');
+    async function toggleLike() {
+      const user = getLoggedInUser();
+      const userId = await resolveUserId(user);
 
-  if (isLiked) {
-    // 👉 DB 증가
-    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
-      method: 'PUT'
-    });
+      if (!userId) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = 'login.html';
+        return;
+      }
 
-    // 👉 UI 변경
-    mobileIcon.setAttribute('fill', '#ef4444');
-    mobileIcon.setAttribute('stroke', '#ef4444');
-    desktopIcon.setAttribute('fill', '#ef4444');
-    desktopIcon.setAttribute('stroke', '#ef4444');
-    desktopText.textContent = '관심 해제';
-    mobileBtn.classList.add('text-red-500', 'border-red-500');
-    desktopBtn.classList.add('text-red-500', 'border-red-500');
+      const nextLiked = !isLiked;
+      const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
+        method: nextLiked ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          user_email: user && user.email
+        })
+      });
 
-    // 👉 숫자 증가
-    document.getElementById('likes').innerText =
-      parseInt(document.getElementById('likes').innerText) + 1;
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        alert(result.message || '관심 등록 처리에 실패했습니다.');
+        return;
+      }
 
-  } else {
-    // 👉 DB 감소
-    fetch(`https://daegu-market-api.onrender.com/api/products/${id}/unlike`, {
-      method: 'PUT'
-    });
-
-    // 👉 UI 원래대로
-    mobileIcon.setAttribute('fill', 'none');
-    mobileIcon.setAttribute('stroke', 'currentColor');
-    desktopIcon.setAttribute('fill', 'none');
-    desktopIcon.setAttribute('stroke', 'currentColor');
-    desktopText.textContent = '관심 등록';
-    mobileBtn.classList.remove('text-red-500', 'border-red-500');
-    desktopBtn.classList.remove('text-red-500', 'border-red-500');
-
-    // 👉 숫자 감소
-    document.getElementById('likes').innerText =
-      parseInt(document.getElementById('likes').innerText) - 1;
-  }
-}
+      const likesElement = document.getElementById('likes');
+      const currentLikes = Number(likesElement.innerText || 0);
+      isLiked = nextLiked;
+      likesElement.innerText = Math.max(0, currentLikes + (isLiked ? 1 : -1));
+      syncLikeButton();
+    }
     // Share functionality
     async function handleShare() {
       if (navigator.share) {
@@ -537,6 +545,27 @@ async function updateOwnerActions() {
   document.querySelectorAll('.owner-action').forEach(button => {
     button.classList.toggle('hidden', !isOwner);
   });
+}
+
+async function loadLikeState() {
+  const user = getLoggedInUser();
+  const userId = await resolveUserId(user);
+
+  if (!userId || !id) {
+    isLiked = false;
+    syncLikeButton();
+    return;
+  }
+
+  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like?user_id=${encodeURIComponent(userId)}`);
+
+  if (!response.ok) {
+    return;
+  }
+
+  const data = await response.json();
+  isLiked = Boolean(data.liked);
+  syncLikeButton();
 }
 
 function openSellerProfile() {
@@ -665,6 +694,7 @@ if (!id) {
     document.getElementById('sellerName').innerText = sellerName;
     document.getElementById('sellerDepartment').innerText = sellerDepartment;
     updateOwnerActions();
+    loadLikeState();
 
     // 시간 표시
     document.getElementById('createdAt').innerText = getTimeAgo(item.created_at || item.createdAt);

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>계정 설정 - 대구마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="mx-auto max-w-2xl px-4 py-6">
+    <div class="mb-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">계정 설정</h1>
+        <p class="mt-1 text-sm text-slate-500">프로필 정보와 비밀번호를 관리합니다.</p>
+      </div>
+      <a href="mypage.html" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">마이페이지</a>
+    </div>
+
+    <form id="accountForm" class="space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div>
+        <label for="email" class="text-sm font-medium text-slate-700">학교 이메일</label>
+        <input id="email" type="email" disabled class="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm text-slate-500">
+      </div>
+
+      <div>
+        <label for="name" class="text-sm font-medium text-slate-700">이름</label>
+        <input id="name" type="text" required class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+      </div>
+
+      <div>
+        <label for="nickname" class="text-sm font-medium text-slate-700">닉네임</label>
+        <input id="nickname" type="text" required class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+      </div>
+
+      <div>
+        <label for="department" class="text-sm font-medium text-slate-700">학과</label>
+        <input id="department" type="text" required class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+      </div>
+
+      <div class="border-t border-slate-100 pt-4">
+        <p class="text-sm font-semibold text-slate-700">비밀번호 변경</p>
+        <p class="mt-1 text-xs text-slate-500">변경하지 않으려면 비워두세요.</p>
+      </div>
+
+      <div>
+        <label for="currentPassword" class="text-sm font-medium text-slate-700">현재 비밀번호</label>
+        <input id="currentPassword" type="password" class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+      </div>
+
+      <div>
+        <label for="newPassword" class="text-sm font-medium text-slate-700">새 비밀번호</label>
+        <input id="newPassword" type="password" class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+      </div>
+
+      <button id="saveButton" type="submit" class="h-12 w-full rounded-xl bg-primary text-sm font-medium text-white hover:bg-green-600">
+        저장하기
+      </button>
+    </form>
+  </main>
+
+  <script>
+    const API_BASE_URL = 'https://daegu-market-api.onrender.com';
+    const form = document.getElementById('accountForm');
+    const saveButton = document.getElementById('saveButton');
+    const fields = {
+      email: document.getElementById('email'),
+      name: document.getElementById('name'),
+      nickname: document.getElementById('nickname'),
+      department: document.getElementById('department'),
+      currentPassword: document.getElementById('currentPassword'),
+      newPassword: document.getElementById('newPassword')
+    };
+
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function resolveUserId(user) {
+      if (user.user_id || user.id) {
+        return user.user_id || user.id;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/users`);
+      const users = await response.json();
+      const matchedUser = users.find(item => item.email === user.email);
+
+      return matchedUser && matchedUser.user_id;
+    }
+
+    async function loadAccount() {
+      const user = getLoggedInUser();
+
+      if (!user) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const userId = await resolveUserId(user);
+
+      if (!userId) {
+        alert('사용자 정보를 찾지 못했습니다.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(userId)}`);
+      const data = await response.json();
+
+      fields.email.value = data.email || user.email || '';
+      fields.name.value = data.name || user.name || '';
+      fields.nickname.value = data.nickname || user.nickname || '';
+      fields.department.value = data.department || user.department || '';
+      form.dataset.userId = userId;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      saveButton.disabled = true;
+      saveButton.textContent = '저장 중...';
+
+      const payload = {
+        name: fields.name.value.trim(),
+        nickname: fields.nickname.value.trim(),
+        department: fields.department.value.trim(),
+        currentPassword: fields.currentPassword.value,
+        newPassword: fields.newPassword.value
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(form.dataset.userId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      saveButton.disabled = false;
+      saveButton.textContent = '저장하기';
+
+      if (!response.ok) {
+        alert(result.message || '계정 정보 저장에 실패했습니다.');
+        return;
+      }
+
+      const storedUser = getLoggedInUser() || {};
+      localStorage.setItem('loggedInUser', JSON.stringify({
+        ...storedUser,
+        user_id: Number(form.dataset.userId),
+        id: Number(form.dataset.userId),
+        name: payload.name,
+        nickname: payload.nickname,
+        department: payload.department,
+        email: fields.email.value
+      }));
+
+      fields.currentPassword.value = '';
+      fields.newPassword.value = '';
+      alert(result.message || '계정 정보가 수정되었습니다.');
+    });
+
+    loadAccount().catch(error => {
+      console.error('계정 정보 로딩 실패:', error);
+      alert('계정 정보를 불러오지 못했습니다.');
+    });
+  </script>
+</body>
+</html>
