@@ -86,7 +86,7 @@
 
       <nav class="hidden items-center gap-2 md:flex">
         <a href="club-main.html" class="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">동아리</a>
-        <a href="sell.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
+        <a href="sell.html" data-auth-required="true" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
           판매하기
         </a>
         
@@ -101,7 +101,7 @@
         </div>
       </nav>
 
-      <a href="mypage.html" class="rounded-lg p-2 hover:bg-muted md:hidden" aria-label="마이페이지">
+      <a href="mypage.html" data-auth-required="true" class="rounded-lg p-2 hover:bg-muted md:hidden" aria-label="마이페이지">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
           <circle cx="12" cy="7" r="4"></circle>
@@ -196,16 +196,16 @@
         </div>
         <span class="text-xs">동아리</span>
       </a>
-      <a href="sell.html" class="flex flex-col items-center gap-1">
+      <a href="sell.html" data-auth-required="true" class="flex flex-col items-center gap-1">
         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
           +
         </div>
         <span class="text-xs font-medium text-primary">판매</span>
       </a>
-      <a href="chat.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+      <a href="chat.html" data-auth-required="true" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
         <span class="text-xs">채팅</span>
       </a>
-      <a href="mypage.html" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+      <a href="mypage.html" data-auth-required="true" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
         <span class="text-xs">MY</span>
       </a>
     </div>

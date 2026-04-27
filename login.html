@@ -126,6 +126,25 @@
     const submitBtn = document.getElementById('submitBtn');
     const errorAlert = document.getElementById('errorAlert');
     const errorMessage = document.getElementById('errorMessage');
+    const nextUrl = new URLSearchParams(window.location.search).get('next');
+
+    function getSafeNextUrl() {
+      if (!nextUrl) {
+        return 'index.html';
+      }
+
+      try {
+        const parsed = new URL(nextUrl, window.location.href);
+
+        if (parsed.origin !== window.location.origin) {
+          return 'index.html';
+        }
+
+        return `${parsed.pathname.replace(/^\//, '')}${parsed.search}${parsed.hash}` || 'index.html';
+      } catch (error) {
+        return 'index.html';
+      }
+    }
 
     function showError(message) {
       errorMessage.textContent = message;
@@ -169,7 +188,7 @@
       localStorage.setItem('loggedInUser', JSON.stringify(data.user));
     
       // 메인 화면으로 이동!
-     window.location.href = 'index.html'; 
+     window.location.href = getSafeNextUrl(); 
       })
       .catch(error => {
         showError(error.message);

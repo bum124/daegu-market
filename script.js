@@ -209,6 +209,36 @@ let hasLoadError = false;
 const API_BASE_URL = "https://daegu-market-api.onrender.com";
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/800x800?text=Product";
 
+function getLoggedInUser() {
+  try {
+    return JSON.parse(localStorage.getItem("loggedInUser") || "null");
+  } catch (error) {
+    return null;
+  }
+}
+
+function isLoggedIn() {
+  return Boolean(getLoggedInUser());
+}
+
+function redirectToLogin(targetUrl) {
+  const next = targetUrl || `${location.pathname}${location.search}`;
+  window.location.href = `login.html?next=${encodeURIComponent(next)}`;
+}
+
+function bindAuthRequiredLinks() {
+  document.addEventListener("click", event => {
+    const link = event.target.closest("[data-auth-required='true']");
+
+    if (!link || isLoggedIn()) {
+      return;
+    }
+
+    event.preventDefault();
+    redirectToLogin(link.getAttribute("href"));
+  });
+}
+
 function setDataStatus({ loading = false, error = false, message = "" } = {}) {
   isLoading = loading;
   hasLoadError = error;
@@ -612,6 +642,7 @@ collegeContainer.addEventListener("scroll", updateCollegeScrollButtons);
 
 window.addEventListener("resize", updateCollegeScrollButtons);
 
+bindAuthRequiredLinks();
 initializeStateFromUrl();
 setDataStatus({ loading: true });
 loadProducts().then(() => {
