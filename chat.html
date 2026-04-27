@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>채팅 목록 - 대구대 중고장터</title>
+  <title>채팅 목록</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -14,161 +16,126 @@
             background: '#fafafa',
             foreground: '#171717',
             muted: '#f5f5f5',
-            'muted-foreground': '#737373',
-            border: '#e5e5e5',
+            border: '#e5e5e5'
           }
         }
       }
     }
   </script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
+    body { font-family: sans-serif; }
   </style>
 </head>
-<body class="bg-background text-foreground">
 
-  <div class="mx-auto min-h-screen max-w-2xl bg-white shadow-sm">
-    <header class="sticky top-0 z-30 border-b border-border bg-white/95 backdrop-blur">
-      <div class="px-4 py-4">
-        <h1 class="text-xl font-bold">채팅</h1>
-      </div>
+<body class="bg-background">
 
-      <!-- 1) 상단 탭 메뉴 -->
-      <div class="px-4">
-        <div class="flex gap-6 border-t border-border">
-          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-primary border-b-2 border-primary" data-filter="all">전체</button>
-          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-muted-foreground border-b-2 border-transparent hover:text-foreground" data-filter="market">중고거래</button>
-          <button type="button" class="chat-tab -mb-px inline-flex items-center justify-center py-3 text-sm font-semibold text-muted-foreground border-b-2 border-transparent hover:text-foreground" data-filter="club">동아리</button>
-        </div>
-      </div>
-    </header>
+<div class="max-w-2xl mx-auto bg-white min-h-screen">
 
-    <div id="chatList" class="divide-y divide-border">
-      <!-- 2) 중고거래 채팅: 상품 이미지 + 가격 유지 -->
-      <a data-type="market" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
-        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-          <img src="https://via.placeholder.com/200x200?text=Item" alt="상품 이미지" class="h-full w-full object-cover">
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium">김철수</span>
-                <span class="text-xs text-muted-foreground">오후 2:30</span>
-              </div>
-              <p class="mt-0.5 truncate text-sm text-muted-foreground">네, 직거래 가능합니다! 정문 앞에서 뵐까요?</p>
-            </div>
-            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">2</span>
-          </div>
-          <div class="mt-2 flex items-center gap-2">
-            <span class="truncate text-xs text-muted-foreground">2024 맥북 에어 M3</span>
-            <span class="text-xs font-semibold">1,200,000원</span>
-          </div>
-        </div>
-      </a>
-
-      <a data-type="market" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
-        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-          <img src="https://via.placeholder.com/200x200?text=Item" alt="상품 이미지" class="h-full w-full object-cover">
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium">이영희</span>
-                <span class="text-xs text-muted-foreground">오전 11:10</span>
-              </div>
-              <p class="mt-0.5 truncate text-sm text-muted-foreground">상태 좋아요. 오늘 저녁에 확인 가능할까요?</p>
-            </div>
-            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">1</span>
-          </div>
-          <div class="mt-2 flex items-center gap-2">
-            <span class="truncate text-xs text-muted-foreground">아이패드 프로 12.9</span>
-            <span class="text-xs font-semibold">850,000원</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- 2) 동아리 채팅: 로고(원형) + 동아리명 강조 -->
-      <a data-type="club" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
-        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
-          <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Run" alt="동아리 로고" class="h-full w-full object-cover">
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium">오범석(회장)</span>
-                <span class="text-xs text-muted-foreground">어제</span>
-              </div>
-              <p class="mt-0.5 truncate text-sm text-muted-foreground">오늘 번개 뛰실 분? 9시에 잔디광장에서 모여요!</p>
-            </div>
-            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">3</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between gap-2">
-            <span class="truncate text-xs text-muted-foreground">동아리</span>
-            <span class="text-xs font-semibold">대구대 러닝크루</span>
-          </div>
-        </div>
-      </a>
-
-      <a data-type="club" href="chat_detail.html" class="chat-item flex gap-4 px-4 py-4 transition-colors hover:bg-muted/60">
-        <div class="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-full border border-border bg-muted">
-          <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Band" alt="동아리 로고" class="h-full w-full object-cover">
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-medium">대구대 밴드부</span>
-                <span class="text-xs text-muted-foreground">3일 전</span>
-              </div>
-              <p class="mt-0.5 truncate text-sm text-muted-foreground">버스킹 홍보 포스터 수정본 확인 부탁드려요!</p>
-            </div>
-            <span class="flex-shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">1</span>
-          </div>
-          <div class="mt-2 flex items-center justify-between gap-2">
-            <span class="truncate text-xs text-muted-foreground">동아리</span>
-            <span class="text-xs font-semibold">대구대 밴드부</span>
-          </div>
-        </div>
-      </a>
-    </div>
+  <!-- 탭 -->
+  <div class="flex border-b">
+    <button class="tab px-4 py-3" data-type="all">전체</button>
+    <button class="tab px-4 py-3" data-type="market">중고</button>
+    <button class="tab px-4 py-3" data-type="club">동아리</button>
   </div>
 
-  <script>
-    // 3) 필터링 스크립트
-    const tabs = Array.from(document.querySelectorAll('.chat-tab'));
-    const items = Array.from(document.querySelectorAll('.chat-item'));
+  <!-- 리스트 -->
+  <div id="list">
 
-    function setActiveTab(active) {
-      tabs.forEach((tab) => {
-        const isActive = tab === active;
-        tab.classList.toggle('text-primary', isActive);
-        tab.classList.toggle('border-primary', isActive);
-        tab.classList.toggle('text-muted-foreground', !isActive);
-        tab.classList.toggle('border-transparent', !isActive);
-      });
+    <!-- 1 -->
+    <a href="chat_id.html?room_id=1&type=market"
+       data-type="market"
+       class="item flex p-4 border-b">
+      <div class="flex-1">
+        <div class="font-bold">김철수</div>
+        <div id="last-1" class="text-sm text-gray-500"></div>
+      </div>
+      <div id="unread-1" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
+    </a>
+
+    <!-- 2 -->
+    <a href="chat_id.html?room_id=2&type=market"
+       data-type="market"
+       class="item flex p-4 border-b">
+      <div class="flex-1">
+        <div class="font-bold">이영희</div>
+        <div id="last-2" class="text-sm text-gray-500"></div>
+      </div>
+      <div id="unread-2" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
+    </a>
+
+    <!-- 3 -->
+    <a href="chat_id.html?room_id=3&type=club"
+       data-type="club"
+       class="item flex p-4 border-b">
+      <div class="flex-1">
+        <div class="font-bold">러닝크루</div>
+        <div id="last-3" class="text-sm text-gray-500"></div>
+      </div>
+      <div id="unread-3" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
+    </a>
+
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   데이터 함수
+------------------------- */
+function getLast(roomId) {
+  const data = JSON.parse(localStorage.getItem("chat_" + roomId)) || [];
+  return data.length ? data[data.length - 1].text : "대화 없음";
+}
+
+function getUnread(roomId) {
+  return Number(localStorage.getItem("chat_" + roomId + "_unread") || 0);
+}
+
+/* -------------------------
+   UI 업데이트
+------------------------- */
+function updateUI() {
+  [1,2,3].forEach(id => {
+
+    const last = document.getElementById("last-" + id);
+    if (last) last.textContent = getLast(id);
+
+    const unread = document.getElementById("unread-" + id);
+    const count = getUnread(id);
+
+    if (unread) {
+      unread.textContent = count > 0 ? count : "";
+      unread.style.display = count > 0 ? "inline-block" : "none";
     }
+  });
+}
 
-    function applyFilter(filter) {
-      items.forEach((item) => {
-        const type = item.getAttribute('data-type');
-        const visible = filter === 'all' || type === filter;
-        item.classList.toggle('hidden', !visible);
-      });
-    }
+/* -------------------------
+   탭 필터
+------------------------- */
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.onclick = () => {
+    const type = btn.dataset.type;
 
-    tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const filter = tab.getAttribute('data-filter');
-        setActiveTab(tab);
-        applyFilter(filter);
-      });
+    document.querySelectorAll(".item").forEach(el => {
+      if (type === "all") el.style.display = "flex";
+      else el.style.display =
+        el.dataset.type === type ? "flex" : "none";
     });
+  };
+});
 
-    applyFilter('all');
-  </script>
+/* -------------------------
+   최초 실행
+------------------------- */
+document.addEventListener("DOMContentLoaded", updateUI);
+
+/* -------------------------
+   자동 갱신 (핵심)
+------------------------- */
+setInterval(updateUI, 1000);
+
+</script>
+
 </body>
 </html>

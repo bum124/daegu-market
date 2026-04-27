@@ -13,6 +13,50 @@ const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json());
 
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
+
+app.post('/chat/start', (req, res) => {
+  const { product_id, buyer_id, seller_id } = req.body;
+
+  const checkRoomSql = `
+    SELECT r.id 
+    FROM rooms r
+    JOIN room_users ru1 ON r.id = ru1.room_id
+    JOIN room_users ru2 ON r.id = ru2.room_id
+    WHERE r.product_id = ?
+      AND ru1.user_id = ?
+      AND ru2.user_id = ?
+    LIMIT 1
+  `;
+
+  db.query(checkRoomSql, [product_id, buyer_id, seller_id], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      return res.json({ room_id: results[0].id });
+    }
+
+    const createRoomSql = `INSERT INTO rooms (product_id) VALUES (?)`;
+
+    db.query(createRoomSql, [product_id], (err, result) => {
+      if (err) return res.status(500).send(err);
+
+      const room_id = result.insertId;
+
+      const insertUsersSql = `
+        INSERT INTO room_users (room_id, user_id) VALUES (?, ?), (?, ?)
+      `;
+
+      db.query(insertUsersSql, [room_id, buyer_id, room_id, seller_id], (err) => {
+        if (err) return res.status(500).send(err);
+
+        res.json({ room_id });
+      });
+    });
+  });
+});
+
 function resolveUserId(payload, callback) {
   const { user_id, id, email, user_email } = payload || {};
   const directUserId = user_id || id;
