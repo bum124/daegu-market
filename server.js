@@ -106,6 +106,32 @@ function refreshProductLikeCount(productId, callback) {
   );
 }
 
+function ensureProductStatusColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME = 'status'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        "ALTER TABLE products ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT '판매중'",
+        callback
+      );
+    }
+  );
+}
+
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
 const db = mysql.createConnection({
@@ -611,6 +637,65 @@ app.delete('/api/products/:id', (req, res) => {
     }
 
     deleteProduct(results[0] && results[0].user_id);
+  });
+});
+
+app.put('/api/products/:id/status', (req, res) => {
+  const productId = req.params.id;
+  const { seller_id, seller_email, status } = req.body || {};
+  const allowedStatuses = ['판매중', '예약중', '판매완료'];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: '변경할 수 없는 상품 상태입니다.' });
+  }
+
+  const updateStatus = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
+    }
+
+    ensureProductStatusColumn((columnErr) => {
+      if (columnErr) {
+        console.error(columnErr);
+        return res.status(500).json({ message: '상품 상태 컬럼 준비에 실패했습니다.' });
+      }
+
+      db.query(
+        'UPDATE products SET status = ? WHERE id = ? AND seller_id = ?',
+        [status, productId, resolvedSellerId],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: '상품 상태 변경 중 DB 오류가 발생했습니다.' });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.status(403).json({ message: '본인이 등록한 상품만 상태를 변경할 수 있습니다.' });
+          }
+
+          res.json({ message: '상품 상태가 변경되었습니다.', status });
+        }
+      );
+    });
+  };
+
+  if (seller_id) {
+    updateStatus(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    updateStatus(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: '사용자 확인 중 DB 오류가 발생했습니다.' });
+    }
+
+    updateStatus(results[0] && results[0].user_id);
   });
 });
 

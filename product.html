@@ -82,8 +82,8 @@
         <div class="relative aspect-square bg-gray-100 md:rounded-2xl md:overflow-hidden">
           <img 
             id="mainImage"
-            src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&h=800&fit=crop" 
-            alt="맥북 프로 14인치" 
+            src="https://via.placeholder.com/800x800?text=Loading"
+            alt="상품 이미지를 불러오는 중"
             class="h-full w-full object-cover"
           >
           
@@ -213,6 +213,13 @@
               채팅으로 거래하기
             </button>
             <button
+              id="desktopSoldBtn"
+              onclick="markProductSold()"
+              class="owner-action sold-action hidden inline-flex items-center justify-center rounded-lg border border-green-200 px-6 py-3 text-sm font-medium text-green-700 hover:bg-green-50 transition-colors"
+            >
+              판매완료
+            </button>
+            <button
               id="desktopDeleteBtn"
               onclick="deleteProduct()"
               class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -312,6 +319,13 @@
         채팅으로 거래하기
       </button>
       <button
+        id="mobileSoldBtn"
+        onclick="markProductSold()"
+        class="owner-action sold-action hidden inline-flex items-center justify-center rounded-lg border border-green-200 px-4 py-3 text-sm font-medium text-green-700 hover:bg-green-50 transition-colors"
+      >
+        완료
+      </button>
+      <button
         id="mobileDeleteBtn"
         onclick="deleteProduct()"
         class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -328,6 +342,7 @@
     window.currentIndex = 0;
     window.currentProductTitle = '대구대 마켓 상품';
     window.currentSeller = null;
+    window.currentProductStatus = '판매중';
 
     function updateImage() {
       if (!window.images.length) {
@@ -528,9 +543,14 @@ async function updateOwnerActions() {
   const currentUserId = await resolveUserId(user);
   const sellerId = window.currentSeller && window.currentSeller.id;
   const isOwner = currentUserId && sellerId && String(currentUserId) === String(sellerId);
+  const isSold = window.currentProductStatus === '판매완료';
 
   document.querySelectorAll('.owner-action').forEach(button => {
     button.classList.toggle('hidden', !isOwner);
+  });
+
+  document.querySelectorAll('.sold-action').forEach(button => {
+    button.classList.toggle('hidden', !isOwner || isSold);
   });
 }
 
@@ -587,6 +607,48 @@ function openChat() {
   }
 
   window.location.href = `chat.html${query.toString() ? `?${query.toString()}` : ''}`;
+}
+
+async function markProductSold() {
+  const seller = window.currentSeller;
+  const user = getLoggedInUser();
+  const sellerId = await resolveUserId(user);
+
+  if (!seller || !seller.id || !sellerId || String(seller.id) !== String(sellerId)) {
+    alert('본인이 등록한 상품만 판매완료로 변경할 수 있습니다.');
+    return;
+  }
+
+  if (window.currentProductStatus === '판매완료') {
+    alert('이미 판매완료된 상품입니다.');
+    return;
+  }
+
+  if (!confirm('이 상품을 판매완료로 변경할까요?')) {
+    return;
+  }
+
+  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seller_id: sellerId,
+      seller_email: user && user.email,
+      status: '판매완료'
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '판매완료 처리에 실패했습니다.');
+    return;
+  }
+
+  window.currentProductStatus = '판매완료';
+  document.getElementById('condition').innerText = '판매완료';
+  updateOwnerActions();
+  alert(result.message || '판매완료로 변경되었습니다.');
 }
 
 async function deleteProduct() {
@@ -676,7 +738,8 @@ if (!id) {
     // 상품 정보
     document.getElementById('title').innerText = item.title || '제목 없음';
     document.getElementById('price').innerText = formatPrice(item.price);
-    document.getElementById('condition').innerText = item.condition || item.status || '판매중';
+    window.currentProductStatus = item.status || item.condition || '판매중';
+    document.getElementById('condition').innerText = window.currentProductStatus;
     document.getElementById('category').innerText = item.category || '기타';
     document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
     document.getElementById('location').innerText = item.location || '위치 미정';

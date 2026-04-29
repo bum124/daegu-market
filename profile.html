@@ -62,6 +62,14 @@
               </div>
               <p id="profileDepartment" class="mt-1 text-sm text-gray-500">학과 정보 없음</p>
               <p id="profileEmail" class="mt-1 text-sm text-gray-500"></p>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="openProfileChat()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
+                  채팅하기
+                </button>
+                <button onclick="reportProfile()" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                  신고하기
+                </button>
+              </div>
             </div>
           </div>
 
@@ -99,6 +107,19 @@
     const API_BASE = 'https://daegu-market-api.onrender.com';
     const params = new URLSearchParams(location.search);
     const userId = params.get('userId') || params.get('id');
+    let loadedUser = null;
+
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function redirectToLogin(targetUrl) {
+      window.location.href = `login.html?next=${encodeURIComponent(targetUrl || window.location.href)}`;
+    }
 
     function parseImages(images) {
       if (Array.isArray(images)) {
@@ -153,6 +174,7 @@
     }
 
     function renderProfile(user, products) {
+      loadedUser = user;
       const displayName = getDisplayName(user);
       const selling = products.filter(product => !isSold(product));
       const sold = products.filter(isSold);
@@ -168,6 +190,42 @@
       document.getElementById('trustCount').textContent = totalLikes;
       document.getElementById('profileLoading').classList.add('hidden');
       document.getElementById('profileContent').classList.remove('hidden');
+    }
+
+    function openProfileChat() {
+      const user = getLoggedInUser();
+
+      if (!user) {
+        redirectToLogin(`profile.html?userId=${encodeURIComponent(userId || '')}`);
+        return;
+      }
+
+      const currentUserId = user.user_id || user.id;
+
+      if (currentUserId && String(currentUserId) === String(userId)) {
+        alert('본인과는 채팅할 수 없습니다.');
+        return;
+      }
+
+      window.location.href = `chat.html?sellerId=${encodeURIComponent(userId)}`;
+    }
+
+    function reportProfile() {
+      const user = getLoggedInUser();
+
+      if (!user) {
+        redirectToLogin(`profile.html?userId=${encodeURIComponent(userId || '')}`);
+        return;
+      }
+
+      const displayName = getDisplayName(loadedUser || {});
+      const reason = prompt(`${displayName}님을 신고하는 이유를 입력해주세요.`);
+
+      if (!reason || !reason.trim()) {
+        return;
+      }
+
+      alert('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
     }
 
     function createProductCard(product) {
