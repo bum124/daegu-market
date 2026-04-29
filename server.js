@@ -13,6 +13,10 @@ const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json());
 
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, service: 'daegu-market-api' });
+});
+
 const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
@@ -134,13 +138,19 @@ function ensureProductStatusColumn(callback) {
 
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
@@ -717,11 +727,12 @@ app.delete('/api/products/legacy/orphans', (req, res) => {
 });
 
 // DB 연결 테스트
-db.connect((err) => {
+db.getConnection((err, connection) => {
     if (err) {
         console.log('DB 연결 실패 ㅠㅠ 원인:', err);
     } else {
         console.log('MySQL 데이터베이스 연결 성공!');
+        connection.release();
     }
 });
 

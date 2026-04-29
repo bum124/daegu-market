@@ -105,9 +105,24 @@
 
   <script>
     const API_BASE = 'https://daegu-market-api.onrender.com';
+    const API_TIMEOUT_MS = 12000;
     const params = new URLSearchParams(location.search);
     const userId = params.get('userId') || params.get('id');
     let loadedUser = null;
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        return await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
 
     function getLoggedInUser() {
       try {
@@ -288,8 +303,8 @@
 
       try {
         const [userResponse, productsResponse] = await Promise.all([
-          fetch(`${API_BASE}/api/users/${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/api/products`)
+          fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}`),
+          fetchWithTimeout(`${API_BASE}/api/products`)
         ]);
 
         if (!userResponse.ok) {
