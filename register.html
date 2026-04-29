@@ -133,20 +133,38 @@
             </div>
           </div>
 
-          <!-- Department -->
+          <div class="space-y-2">
+            <label for="college" class="text-sm font-medium">단과대학</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6"/>
+              </svg>
+              <select
+                id="college"
+                required
+                class="w-full h-10 appearance-none rounded-lg border border-border bg-white pl-10 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">단과대학을 선택하세요</option>
+              </select>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">▼</span>
+            </div>
+          </div>
+
           <div class="space-y-2">
             <label for="department" class="text-sm font-medium">학과</label>
             <div class="relative">
               <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
               </svg>
-              <input
+              <select
                 id="department"
-                type="text"
-                placeholder="학과명을 정확히 입력하세요 (예: 소프트웨어공학과)"
                 required
-                class="w-full h-10 rounded-lg border border-border bg-white pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+                disabled
+                class="w-full h-10 appearance-none rounded-lg border border-border bg-white pl-10 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-muted disabled:text-muted-foreground"
+              >
+                <option value="">단과대학을 먼저 선택하세요</option>
+              </select>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">▼</span>
             </div>
           </div>
 
@@ -210,12 +228,49 @@
     const emailInput = document.getElementById('email');
     const nameInput = document.getElementById('name');
     const nicknameInput = document.getElementById('nickname');
+    const collegeSelect = document.getElementById('college');
     const departmentSelect = document.getElementById('department');
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
     const submitBtn = document.getElementById('submitBtn');
     const errorAlert = document.getElementById('errorAlert');
     const errorMessage = document.getElementById('errorMessage');
+
+    const departmentData = {
+      '공공인재대학': ['경찰학부', '소방방재학과', '군사학과', '공공안전학과', '행정학과'],
+      '글로벌경영대학': ['경영학부', '경제금융학부', '무역학과', '관광경영학과', '호텔관광학과'],
+      '사회과학대학': ['사회복지학과', '심리학과', '문헌정보학과', '미디어커뮤니케이션학과', '법학부'],
+      '보건바이오대학': ['식품영양학과', '생명환경학부', '반려동물산업학과', '보건의료정보학과', '스마트원예학과'],
+      'IT·공과대학': ['컴퓨터정보공학부', 'AI학부', '전자전기공학부', '기계공학부', '건축공학과', '식품공학과', '조경학과'],
+      '디자인예술대학': ['시각디자인학과', '산업디자인학과', '패션디자인학과', '실내건축디자인학과', '영상애니메이션디자인학과'],
+      '사범대학': ['국어교육과', '영어교육과', '역사교육과', '지리교육과', '일반사회교육과', '수학교육과', '유아교육과', '특수교육과'],
+      '재활과학대학': ['직업재활학과', '언어치료학과', '재활심리학과', '재활공학과', '물리치료학과', '작업치료학과'],
+      '간호대학': ['간호학과'],
+      '체육레저학부': ['체육학전공', '레저스포츠전공', '스포츠건강과학전공'],
+      '문화콘텐츠학부': ['문화콘텐츠전공', '공연예술전공', '디지털문예창작전공'],
+      '자유전공학부': ['자유전공학부'],
+      '글로컬라이프대학': ['평생교육학과', '사회적경제학과', '복지상담학과'],
+      '국제대학': ['국제학부', '한국어교육학과']
+    };
+
+    function populateCollegeOptions() {
+      collegeSelect.innerHTML = '<option value="">단과대학을 선택하세요</option>' + Object.keys(departmentData)
+        .map(college => `<option value="${college}">${college}</option>`)
+        .join('');
+    }
+
+    function populateDepartmentOptions(college) {
+      const departments = departmentData[college] || [];
+
+      departmentSelect.disabled = departments.length === 0;
+      departmentSelect.innerHTML = departments.length
+        ? '<option value="">학과를 선택하세요</option>' + departments.map(department => `<option value="${department}">${department}</option>`).join('')
+        : '<option value="">단과대학을 먼저 선택하세요</option>';
+    }
+
+    collegeSelect.addEventListener('change', () => {
+      populateDepartmentOptions(collegeSelect.value);
+    });
 
     function showError(message) {
       errorMessage.textContent = message;
@@ -235,6 +290,7 @@
       const email = emailInput.value;
       const name = nameInput.value;
       const nickname = nicknameInput.value;
+      const college = collegeSelect.value;
       const department = departmentSelect.value;
       const password = passwordInput.value;
       const confirmPassword = confirmPasswordInput.value;
@@ -254,6 +310,11 @@
         return;
       }
 
+      if (!college) {
+        showError('단과대학을 선택해주세요.');
+        return;
+      }
+
       if (!department) {
         showError('학과를 선택해주세요.');
         return;
@@ -268,6 +329,7 @@
           email: email,
           name: name,
           nickname: nickname,
+          college: college,
           department: department,
           password: password
       };
@@ -299,6 +361,8 @@
           submitBtn.textContent = '회원가입';
       });
     }); // 닫는 괄호 주의!
+
+    populateCollegeOptions();
   </script>
 </body>
 </html>

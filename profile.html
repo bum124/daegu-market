@@ -198,7 +198,7 @@
       document.title = `${displayName} 프로필 - 대구마켓`;
       document.getElementById('profileInitial').textContent = getInitial(displayName);
       document.getElementById('profileName').textContent = displayName;
-      document.getElementById('profileDepartment').textContent = user.department || '학과 정보 없음';
+      document.getElementById('profileDepartment').textContent = [user.college, user.department].filter(Boolean).join(' · ') || '학과 정보 없음';
       document.getElementById('profileEmail').textContent = maskEmail(user.email);
       document.getElementById('sellingCount').textContent = selling.length;
       document.getElementById('soldCount').textContent = sold.length;

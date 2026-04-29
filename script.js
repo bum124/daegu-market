@@ -405,7 +405,7 @@ function normalizeProduct(product) {
     id: product.id,
     title: product.title || "제목 없음",
     category: product.category || "기타",
-    college: product.college || product.seller_department || "단과대 미지정",
+    college: product.college || product.seller_college || product.seller_department || "단과대 미지정",
     price: Number(product.price || 0),
     location: product.location || "위치 미정",
     posted: product.posted || getTimeAgo(createdAt),

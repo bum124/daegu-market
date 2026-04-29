@@ -700,7 +700,7 @@ if (!id) {
     document.getElementById('views').innerText = Number(item.views || 0);
     document.getElementById('likes').innerText = Number(item.likes || 0);
     const sellerName = item.seller_nickname || item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
-    const sellerDepartment = item.seller_department || item.department || item.college || '판매자 정보 미제공';
+    const sellerDepartment = [item.seller_college, item.seller_department || item.department].filter(Boolean).join(' · ') || item.college || '판매자 정보 미제공';
 
     window.currentSeller = {
       id: item.seller_id || null,

@@ -106,7 +106,7 @@ function normalizeProduct(item) {
     id: item.id,
     title: item.title || '제목 없음',
     category: item.category || '기타',
-    college: item.college || item.seller_department || '단과대 미지정',
+    college: item.college || item.seller_college || item.seller_department || '단과대 미지정',
     price: Number(item.price || 0),
     location: item.location || '위치 미정',
     posted: item.posted || getTimeAgo(createdAt),
@@ -129,7 +129,7 @@ function normalizeMyPageData(data, loggedInUser) {
     user: {
       id: data.user.id || loggedInUser.user_id || loggedInUser.id || '',
       name: data.user.name || loggedInUser.name || loggedInUser.nickname || '사용자',
-      department: data.user.department || loggedInUser.department || '학과 미지정',
+      department: [data.user.college, data.user.department || loggedInUser.department].filter(Boolean).join(' · ') || '학과 미지정',
       email: data.user.email || loggedInUser.email || '',
       verified: Boolean(data.user.verified ?? true)
     },
