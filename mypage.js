@@ -255,13 +255,24 @@ function renderItems() {
           <span>조회 ${item.views}</span>
         </div>
         ${state.activeTab !== 'liked' ? `
-          <button
-            type="button"
-            data-delete-id="${item.id}"
-            class="mt-3 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-          >
-            삭제
-          </button>
+          <div class="mt-3 flex flex-wrap gap-2">
+            ${state.activeTab === 'selling' && item.status !== '판매완료' ? `
+              <button
+                type="button"
+                data-sold-id="${item.id}"
+                class="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
+              >
+                판매완료
+              </button>
+            ` : ''}
+            <button
+              type="button"
+              data-delete-id="${item.id}"
+              class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+            >
+              삭제
+            </button>
+          </div>
         ` : ''}
       </div>
     </article>
@@ -325,6 +336,14 @@ tabButtons.forEach(button => {
 });
 
 itemList.addEventListener('click', event => {
+  const soldButton = event.target.closest('[data-sold-id]');
+
+  if (soldButton) {
+    event.stopPropagation();
+    markMyProductSold(soldButton.dataset.soldId);
+    return;
+  }
+
   const deleteButton = event.target.closest('[data-delete-id]');
 
   if (deleteButton) {
@@ -352,6 +371,50 @@ itemList.addEventListener('keydown', event => {
   event.preventDefault();
   navigateToProduct(card.dataset.productId);
 });
+
+async function markMyProductSold(productId) {
+  if (!state.currentUserId) {
+    alert('로그인 정보를 확인하지 못했습니다.');
+    return;
+  }
+
+  if (!confirm('이 상품을 판매완료로 변경할까요?')) {
+    return;
+  }
+
+  const userStr = localStorage.getItem('loggedInUser');
+  const user = userStr ? JSON.parse(userStr) : {};
+  const response = await fetch(`${API_BASE_URL}/api/products/${encodeURIComponent(productId)}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      seller_id: state.currentUserId,
+      seller_email: user.email,
+      status: '판매완료'
+    })
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '판매완료 처리에 실패했습니다.');
+    return;
+  }
+
+  const product = state.data.selling.find(item => String(item.id) === String(productId));
+
+  if (product) {
+    product.status = '판매완료';
+    state.data.selling = state.data.selling.filter(item => String(item.id) !== String(productId));
+    state.data.sold = [product, ...state.data.sold.filter(item => String(item.id) !== String(productId))];
+  }
+
+  state.data.stats.sellingCount = state.data.selling.length;
+  state.data.stats.soldCount = state.data.sold.length;
+  renderProfile(state.data);
+  renderItems();
+  alert(result.message || '판매완료로 변경되었습니다.');
+}
 
 async function deleteMyProduct(productId) {
   if (!state.currentUserId) {

@@ -213,13 +213,6 @@
               채팅으로 거래하기
             </button>
             <button
-              id="desktopSoldBtn"
-              onclick="markProductSold()"
-              class="owner-action sold-action hidden inline-flex items-center justify-center rounded-lg border border-green-200 px-6 py-3 text-sm font-medium text-green-700 hover:bg-green-50 transition-colors"
-            >
-              판매완료
-            </button>
-            <button
               id="desktopDeleteBtn"
               onclick="deleteProduct()"
               class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -317,13 +310,6 @@
           <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
         </svg>
         채팅으로 거래하기
-      </button>
-      <button
-        id="mobileSoldBtn"
-        onclick="markProductSold()"
-        class="owner-action sold-action hidden inline-flex items-center justify-center rounded-lg border border-green-200 px-4 py-3 text-sm font-medium text-green-700 hover:bg-green-50 transition-colors"
-      >
-        완료
       </button>
       <button
         id="mobileDeleteBtn"
@@ -558,14 +544,9 @@ async function updateOwnerActions() {
   const currentUserId = await resolveUserId(user);
   const sellerId = window.currentSeller && window.currentSeller.id;
   const isOwner = currentUserId && sellerId && String(currentUserId) === String(sellerId);
-  const isSold = window.currentProductStatus === '판매완료';
 
   document.querySelectorAll('.owner-action').forEach(button => {
     button.classList.toggle('hidden', !isOwner);
-  });
-
-  document.querySelectorAll('.sold-action').forEach(button => {
-    button.classList.toggle('hidden', !isOwner || isSold);
   });
 }
 
@@ -622,48 +603,6 @@ function openChat() {
   }
 
   window.location.href = `chat.html${query.toString() ? `?${query.toString()}` : ''}`;
-}
-
-async function markProductSold() {
-  const seller = window.currentSeller;
-  const user = getLoggedInUser();
-  const sellerId = await resolveUserId(user);
-
-  if (!seller || !seller.id || !sellerId || String(seller.id) !== String(sellerId)) {
-    alert('본인이 등록한 상품만 판매완료로 변경할 수 있습니다.');
-    return;
-  }
-
-  if (window.currentProductStatus === '판매완료') {
-    alert('이미 판매완료된 상품입니다.');
-    return;
-  }
-
-  if (!confirm('이 상품을 판매완료로 변경할까요?')) {
-    return;
-  }
-
-  const response = await fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}/status`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      seller_id: sellerId,
-      seller_email: user && user.email,
-      status: '판매완료'
-    })
-  });
-
-  const result = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    alert(result.message || '판매완료 처리에 실패했습니다.');
-    return;
-  }
-
-  window.currentProductStatus = '판매완료';
-  document.getElementById('condition').innerText = '판매완료';
-  updateOwnerActions();
-  alert(result.message || '판매완료로 변경되었습니다.');
 }
 
 async function deleteProduct() {
