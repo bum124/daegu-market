@@ -136,6 +136,15 @@ function ensureProductStatusColumn(callback) {
   );
 }
 
+function queryWithTimeout(sql, values, callback, timeout = 10000) {
+  if (typeof values === 'function') {
+    callback = values;
+    values = [];
+  }
+
+  db.query({ sql, timeout }, values, callback);
+}
+
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
 const db = mysql.createPool({
@@ -435,7 +444,7 @@ app.get('/api/products', (req, res) => {
     ORDER BY p.id DESC
   `;
 
-  db.query(sql, (err, results) => {
+  queryWithTimeout(sql, (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
   });
@@ -444,7 +453,7 @@ app.get('/api/products', (req, res) => {
 app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
-  db.query(
+  queryWithTimeout(
     `SELECT
       p.*,
       u.name AS seller_name,
@@ -740,7 +749,7 @@ db.getConnection((err, connection) => {
 app.get('/api/users', (req, res) => {
     const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users';
 
-    db.query(sql, (err, results) => {
+    queryWithTimeout(sql, (err, results) => {
         if (err) {
             res.status(500).send('데이터 가져오기 에러');
         } else {
@@ -752,7 +761,7 @@ app.get('/api/users', (req, res) => {
 app.get('/api/users/:id', (req, res) => {
     const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users WHERE user_id = ?';
 
-    db.query(sql, [req.params.id], (err, results) => {
+    queryWithTimeout(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).send('데이터 가져오기 에러');
         if (results.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
         res.json(results[0]);
