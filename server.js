@@ -541,6 +541,60 @@ app.post('/api/products/:id/like', (req, res) => {
   });
 });
 
+// 1. 동아리 개설 API (클라이언트에서 데이터 받아 DB에 저장)
+app.post('/api/clubs', (req, res) => {
+  const { 
+    clubName, clubCategory, clubTagline, intro, 
+    clubMeet, clubLocation, meetingInfo, feeAmount, 
+    feeInfo, eligibilityAndTips, leader_id 
+  } = req.body;
+
+  // 로그인된 유저(leader_id)가 제대로 넘어왔는지 확인
+  if (!leader_id) {
+    return res.status(400).json({ message: '회장(로그인 사용자) 정보가 없습니다.' });
+  }
+
+  const sql = `
+    INSERT INTO Clubs 
+    (leader_id, name, category, tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  
+  const values = [
+    leader_id, clubName, clubCategory, clubTagline, intro, 
+    clubMeet, clubLocation, meetingInfo, feeAmount, feeInfo, eligibilityAndTips
+  ];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('동아리 개설 DB 에러:', err);
+      return res.status(500).json({ message: '동아리 개설 중 DB 오류가 발생했습니다.' });
+    }
+    
+    // 개설 성공 시, 새로 만들어진 동아리의 ID를 프론트로 돌려줌
+    res.json({ message: '동아리가 성공적으로 개설되었습니다!', club_id: result.insertId });
+  });
+});
+
+// 2. 동아리 목록 불러오기 API (클라이언트에 DB 데이터 전달)
+app.get('/api/clubs', (req, res) => {
+  const sql = `
+    SELECT c.*, u.name AS leader_name, u.nickname AS leader_nickname 
+    FROM Clubs c 
+    LEFT JOIN Users u ON c.leader_id = u.user_id 
+    ORDER BY c.created_at DESC
+  `;
+  
+  // 기존에 만들어두신 queryWithTimeout 함수 활용
+  queryWithTimeout(sql, (err, results) => {
+    if (err) {
+      console.error('동아리 목록 조회 DB 에러:', err);
+      return res.status(500).json({ message: '동아리 목록을 불러오는 중 오류가 발생했습니다.' });
+    }
+    res.json(results);
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

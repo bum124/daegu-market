@@ -364,8 +364,8 @@
       window.location.href = 'club-main.html';
     });
 
-    // 4) 개설 버튼 로직: 즉시 성공 알림 후 이동(승인 대기 없음)
-    form.addEventListener('submit', (e) => {
+   // 4) 개설 버튼 로직: 서버 API로 데이터 전송
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideError();
 
@@ -375,7 +375,9 @@
       const intro = document.getElementById('intro').value.trim();
       const clubMeet = document.getElementById('clubMeet').value.trim();
       const clubLocation = document.getElementById('clubLocation').value.trim();
+      const meetingInfo = document.getElementById('meetingInfo').value.trim();
       const feeAmountRaw = document.getElementById('feeAmount').value;
+      const feeInfo = document.getElementById('feeInfo').value.trim();
       const eligibilityAndTips = document.getElementById('eligibilityAndTips').value.trim();
 
       if (!clubName) return showError('동아리 이름을 입력해주세요.');
@@ -388,23 +390,57 @@
       if (feeAmountRaw === '' || Number.isNaN(Number(feeAmountRaw)) || Number(feeAmountRaw) < 0) return showError('월 회비 금액을 올바르게 입력해주세요.');
       if (!eligibilityAndTips) return showError('지원 자격 & 추천을 입력해주세요.');
 
-      // 수정 모드 고려용: 임시로 초안 저장(나중에 실제 API 연결 시 제거/대체)
-      const draft = {
+      // 1. 현재 로그인한 유저 정보 가져오기 (이 사람이 동아리 회장이 됨)
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('loggedInUser'));
+      } catch (err) {}
+
+      if (!user || !user.user_id) {
+        return showError('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      }
+
+      // 2. 서버로 보낼 데이터 묶기
+      const clubData = {
         clubName,
         clubCategory,
         clubTagline,
         intro,
         clubMeet,
         clubLocation,
-        meetingInfo: document.getElementById('meetingInfo').value.trim(),
+        meetingInfo,
         feeAmount: Number(feeAmountRaw),
-        feeInfo: document.getElementById('feeInfo').value.trim(),
-        eligibilityAndTips
+        feeInfo,
+        eligibilityAndTips,
+        leader_id: user.user_id  // 로그인한 유저의 고유 ID
       };
-      localStorage.setItem('clubDraft', JSON.stringify(draft));
 
-      alert('축하합니다! 동아리가 성공적으로 개설되었습니다.');
-      window.location.href = 'club-main.html';
+      // 3. 서버(API)로 데이터 전송 (백엔드 서버 주소)
+      // 로컬 테스트 시 http://localhost:3000, 배포 시 https://daegu-market-api.onrender.com
+      const API_BASE_URL = "https://daegu-market-api.onrender.com"; 
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(clubData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // 4. 성공 시 처리
+          alert('축하합니다! 동아리가 성공적으로 개설되었습니다.');
+          window.location.href = 'club-main.html';
+        } else {
+          showError(result.message || '동아리 개설에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error(error);
+        showError('서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
     });
   </script>
 </body>
