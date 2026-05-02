@@ -82,8 +82,8 @@
         <div class="relative aspect-square bg-gray-100 md:rounded-2xl md:overflow-hidden">
           <img 
             id="mainImage"
-            src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&h=800&fit=crop" 
-            alt="맥북 프로 14인치" 
+            src="https://via.placeholder.com/800x800?text=Loading"
+            alt="상품 이미지를 불러오는 중"
             class="h-full w-full object-cover"
           >
           
@@ -328,6 +328,22 @@
     window.currentIndex = 0;
     window.currentProductTitle = '대구대 마켓 상품';
     window.currentSeller = null;
+    window.currentProductStatus = '판매중';
+    const API_TIMEOUT_MS = 12000;
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        return await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
 
     function updateImage() {
       if (!window.images.length) {
@@ -410,7 +426,7 @@
       }
 
       const nextLiked = !isLiked;
-      const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
+      const response = await fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}/like`, {
         method: nextLiked ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -544,7 +560,7 @@ async function loadLikeState() {
     return;
   }
 
-  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}/like?user_id=${encodeURIComponent(userId)}`);
+  const response = await fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}/like?user_id=${encodeURIComponent(userId)}`);
 
   if (!response.ok) {
     return;
@@ -603,7 +619,7 @@ async function deleteProduct() {
     return;
   }
 
-  const response = await fetch(`https://daegu-market-api.onrender.com/api/products/${id}`, {
+  const response = await fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -630,11 +646,11 @@ if (!id) {
   document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
   document.getElementById('description').innerText = '상품 ID가 없습니다. 메인 페이지에서 상품을 다시 선택해주세요.';
 } else {
-  fetch(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
+  fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}/views`, {
     method: 'PUT'
-  });
+  }).catch(() => {});
 
-  fetch(`https://daegu-market-api.onrender.com/api/products/${id}`)
+  fetchWithTimeout(`https://daegu-market-api.onrender.com/api/products/${id}`)
   .then(res => res.json())
   .then(item => {
 
@@ -676,14 +692,15 @@ if (!id) {
     // 상품 정보
     document.getElementById('title').innerText = item.title || '제목 없음';
     document.getElementById('price').innerText = formatPrice(item.price);
-    document.getElementById('condition').innerText = item.condition || item.status || '판매중';
+    window.currentProductStatus = item.status || item.condition || '판매중';
+    document.getElementById('condition').innerText = window.currentProductStatus;
     document.getElementById('category').innerText = item.category || '기타';
     document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
     document.getElementById('location').innerText = item.location || '위치 미정';
     document.getElementById('views').innerText = Number(item.views || 0);
     document.getElementById('likes').innerText = Number(item.likes || 0);
     const sellerName = item.seller_nickname || item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
-    const sellerDepartment = item.seller_department || item.department || item.college || '판매자 정보 미제공';
+    const sellerDepartment = [item.seller_college, item.seller_department || item.department].filter(Boolean).join(' · ') || item.college || '판매자 정보 미제공';
 
     window.currentSeller = {
       id: item.seller_id || null,

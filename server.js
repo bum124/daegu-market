@@ -13,6 +13,10 @@ const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json());
 
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, service: 'daegu-market-api' });
+});
+
 const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
@@ -106,15 +110,82 @@ function refreshProductLikeCount(productId, callback) {
   );
 }
 
+function ensureProductStatusColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME = 'status'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        "ALTER TABLE products ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT '판매중'",
+        callback
+      );
+    }
+  );
+}
+
+function ensureUserCollegeColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'Users'
+       AND COLUMN_NAME = 'college'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        'ALTER TABLE Users ADD COLUMN college VARCHAR(100) NULL AFTER department',
+        callback
+      );
+    }
+  );
+}
+
+function queryWithTimeout(sql, values, callback, timeout = 10000) {
+  if (typeof values === 'function') {
+    callback = values;
+    values = [];
+  }
+
+  db.query({ sql, timeout }, values, callback);
+}
+
 
 // 1. MySQL 설정 (금고에서 꺼내 쓰기)
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
@@ -126,7 +197,7 @@ app.post('/api/register', (req, res) => {
     // 🚩 로그 추가 (이제 Render 로그에 이 글씨가 바로 뜰 겁니다!)
     console.log("--- 회원가입 요청 들어옴! 학번:", req.body.student_id); 
     
-    const { student_id, email, name, nickname , department, password } = req.body;
+    const { student_id, email, name, nickname, college, department, password } = req.body;
 
     // 1. 대구대 메일인지 확인
     if (!email.endsWith('@daegu.ac.kr')) {
@@ -136,13 +207,19 @@ app.post('/api/register', (req, res) => {
     // 2. 6자리 랜덤 인증번호 생성
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 3. DB에 정보 저장
-    const sql = `INSERT INTO Users (student_id, password, name, nickname, department, email, is_verified, verification_code) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    ensureUserCollegeColumn((columnErr) => {
+      if (columnErr) {
+        console.error(columnErr);
+        return res.status(500).json({ message: '회원가입 준비 중 오류가 발생했습니다.' });
+      }
 
-    const values = [student_id, password, name, nickname, department, email, false, verifyCode];
-    
-    db.query(sql, values, (err, result) => {
+      // 3. DB에 정보 저장
+      const sql = `INSERT INTO Users (student_id, password, name, nickname, department, college, email, is_verified, verification_code)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+      const values = [student_id, password, name, nickname, department, college || null, email, false, verifyCode];
+
+      db.query(sql, values, (err, result) => {
         if (err) {
             console.error(err);
             return res.status(500).json({ message: '회원가입 실패 (이미 가입된 학번일 수 있습니다.)' });
@@ -177,6 +254,7 @@ app.post('/api/register', (req, res) => {
                 console.error('메일 전송 에러:', mailErr);
                 res.status(500).json({ message: '메일 전송에 실패했습니다.' });
             });
+      });
     });
 });
 
@@ -237,6 +315,7 @@ app.post('/api/login', (req, res) => {
                 id: user.user_id,
                 name: user.name, 
                 nickname: user.nickname,
+                college: user.college,
                 department: user.department,
                 email: user.email
             } 
@@ -392,6 +471,7 @@ app.get('/api/products', (req, res) => {
       p.*,
       u.name AS seller_name,
       u.nickname AS seller_nickname,
+      u.college AS seller_college,
       u.department AS seller_department,
       u.email AS seller_email
     FROM products p
@@ -399,7 +479,7 @@ app.get('/api/products', (req, res) => {
     ORDER BY p.id DESC
   `;
 
-  db.query(sql, (err, results) => {
+  queryWithTimeout(sql, (err, results) => {
     if (err) return res.status(500).send(err);
     res.json(results);
   });
@@ -408,11 +488,12 @@ app.get('/api/products', (req, res) => {
 app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
-  db.query(
+  queryWithTimeout(
     `SELECT
       p.*,
       u.name AS seller_name,
       u.nickname AS seller_nickname,
+      u.college AS seller_college,
       u.department AS seller_department,
       u.email AS seller_email
      FROM products p
@@ -668,6 +749,65 @@ app.delete('/api/products/:id', (req, res) => {
   });
 });
 
+app.put('/api/products/:id/status', (req, res) => {
+  const productId = req.params.id;
+  const { seller_id, seller_email, status } = req.body || {};
+  const allowedStatuses = ['판매중', '예약중', '판매완료'];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: '변경할 수 없는 상품 상태입니다.' });
+  }
+
+  const updateStatus = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
+    }
+
+    ensureProductStatusColumn((columnErr) => {
+      if (columnErr) {
+        console.error(columnErr);
+        return res.status(500).json({ message: '상품 상태 컬럼 준비에 실패했습니다.' });
+      }
+
+      db.query(
+        'UPDATE products SET status = ? WHERE id = ? AND seller_id = ?',
+        [status, productId, resolvedSellerId],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: '상품 상태 변경 중 DB 오류가 발생했습니다.' });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.status(403).json({ message: '본인이 등록한 상품만 상태를 변경할 수 있습니다.' });
+          }
+
+          res.json({ message: '상품 상태가 변경되었습니다.', status });
+        }
+      );
+    });
+  };
+
+  if (seller_id) {
+    updateStatus(seller_id);
+    return;
+  }
+
+  if (!seller_email) {
+    updateStatus(null);
+    return;
+  }
+
+  db.query('SELECT user_id FROM Users WHERE email = ?', [seller_email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: '사용자 확인 중 DB 오류가 발생했습니다.' });
+    }
+
+    updateStatus(results[0] && results[0].user_id);
+  });
+});
+
 app.delete('/api/products/legacy/orphans', (req, res) => {
   const cleanupKey = req.headers['x-cleanup-key'];
 
@@ -686,19 +826,25 @@ app.delete('/api/products/legacy/orphans', (req, res) => {
 });
 
 // DB 연결 테스트
-db.connect((err) => {
+db.getConnection((err, connection) => {
     if (err) {
         console.log('DB 연결 실패 ㅠㅠ 원인:', err);
     } else {
         console.log('MySQL 데이터베이스 연결 성공!');
+        connection.release();
+        ensureUserCollegeColumn((columnErr) => {
+          if (columnErr) {
+            console.log('Users college 컬럼 준비 실패:', columnErr);
+          }
+        });
     }
 });
 
 // 2. 길(API) 터주기: 이 주소로 접속하면 DB에서 데이터를 꺼내줌
 app.get('/api/users', (req, res) => {
-    const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users';
+    const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users';
 
-    db.query(sql, (err, results) => {
+    queryWithTimeout(sql, (err, results) => {
         if (err) {
             res.status(500).send('데이터 가져오기 에러');
         } else {
@@ -708,9 +854,9 @@ app.get('/api/users', (req, res) => {
 });
 
 app.get('/api/users/:id', (req, res) => {
-    const sql = 'SELECT user_id, student_id, email, name, nickname, department FROM Users WHERE user_id = ?';
+    const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE user_id = ?';
 
-    db.query(sql, [req.params.id], (err, results) => {
+    queryWithTimeout(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).send('데이터 가져오기 에러');
         if (results.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
         res.json(results[0]);
@@ -718,9 +864,9 @@ app.get('/api/users/:id', (req, res) => {
 });
 
 app.put('/api/users/:id', (req, res) => {
-    const { name, nickname, department, currentPassword, newPassword } = req.body;
-    const values = [name, nickname, department];
-    let sql = 'UPDATE Users SET name = ?, nickname = ?, department = ?';
+    const { name, nickname, college, department, currentPassword, newPassword } = req.body;
+    const values = [name, nickname, department, college || null];
+    let sql = 'UPDATE Users SET name = ?, nickname = ?, department = ?, college = COALESCE(?, college)';
 
     if (newPassword) {
         if (!currentPassword) {
@@ -738,8 +884,8 @@ app.put('/api/users/:id', (req, res) => {
                 }
 
                 db.query(
-                    'UPDATE Users SET name = ?, nickname = ?, department = ?, password = ? WHERE user_id = ?',
-                    [name, nickname, department, newPassword, req.params.id],
+                    'UPDATE Users SET name = ?, nickname = ?, department = ?, college = COALESCE(?, college), password = ? WHERE user_id = ?',
+                    [name, nickname, department, college || null, newPassword, req.params.id],
                     (updateErr) => {
                         if (updateErr) return res.status(500).json({ message: '계정 정보 수정 실패' });
                         res.json({ message: '계정 정보가 수정되었습니다.' });
@@ -771,8 +917,8 @@ app.get('/api/mypage', (req, res) => {
     return res.status(400).json({ message: 'userId가 필요합니다.' });
   }
 
-  db.query(
-    'SELECT user_id, email, name, nickname, department FROM Users WHERE user_id = ?',
+    db.query(
+    'SELECT user_id, email, name, nickname, college, department FROM Users WHERE user_id = ?',
     [userId],
     (userErr, users) => {
       if (userErr) return res.status(500).send(userErr);
@@ -784,6 +930,7 @@ app.get('/api/mypage', (req, res) => {
           p.*,
           u.name AS seller_name,
           u.nickname AS seller_nickname,
+          u.college AS seller_college,
           u.department AS seller_department,
           u.email AS seller_email
         FROM products p
@@ -803,6 +950,7 @@ app.get('/api/mypage', (req, res) => {
               p.*,
               u.name AS seller_name,
               u.nickname AS seller_nickname,
+              u.college AS seller_college,
               u.department AS seller_department,
               u.email AS seller_email
             FROM product_likes l
@@ -822,6 +970,7 @@ app.get('/api/mypage', (req, res) => {
               user: {
                 id: user.user_id,
                 name: user.nickname || user.name,
+                college: user.college,
                 department: user.department,
                 email: user.email,
                 verified: true

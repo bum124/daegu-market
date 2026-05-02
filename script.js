@@ -208,6 +208,21 @@ let hasLoadError = false;
 
 const API_BASE_URL = "https://daegu-market-api.onrender.com";
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/800x800?text=Product";
+const API_TIMEOUT_MS = 12000;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function getLoggedInUser() {
   try {
@@ -390,7 +405,7 @@ function normalizeProduct(product) {
     id: product.id,
     title: product.title || "제목 없음",
     category: product.category || "기타",
-    college: product.college || product.seller_department || "단과대 미지정",
+    college: product.college || product.seller_college || product.seller_department || "단과대 미지정",
     price: Number(product.price || 0),
     location: product.location || "위치 미정",
     posted: product.posted || getTimeAgo(createdAt),
@@ -492,7 +507,7 @@ function getFilteredProducts() {
 
 async function loadProducts() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/products`);
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/products`);
 
     if (!response.ok) {
       throw new Error('Failed to load products');
