@@ -455,7 +455,7 @@ function createCollegeButtons() {
     "문화콘텐츠학부",
     "자유전공학부",
     "글로컬라이프대학",
-    "국제대학"
+    "국제 대학"
   ];
 
   collegeContainer.innerHTML = colleges.map(college => {
