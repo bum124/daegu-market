@@ -40,74 +40,49 @@
   </div>
 
   <!-- 리스트 -->
-  <div id="list">
+  <div id="list"></div>
 
-    <!-- 1 -->
-    <a href="chat_id.html?room_id=1&type=market"
-       data-type="market"
-       class="item flex p-4 border-b">
-      <div class="flex-1">
-        <div class="font-bold">김철수</div>
-        <div id="last-1" class="text-sm text-gray-500"></div>
-      </div>
-      <div id="unread-1" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
-    </a>
-
-    <!-- 2 -->
-    <a href="chat_id.html?room_id=2&type=market"
-       data-type="market"
-       class="item flex p-4 border-b">
-      <div class="flex-1">
-        <div class="font-bold">이영희</div>
-        <div id="last-2" class="text-sm text-gray-500"></div>
-      </div>
-      <div id="unread-2" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
-    </a>
-
-    <!-- 3 -->
-    <a href="chat_id.html?room_id=3&type=club"
-       data-type="club"
-       class="item flex p-4 border-b">
-      <div class="flex-1">
-        <div class="font-bold">러닝크루</div>
-        <div id="last-3" class="text-sm text-gray-500"></div>
-      </div>
-      <div id="unread-3" class="text-xs bg-green-500 text-white px-2 rounded-full"></div>
-    </a>
-
-  </div>
 </div>
 
 <script>
-/* -------------------------
-   데이터 함수
-------------------------- */
-function getLast(roomId) {
-  const data = JSON.parse(localStorage.getItem("chat_" + roomId)) || [];
-  return data.length ? data[data.length - 1].text : "대화 없음";
-}
-
-function getUnread(roomId) {
-  return Number(localStorage.getItem("chat_" + roomId + "_unread") || 0);
-}
 
 /* -------------------------
-   UI 업데이트
+   서버에서 채팅 목록 가져오기
 ------------------------- */
-function updateUI() {
-  [1,2,3].forEach(id => {
+function loadChatList() {
+  fetch("http://localhost:3000/api/chat-list")
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("list");
+      list.innerHTML = "";
 
-    const last = document.getElementById("last-" + id);
-    if (last) last.textContent = getLast(id);
+      data.forEach(chat => {
+        const div = document.createElement("a");
 
-    const unread = document.getElementById("unread-" + id);
-    const count = getUnread(id);
+        div.href = `chat_id.html?room_id=${chat.room_id}&type=${chat.type}`;
+        div.className = "item flex p-4 border-b";
+        div.dataset.type = chat.type;
 
-    if (unread) {
-      unread.textContent = count > 0 ? count : "";
-      unread.style.display = count > 0 ? "inline-block" : "none";
-    }
-  });
+        div.innerHTML = `
+          <div class="flex-1">
+            <div class="font-bold">${chat.name}</div>
+            <div class="text-sm text-gray-500">
+              ${chat.last_message || "대화 없음"}
+            </div>
+          </div>
+
+          ${
+            chat.unread > 0
+              ? `<div class="text-xs bg-green-500 text-white px-2 rounded-full">
+                  ${chat.unread}
+                 </div>`
+              : ""
+          }
+        `;
+
+        list.appendChild(div);
+      });
+    });
 }
 
 /* -------------------------
@@ -126,14 +101,10 @@ document.querySelectorAll(".tab").forEach(btn => {
 });
 
 /* -------------------------
-   최초 실행
+   최초 + 자동 갱신
 ------------------------- */
-document.addEventListener("DOMContentLoaded", updateUI);
-
-/* -------------------------
-   자동 갱신 (핵심)
-------------------------- */
-setInterval(updateUI, 1000);
+loadChatList();
+setInterval(loadChatList, 2000);
 
 </script>
 

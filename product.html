@@ -567,26 +567,38 @@ function openSellerProfile() {
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
 
-function openChat() {
+async function openChat() {
   const user = getLoggedInUser();
-
   if (!user) {
     redirectToLogin(`product.html?id=${encodeURIComponent(id || '')}`);
     return;
   }
 
+  const buyerId = await resolveUserId(user);
   const sellerId = window.currentSeller && window.currentSeller.id;
-  const query = new URLSearchParams();
 
-  if (id) {
-    query.set('productId', id);
+  if (!buyerId || !sellerId) {
+    alert("사용자 정보가 부족합니다.");
+    return;
   }
 
-  if (sellerId) {
-    query.set('sellerId', sellerId);
-  }
+  // 🔥 채팅방 생성 or 찾기 요청
+  const res = await fetch("http://localhost:3001/chat-room", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      buyerId: buyerId,
+      sellerId: sellerId,
+      productId: id
+    })
+  });
 
-  window.location.href = `chat.html${query.toString() ? `?${query.toString()}` : ''}`;
+  const data = await res.json();
+
+  // 🔥 생성된 room_id로 바로 채팅방 이동
+  window.location.href = `chat_id.html?room_id=${data.room_id}`;
 }
 
 async function deleteProduct() {
