@@ -120,6 +120,10 @@ function normalizeProduct(item) {
   };
 }
 
+function isSold(item) {
+  return item.status === '판매완료' || item.condition === '판매완료';
+}
+
 function normalizeMyPageData(data, loggedInUser) {
   if (!data || !data.user || !data.stats) {
     throw new Error('Invalid mypage response');
@@ -229,18 +233,22 @@ function renderItems() {
   emptyState.classList.toggle('hidden', items.length !== 0);
   itemList.classList.toggle('hidden', items.length === 0);
 
-  itemList.innerHTML = items.map(item => `
+  itemList.innerHTML = items.map(item => {
+    const sold = isSold(item);
+
+    return `
     <article
-      class="mypage-item flex cursor-pointer gap-4 rounded-2xl border border-slate-200 bg-white p-3"
+      class="mypage-item flex cursor-pointer gap-4 rounded-2xl border border-slate-200 bg-white p-3 ${sold ? 'opacity-80' : ''}"
       data-product-id="${item.id}"
       role="link"
       tabindex="0"
       aria-label="${item.title} 상세 보기"
     >
-      <div class="h-24 w-24 overflow-hidden rounded-xl bg-slate-100">
-        <img src="${item.image}" alt="${item.title}" class="h-full w-full object-cover">
+      <div class="relative h-24 w-24 overflow-hidden rounded-xl bg-slate-100">
+        <img src="${item.image}" alt="${item.title}" class="h-full w-full object-cover ${sold ? 'grayscale opacity-45' : ''}">
+        ${sold ? '<div class="absolute inset-0 bg-white/50"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-white">완료</span></div>' : ''}
       </div>
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0 flex-1 ${sold ? 'text-slate-500' : ''}">
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-xs font-medium text-slate-500">${item.category}</p>
@@ -276,7 +284,8 @@ function renderItems() {
         ` : ''}
       </div>
     </article>
-  `).join('');
+  `;
+  }).join('');
 
   updateUrl();
 }

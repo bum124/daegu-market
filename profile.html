@@ -248,16 +248,18 @@
       const image = images[0] || 'https://via.placeholder.com/400x400?text=Product';
       const title = product.title || '제목 없음';
       const status = isSold(product) ? '판매완료' : (product.condition || product.status || '판매중');
+      const sold = isSold(product);
 
       const card = document.createElement('a');
       card.href = `product.html?id=${encodeURIComponent(product.id)}`;
-      card.className = 'group block overflow-hidden rounded-xl border border-gray-200 bg-white';
+      card.className = `group block overflow-hidden rounded-xl border border-gray-200 bg-white ${sold ? 'opacity-80' : ''}`;
       card.innerHTML = `
         <div class="relative aspect-square bg-gray-100">
-          <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" class="h-full w-full object-cover transition-transform group-hover:scale-105">
-          <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium text-gray-700">${escapeHtml(status)}</span>
+          <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" class="h-full w-full object-cover transition-transform ${sold ? 'grayscale opacity-45' : 'group-hover:scale-105'}">
+          ${sold ? '<div class="absolute inset-0 bg-white/50"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-slate-900/80 px-4 py-2 text-sm font-semibold text-white">판매완료</span></div>' : ''}
+          <span class="absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-medium ${sold ? 'bg-slate-900/80 text-white' : 'bg-white/90 text-gray-700'}">${escapeHtml(status)}</span>
         </div>
-        <div class="p-3">
+        <div class="p-3 ${sold ? 'text-slate-500' : ''}">
           <p class="line-clamp-1 text-sm font-medium text-gray-900">${escapeHtml(title)}</p>
           <p class="mt-1 font-bold text-gray-900">${formatPrice(product.price)}</p>
           <div class="mt-2 flex items-center justify-between text-xs text-gray-500">

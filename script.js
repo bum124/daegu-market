@@ -397,6 +397,10 @@ function getTimeAgo(dateString) {
   return `${Math.floor(diffHours / 24)}일 전`;
 }
 
+function isSold(product) {
+  return product.status === "판매완료" || product.condition === "판매완료";
+}
+
 function normalizeProduct(product) {
   const images = parseImages(product.images);
   const createdAt = product.createdAt || product.created_at || new Date().toISOString();
@@ -490,19 +494,21 @@ function getFilteredProducts() {
     return matchesCategory && matchesCollege && matchesKeyword;
   });
 
+  const compareActiveFirst = (a, b) => Number(isSold(a)) - Number(isSold(b));
+
   if (state.sortBy === "oldest") {
-    return [...filtered].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return [...filtered].sort((a, b) => compareActiveFirst(a, b) || new Date(a.createdAt) - new Date(b.createdAt));
   }
 
   if (state.sortBy === "price-low") {
-    return [...filtered].sort((a, b) => a.price - b.price);
+    return [...filtered].sort((a, b) => compareActiveFirst(a, b) || a.price - b.price);
   }
 
   if (state.sortBy === "price-high") {
-    return [...filtered].sort((a, b) => b.price - a.price);
+    return [...filtered].sort((a, b) => compareActiveFirst(a, b) || b.price - a.price);
   }
 
-  return [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return [...filtered].sort((a, b) => compareActiveFirst(a, b) || new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 async function loadProducts() {
@@ -534,21 +540,25 @@ function renderProducts() {
   emptyState.classList.toggle("hidden", filteredProducts.length !== 0);
   productGrid.classList.toggle("hidden", filteredProducts.length === 0);
 
-  productGrid.innerHTML = filteredProducts.map(product => `
+  productGrid.innerHTML = filteredProducts.map(product => {
+    const sold = isSold(product);
+
+    return `
     <article
-      class="product-card cursor-pointer overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg"
+      class="product-card cursor-pointer overflow-hidden rounded-2xl border border-border bg-card transition-all ${sold ? 'opacity-80' : 'hover:-translate-y-1 hover:shadow-lg'}"
       data-product-id="${product.id}"
       role="link"
       tabindex="0"
       aria-label="${product.title} 상세 보기"
     >
       <div class="relative aspect-square overflow-hidden bg-muted">
-        <img src="${product.image}" alt="${product.title}" class="h-full w-full object-cover">
-        <span class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${product.status === "예약중" ? "bg-amber-500 text-white" : "bg-white/90 text-foreground"}">
+        <img src="${product.image}" alt="${product.title}" class="h-full w-full object-cover ${sold ? 'grayscale opacity-45' : ''}">
+        ${sold ? '<div class="absolute inset-0 bg-white/50"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-slate-900/80 px-4 py-2 text-sm font-semibold text-white">판매완료</span></div>' : ''}
+        <span class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${sold ? "bg-slate-900/80 text-white" : product.status === "예약중" ? "bg-amber-500 text-white" : "bg-white/90 text-foreground"}">
           ${product.status}
         </span>
       </div>
-      <div class="p-4">
+      <div class="p-4 ${sold ? 'text-slate-500' : ''}">
         <div class="mb-2 flex items-center justify-between gap-2">
           <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">${product.category}</span>
           <span class="text-xs text-muted-foreground">${product.posted}</span>
@@ -563,7 +573,8 @@ function renderProducts() {
         </div>
       </div>
     </article>
-  `).join("");
+  `;
+  }).join("");
 
   updateUrl();
   updateCollegeScrollButtons();

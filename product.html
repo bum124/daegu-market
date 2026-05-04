@@ -206,11 +206,11 @@
               </svg>
               <span id="desktopLikeText">관심 등록</span>
             </button>
-            <button onclick="openChat()" class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
+            <button id="desktopChatBtn" onclick="openChat()" class="chat-action flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                 <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
               </svg>
-              채팅으로 거래하기
+              <span id="desktopChatText">채팅으로 거래하기</span>
             </button>
             <button
               id="desktopDeleteBtn"
@@ -305,11 +305,11 @@
           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
         </svg>
       </button>
-      <button onclick="openChat()" class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
+      <button id="mobileChatBtn" onclick="openChat()" class="chat-action flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white hover:bg-primary/90 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
           <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
         </svg>
-        채팅으로 거래하기
+        <span id="mobileChatText">채팅으로 거래하기</span>
       </button>
       <button
         id="mobileDeleteBtn"
@@ -584,6 +584,10 @@ function openSellerProfile() {
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
 
 function openChat() {
+  if (window.currentProductStatus === '판매완료') {
+    return;
+  }
+
   const user = getLoggedInUser();
 
   if (!user) {
@@ -603,6 +607,28 @@ function openChat() {
   }
 
   window.location.href = `chat.html${query.toString() ? `?${query.toString()}` : ''}`;
+}
+
+function syncProductStatusUi() {
+  const isSold = window.currentProductStatus === '판매완료';
+  const condition = document.getElementById('condition');
+
+  condition.className = isSold
+    ? 'inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700'
+    : 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700';
+
+  document.querySelectorAll('.chat-action').forEach(button => {
+    button.disabled = isSold;
+    button.classList.toggle('bg-primary', !isSold);
+    button.classList.toggle('hover:bg-primary/90', !isSold);
+    button.classList.toggle('bg-slate-300', isSold);
+    button.classList.toggle('cursor-not-allowed', isSold);
+    button.classList.toggle('text-slate-600', isSold);
+
+    const textId = button.id === 'desktopChatBtn' ? 'desktopChatText' : 'mobileChatText';
+    const text = document.getElementById(textId);
+    text.textContent = isSold ? '판매완료된 상품' : '채팅으로 거래하기';
+  });
 }
 
 async function deleteProduct() {
@@ -693,6 +719,7 @@ if (!id) {
     document.getElementById('price').innerText = formatPrice(item.price);
     window.currentProductStatus = item.status || item.condition || '판매중';
     document.getElementById('condition').innerText = window.currentProductStatus;
+    syncProductStatusUi();
     document.getElementById('category').innerText = item.category || '기타';
     document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
     document.getElementById('location').innerText = item.location || '위치 미정';
