@@ -411,9 +411,10 @@ async function markMyProductSold(productId) {
 
   state.data.stats.sellingCount = state.data.selling.length;
   state.data.stats.soldCount = state.data.sold.length;
+  state.activeTab = 'sold';
   renderProfile(state.data);
+  syncTabs();
   renderItems();
-  alert(result.message || '판매완료로 변경되었습니다.');
 }
 
 async function deleteMyProduct(productId) {

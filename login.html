@@ -182,8 +182,6 @@
       return response.json();
       })
       .then(data => {
-      alert(data.message); // "로그인 성공!"
-    
       // ★ 핵심: 브라우저에 내 정보를 문자열로 바꿔서 영구 저장합니다.
       localStorage.setItem('loggedInUser', JSON.stringify(data.user));
     

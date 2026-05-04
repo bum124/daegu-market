@@ -459,8 +459,8 @@
         return response.json();
       })
       .then(data => {
-        alert('상품이 성공적으로 등록되었습니다!');
-        window.location.href = 'index.html';
+        const productId = data.product_id || data.id;
+        window.location.href = productId ? `product.html?id=${encodeURIComponent(productId)}` : 'mypage.html';
       })
       .catch(error => {
         console.error(error);

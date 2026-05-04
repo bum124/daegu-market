@@ -444,7 +444,6 @@
       })
       .then(data => {
           // 성공적으로 메일이 발송되었을 때
-          alert('인증 메일이 발송되었습니다! 웹메일함을 확인해주세요.');
           localStorage.setItem('pendingEmail', email); // 인증 화면을 위해 이메일 기억해두기
           window.location.href = 'verify.html'; 
       })

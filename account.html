@@ -172,7 +172,7 @@
 
       fields.currentPassword.value = '';
       fields.newPassword.value = '';
-      alert(result.message || '계정 정보가 수정되었습니다.');
+      window.location.href = 'mypage.html';
     });
 
     loadAccount().catch(error => {
