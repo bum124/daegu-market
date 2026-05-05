@@ -676,6 +676,33 @@ app.get('/api/clubs', (req, res) => {
   });
 });
 
+// 3. 특정 동아리 상세 정보 불러오기 API
+app.get('/api/clubs/:id', (req, res) => {
+  const clubId = req.params.id; // 주소창에서 동아리 번호 뽑아오기
+  
+  const sql = `
+    SELECT c.*, u.name AS leader_name, u.nickname AS leader_nickname, u.department AS leader_department
+    FROM Clubs c
+    LEFT JOIN Users u ON c.leader_id = u.user_id
+    WHERE c.club_id = ?
+  `;
+  
+  queryWithTimeout(sql, [clubId], (err, results) => {
+    if (err) {
+      console.error('동아리 상세 조회 DB 에러:', err);
+      return res.status(500).json({ message: '동아리 정보를 불러오는 중 오류가 발생했습니다.' });
+    }
+    
+    // 동아리가 삭제되었거나 없는 번호일 경우
+    if (results.length === 0) {
+      return res.status(404).json({ message: '해당 동아리를 찾을 수 없습니다.' });
+    }
+    
+    // 성공적으로 찾았으면 딱 1개의 동아리 정보(results[0])만 프론트로 던져줌!
+    res.json(results[0]);
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

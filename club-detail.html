@@ -345,125 +345,61 @@
   </div>
 
   <script>
-    // ===== 갤러리(슬라이더) - product.html 로직 유지/재사용 =====
-    window.images = [
-      "https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=1200&q=80"
-    ];
-    window.currentIndex = 0;
-    window.currentClubTitle = "대구대 러닝크루";
+    const urlParams = new URLSearchParams(window.location.search);
+    const clubId = urlParams.get('id');
 
-    function updateImage() {
-      if (!window.images.length) return;
-      document.getElementById("mainImage").src = window.images[window.currentIndex];
+    const API_BASE_URL = "https://daegu-market-api.onrender.com";
 
-      const dots = document.getElementById("imageDots").children;
-      for (let i = 0; i < dots.length; i++) {
-        dots[i].className = i === window.currentIndex ? "h-2 w-2 rounded-full bg-primary" : "h-2 w-2 rounded-full bg-white/70";
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!clubId) {
+        alert('잘못된 접근입니다.');
+        window.location.href = 'club-main.html';
+        return;
       }
-    }
-
-    function prevImage() {
-      if (!window.images.length) return;
-      window.currentIndex = window.currentIndex === 0 ? window.images.length - 1 : window.currentIndex - 1;
-      updateImage();
-    }
-
-    function nextImage() {
-      if (!window.images.length) return;
-      window.currentIndex = window.currentIndex === window.images.length - 1 ? 0 : window.currentIndex + 1;
-      updateImage();
-    }
-
-    function goToImage(index) {
-      window.currentIndex = index;
-      updateImage();
-    }
-
-    // dot 생성 + 첫 이미지 반영
-    (function initGallery() {
-      const dotsContainer = document.getElementById("imageDots");
-      dotsContainer.innerHTML = "";
-      window.images.forEach((_, index) => {
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.className = index === 0 ? "h-2 w-2 rounded-full bg-primary" : "h-2 w-2 rounded-full bg-white/70";
-        dot.onclick = () => goToImage(index);
-        dotsContainer.appendChild(dot);
-      });
-      document.getElementById("mainImage").alt = window.currentClubTitle;
-      updateImage();
-    })();
-
-    // ===== 관심(좋아요) - product.html 감성 유지(데모) =====
-    let isLiked = false;
-
-    function syncLikeButton() {
-      const mobileIcon = document.getElementById("mobileHeartIcon");
-      const desktopIcon = document.getElementById("desktopHeartIcon");
-      const desktopText = document.getElementById("desktopLikeText");
-      const mobileBtn = document.getElementById("mobileLikeBtn");
-      const desktopBtn = document.getElementById("desktopLikeBtn");
-
-      if (isLiked) {
-        mobileIcon.setAttribute("fill", "#ef4444");
-        mobileIcon.setAttribute("stroke", "#ef4444");
-        desktopIcon.setAttribute("fill", "#ef4444");
-        desktopIcon.setAttribute("stroke", "#ef4444");
-        desktopText.textContent = "관심 해제";
-        mobileBtn.classList.add("text-red-500", "border-red-200", "bg-rose-50");
-        desktopBtn.classList.add("text-red-500", "border-red-200", "bg-rose-50");
-      } else {
-        mobileIcon.setAttribute("fill", "none");
-        mobileIcon.setAttribute("stroke", "currentColor");
-        desktopIcon.setAttribute("fill", "none");
-        desktopIcon.setAttribute("stroke", "currentColor");
-        desktopText.textContent = "관심 등록";
-        mobileBtn.classList.remove("text-red-500", "border-red-200", "bg-rose-50");
-        desktopBtn.classList.remove("text-red-500", "border-red-200", "bg-rose-50");
-      }
-    }
-
-    function toggleLike() {
-      const likesElement = document.getElementById("likes");
-      const currentLikes = Number(likesElement.innerText || 0);
-      isLiked = !isLiked;
-      likesElement.innerText = Math.max(0, currentLikes + (isLiked ? 1 : -1));
-      syncLikeButton();
-    }
-
-    // ===== 액션 버튼(데모) =====
-    function contactPresident() {
-      alert("회장에게 문의하기(데모)\n\n추후: 채팅/문의 폼으로 연결하면 좋아요.");
-    }
-
-    function applyToClub() {
-      alert("가입 신청하기(데모)\n\n추후: 신청 폼 + 승인 흐름을 연결할 수 있어요.");
-    }
-
-    // ===== 공유 =====
-    async function handleShare() {
-      const shareData = {
-        title: window.currentClubTitle,
-        text: "대구대 동아리 상세 페이지입니다.",
-        url: window.location.href
-      };
 
       try {
-        if (navigator.share) {
-          await navigator.share(shareData);
-          return;
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`);
+        if (!response.ok) {
+            throw new Error('동아리 정보를 불러오는데 실패했습니다.');
         }
-        await navigator.clipboard.writeText(window.location.href);
-        alert("링크가 복사되었습니다.");
-      } catch (e) {
-        alert("공유에 실패했습니다. 잠시 후 다시 시도해주세요.");
-      }
-    }
 
-    syncLikeButton();
+        const club = await response.json();
+
+        // 범석님의 HTML id에 완벽하게 맞춰서 데이터 꽂아넣기!
+        document.getElementById('clubCategory').textContent = club.category;
+        document.getElementById('clubName').textContent = club.name;
+        document.getElementById('clubTagline').textContent = club.tagline;
+        
+        document.getElementById('clubMeet').textContent = club.meet_time;
+        document.getElementById('clubLocation').textContent = club.location;
+        
+        document.getElementById('intro').innerHTML = club.intro.replace(/\n/g, '<br>');
+        document.getElementById('meetingInfo').innerHTML = club.meeting_info ? club.meeting_info.replace(/\n/g, '<br>') : '상세 정보 없음';
+        
+        // 회비 정보와 지원 자격을 하나의 feeInfo 박스에 예쁘게 합쳐서 보여주기
+        const feeAmountText = club.fee_amount ? `- 회비: 월 ${club.fee_amount.toLocaleString()}원\n` : '- 회비: 없음\n';
+        const feeDetailText = club.fee_info ? `${club.fee_info}\n` : '';
+        const eligibilityText = club.eligibility ? `\n[지원 자격 & 추천]\n${club.eligibility}` : '';
+        
+        document.getElementById('feeInfo').innerHTML = (feeAmountText + feeDetailText + eligibilityText).replace(/\n/g, '<br>');
+
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+        window.location.href = 'club-main.html';
+      }
+    });
+
+    // 버튼 클릭 이벤트 (임시)
+    function toggleLike() {
+      alert('관심 동아리로 등록되었습니다!');
+    }
+    function contactPresident() {
+      alert('회장에게 채팅을 보냅니다.');
+    }
+    function applyToClub() {
+      alert('가입 신청 폼으로 이동합니다.');
+    }
   </script>
 </body>
 </html>
