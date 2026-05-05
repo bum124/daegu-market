@@ -390,13 +390,16 @@
       if (feeAmountRaw === '' || Number.isNaN(Number(feeAmountRaw)) || Number(feeAmountRaw) < 0) return showError('월 회비 금액을 올바르게 입력해주세요.');
       if (!eligibilityAndTips) return showError('지원 자격 & 추천을 입력해주세요.');
 
-      // 1. 현재 로그인한 유저 정보 가져오기 (이 사람이 동아리 회장이 됨)
+      // 1. 현재 로그인한 유저 정보 가져오기 (이름표 호환성 패치!)
       let user = null;
       try {
         user = JSON.parse(localStorage.getItem('loggedInUser'));
       } catch (err) {}
 
-      if (!user || !user.user_id) {
+      // ✨ 여기가 핵심입니다! 셋 중 하나라도 있으면 presidentId에 담습니다.
+      const presidentId = user ? (user.user_id || user.id || user.student_id) : null;
+
+      if (!user || !presidentId) {
         return showError('로그인 정보가 없습니다. 다시 로그인해주세요.');
       }
 
@@ -408,11 +411,11 @@
         intro,
         clubMeet,
         clubLocation,
-        meetingInfo,
+        meetingInfo: document.getElementById('meetingInfo').value.trim(),
         feeAmount: Number(feeAmountRaw),
-        feeInfo,
+        feeInfo: document.getElementById('feeInfo').value.trim(),
         eligibilityAndTips,
-        leader_id: user.user_id  // 로그인한 유저의 고유 ID
+        leader_id: presidentId  // ✨ 아까 찾은 만능 ID를 여기에 넣습니다!
       };
 
       // 3. 서버(API)로 데이터 전송 (백엔드 서버 주소)
