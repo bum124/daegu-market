@@ -397,9 +397,46 @@
     function contactPresident() {
       alert('회장에게 채팅을 보냅니다.');
     }
-    function applyToClub() {
-      alert('가입 신청 폼으로 이동합니다.');
+    // ✅ 진짜 가입 신청 함수!
+async function applyToClub() {
+  // 1. 내 신분증(주머니) 확인하기
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch(e){}
+  
+  if (!user) {
+    alert('로그인 후 가입 신청이 가능합니다!');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const userId = user.user_id || user.id || user.student_id;
+  
+  // 2. 진짜 신청할 건지 한 번 물어보기
+  if (!confirm('이 동아리에 가입 신청을 하시겠습니까?')) {
+    return; 
+  }
+
+  try {
+    // 3. 서버에 "저 신청할래요!" 하고 보내기
+    const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: userId }) // 내 신분증 번호 동봉
+    });
+    
+    const result = await response.json();
+    
+    // 4. 결과 알려주기
+    if (response.ok) {
+      alert(result.message); // 성공 메시지 띄우기
+    } else {
+      alert(result.message || '가입 신청에 실패했습니다.'); // 에러 메시지 띄우기
     }
+  } catch (error) {
+    console.error(error);
+    alert('서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+  }
+}
   </script>
 </body>
 </html>

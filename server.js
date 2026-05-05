@@ -703,6 +703,7 @@ app.get('/api/clubs/:id', (req, res) => {
   });
 });
 
+// 4. 내가 만든(회장인) 동아리 목록 불러오기 API
 app.get('/api/users/:userId/my-clubs', (req, res) => {
   const userId = req.params.userId; // 요청한 사람의 ID
   
@@ -722,6 +723,44 @@ app.get('/api/users/:userId/my-clubs', (req, res) => {
     
     // 찾은 동아리 목록(배열)을 프론트로 전달
     res.json(results);
+  });
+});
+// 5. 동아리 가입 신청 API
+app.post('/api/clubs/:clubId/apply', (req, res) => {
+  const clubId = req.params.clubId;
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: '로그인 정보가 없습니다.' });
+  }
+
+  // 1단계: 이미 가입 신청을 했는지(혹은 이미 회원인지) 중복 검사
+  const checkSql = 'SELECT * FROM ClubMembers WHERE club_id = ? AND user_id = ?';
+  
+  queryWithTimeout(checkSql, [clubId, userId], (checkErr, checkResults) => {
+    if (checkErr) {
+      console.error('가입 중복 검사 DB 에러:', checkErr);
+      return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+    
+    if (checkResults.length > 0) {
+      return res.status(400).json({ message: '이미 가입 신청을 했거나 소속된 동아리입니다! 😅' });
+    }
+
+    // 2단계: 중복이 아니라면, 가입 신청서(상태: pending/대기중) DB에 넣기
+    // (만약 DB의 컬럼 이름이 다르면 이 sql 부분을 살짝 고쳐야 합니다!)
+    const insertSql = `
+      INSERT INTO ClubMembers (club_id, user_id, status) 
+      VALUES (?, ?, 'pending')
+    `;
+    
+    queryWithTimeout(insertSql, [clubId, userId], (insertErr, results) => {
+      if (insertErr) {
+        console.error('가입 신청 DB 에러:', insertErr);
+        return res.status(500).json({ message: '가입 신청 중 오류가 발생했습니다.' });
+      }
+      res.json({ message: '가입 신청이 성공적으로 완료되었습니다! 회장님의 승인을 기다려주세요. 🎉' });
+    });
   });
 });
 
