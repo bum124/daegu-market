@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(cors()); // HTML 파일과 통신 허용
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.get('/api/health', (req, res) => {
     res.json({ ok: true, service: 'daegu-market-api' });
@@ -734,34 +735,83 @@ app.post('/api/clubs/:clubId/apply', (req, res) => {
     return res.status(400).json({ message: '로그인 정보가 없습니다.' });
   }
 
-  // 🚨 [매우 중요] 범석님의 실제 DB 테이블 이름으로 꼭 바꿔주세요!
-  // 예: club_members, ClubMembers, clubmember 등
   const tableName = 'Club_Members'; 
 
-  // 1단계: 이미 신청했는지 중복 검사
-  const checkSql = `SELECT * FROM ${tableName} WHERE club_id = ? AND user_id = ?`;
+  // 👑 0단계: 내가 이 동아리 회장인지 먼저 검사!
+  const checkLeaderSql = `SELECT leader_id FROM Clubs WHERE club_id = ?`;
   
-  queryWithTimeout(checkSql, [clubId, userId], (checkErr, checkResults) => {
-    if (checkErr) {
-      console.error('가입 중복 검사 DB 에러:', checkErr);
+  queryWithTimeout(checkLeaderSql, [clubId], (leaderErr, leaderResults) => {
+    if (leaderErr) {
+      console.error('회장 검사 DB 에러:', leaderErr);
       return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
     }
-    
-    if (checkResults.length > 0) {
-      return res.status(400).json({ message: '이미 가입 신청을 했거나 소속된 동아리입니다! 😅' });
+
+    // DB에 동아리가 있고, 접속한 사람(userId)이 회장(leader_id)이랑 똑같다면 컷!
+    if (leaderResults.length > 0 && leaderResults[0].leader_id == userId) {
+      return res.status(400).json({ message: '회장님은 이미 이 동아리의 주인이십니다! 👑' });
     }
 
-    // 2단계: 가입 신청 넣기 
-    // (범석님이 DB에 PENDING 기본값을 잘 설정해두셔서 상태를 굳이 안 적어줘도 알아서 들어갑니다!)
-    const insertSql = `INSERT INTO ${tableName} (club_id, user_id) VALUES (?, ?)`;
+    // 1단계: 이미 신청했거나 멤버인지 중복 검사
+    const checkSql = `SELECT * FROM ${tableName} WHERE club_id = ? AND user_id = ?`;
     
-    queryWithTimeout(insertSql, [clubId, userId], (insertErr, results) => {
-      if (insertErr) {
-        console.error('가입 신청 DB 에러:', insertErr);
-        return res.status(500).json({ message: '가입 신청 중 오류가 발생했습니다.' });
+    queryWithTimeout(checkSql, [clubId, userId], (checkErr, checkResults) => {
+      if (checkErr) {
+        console.error('가입 중복 검사 DB 에러:', checkErr);
+        return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
       }
-      res.json({ message: '가입 신청이 성공적으로 완료되었습니다! 🎉' });
+      
+      if (checkResults.length > 0) {
+        return res.status(400).json({ message: '이미 가입 신청을 했거나 소속된 동아리입니다! 😅' });
+      }
+
+      // 2단계: 문제없으면 가입 대기(PENDING) 상태로 쾅!
+      const insertSql = `INSERT INTO ${tableName} (club_id, user_id) VALUES (?, ?)`;
+      
+      queryWithTimeout(insertSql, [clubId, userId], (insertErr, results) => {
+        if (insertErr) {
+          console.error('가입 신청 DB 에러:', insertErr);
+          return res.status(500).json({ message: '가입 신청 중 오류가 발생했습니다.' });
+        }
+        res.json({ message: '가입 신청이 성공적으로 완료되었습니다! 🎉' });
+      });
     });
+  });
+});
+
+// 6. 동아리 가입 신청자(PENDING) 목록 불러오기 API
+app.get('/api/clubs/:clubId/pending-members', (req, res) => {
+  const clubId = req.params.clubId;
+  
+  // Club_Members 테이블과 Users 테이블을 조인해서 신청자의 이름과 학번까지 가져옵니다.
+  const sql = `
+    SELECT cm.user_id, cm.status, u.name, u.student_id 
+    FROM Club_Members cm
+    JOIN Users u ON cm.user_id = u.user_id
+    WHERE cm.club_id = ? AND cm.status = 'PENDING'
+  `;
+  
+  queryWithTimeout(sql, [clubId], (err, results) => {
+    if (err) {
+      console.error('신청자 목록 DB 에러:', err);
+      return res.status(500).json({ message: '신청자 목록을 불러오지 못했습니다.' });
+    }
+    res.json(results);
+  });
+});
+
+// 7. 동아리 가입 승인 API
+app.put('/api/clubs/:clubId/members/:userId/approve', (req, res) => {
+  const { clubId, userId } = req.params;
+  
+  // 상태를 PENDING(대기)에서 APPROVED(승인)로 업데이트!
+  const sql = `UPDATE Club_Members SET status = 'APPROVED' WHERE club_id = ? AND user_id = ?`;
+  
+  queryWithTimeout(sql, [clubId, userId], (err) => {
+    if (err) {
+      console.error('가입 승인 DB 에러:', err);
+      return res.status(500).json({ message: '승인 처리 중 오류가 발생했습니다.' });
+    }
+    res.json({ message: '부원 가입이 승인되었습니다! 🎉' });
   });
 });
 

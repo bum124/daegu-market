@@ -190,7 +190,7 @@
             } else {
               // 내 동아리가 있으면 카드로 찍어내기! (내가 만들었으니 👑 왕관 표시)
               myClubContainer.innerHTML = myClubs.map(club => `
-                <a href="club-detail.html?id=${club.club_id}" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted transition-colors shadow-sm">
+                <a href="club-admin.html?id=${club.club_id}" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted transition-colors shadow-sm">
                   <div class="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
                     <span class="text-xl" aria-hidden="true">🎯</span>
                     <span class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-white shadow-sm" title="회장">👑</span>
