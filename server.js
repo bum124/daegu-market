@@ -734,8 +734,12 @@ app.post('/api/clubs/:clubId/apply', (req, res) => {
     return res.status(400).json({ message: '로그인 정보가 없습니다.' });
   }
 
-  // 1단계: 이미 가입 신청을 했는지(혹은 이미 회원인지) 중복 검사
-  const checkSql = 'SELECT * FROM ClubMembers WHERE club_id = ? AND user_id = ?';
+  // 🚨 [매우 중요] 범석님의 실제 DB 테이블 이름으로 꼭 바꿔주세요!
+  // 예: club_members, ClubMembers, clubmember 등
+  const tableName = 'ClubMembers'; 
+
+  // 1단계: 이미 신청했는지 중복 검사
+  const checkSql = `SELECT * FROM ${tableName} WHERE club_id = ? AND user_id = ?`;
   
   queryWithTimeout(checkSql, [clubId, userId], (checkErr, checkResults) => {
     if (checkErr) {
@@ -747,19 +751,16 @@ app.post('/api/clubs/:clubId/apply', (req, res) => {
       return res.status(400).json({ message: '이미 가입 신청을 했거나 소속된 동아리입니다! 😅' });
     }
 
-    // 2단계: 중복이 아니라면, 가입 신청서(상태: pending/대기중) DB에 넣기
-    // (만약 DB의 컬럼 이름이 다르면 이 sql 부분을 살짝 고쳐야 합니다!)
-    const insertSql = `
-      INSERT INTO ClubMembers (club_id, user_id, status) 
-      VALUES (?, ?, 'pending')
-    `;
+    // 2단계: 가입 신청 넣기 
+    // (범석님이 DB에 PENDING 기본값을 잘 설정해두셔서 상태를 굳이 안 적어줘도 알아서 들어갑니다!)
+    const insertSql = `INSERT INTO ${tableName} (club_id, user_id) VALUES (?, ?)`;
     
     queryWithTimeout(insertSql, [clubId, userId], (insertErr, results) => {
       if (insertErr) {
         console.error('가입 신청 DB 에러:', insertErr);
         return res.status(500).json({ message: '가입 신청 중 오류가 발생했습니다.' });
       }
-      res.json({ message: '가입 신청이 성공적으로 완료되었습니다! 회장님의 승인을 기다려주세요. 🎉' });
+      res.json({ message: '가입 신청이 성공적으로 완료되었습니다! 🎉' });
     });
   });
 });
