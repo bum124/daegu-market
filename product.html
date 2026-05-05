@@ -583,30 +583,47 @@ function openSellerProfile() {
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
 
-function openChat() {
+async function openChat() {
   if (window.currentProductStatus === '판매완료') {
     return;
   }
 
   const user = getLoggedInUser();
-
   if (!user) {
     redirectToLogin(`product.html?id=${encodeURIComponent(id || '')}`);
     return;
   }
 
+  const buyerId = await resolveUserId(user);
   const sellerId = window.currentSeller && window.currentSeller.id;
-  const query = new URLSearchParams();
 
-  if (id) {
-    query.set('productId', id);
+  if (!buyerId || !sellerId) {
+    alert("사용자 정보가 부족합니다.");
+    return;
   }
 
-  if (sellerId) {
-    query.set('sellerId', sellerId);
+  // 채팅방 생성 or 찾기 요청
+  const res = await fetchWithTimeout("https://daegu-market-api.onrender.com/chat/start", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      product_id: id
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.room_id) {
+    alert("채팅방을 만들지 못했습니다.");
+    return;
   }
 
-  window.location.href = `chat.html${query.toString() ? `?${query.toString()}` : ''}`;
+  // 생성된 room_id로 바로 채팅방 이동
+  window.location.href = `chat_id.html?room_id=${data.room_id}`;
 }
 
 function syncProductStatusUi() {

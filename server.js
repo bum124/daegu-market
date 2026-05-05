@@ -853,6 +853,19 @@ app.get('/api/users', (req, res) => {
     });
 });
 
+app.get('/messages/:roomId', (req, res) => {
+  const roomId = req.params.roomId;
+
+  db.query(
+    'SELECT * FROM messages WHERE room_id = ? ORDER BY created_at ASC',
+    [roomId],
+    (err, results) => {
+      if (err) return res.status(500).send(err);
+      res.json(results);
+    }
+  );
+});
+
 app.get('/api/users/:id', (req, res) => {
     const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE user_id = ?';
 
