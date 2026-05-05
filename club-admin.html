@@ -173,81 +173,8 @@
           <p class="mt-1 text-sm text-muted-foreground">“우리 동아리 뱃지를 달고 싶어요!” 요청 목록</p>
         </div>
 
-        <div class="space-y-3">
-          <div class="rounded-2xl border border-border bg-background p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white">
-                  <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Minseo" alt="프로필 이미지" class="h-full w-full object-cover">
-                </div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="truncate text-sm font-semibold">김민서</p>
-                    <span class="text-xs text-muted-foreground">20231234</span>
-                  </div>
-                  <p class="mt-0.5 text-xs text-muted-foreground">신청일자 · 2026-04-25</p>
-                </div>
-              </div>
-              <div class="flex flex-shrink-0 items-center gap-2">
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-approve.html')" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600">
-                  승인
-                </button>
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-reject.html')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
-                  거절
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-border bg-background p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white">
-                  <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Jihun" alt="프로필 이미지" class="h-full w-full object-cover">
-                </div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="truncate text-sm font-semibold">박지훈</p>
-                    <span class="text-xs text-muted-foreground">20204567</span>
-                  </div>
-                  <p class="mt-0.5 text-xs text-muted-foreground">신청일자 · 2026-04-24</p>
-                </div>
-              </div>
-              <div class="flex flex-shrink-0 items-center gap-2">
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-approve.html')" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600">
-                  승인
-                </button>
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-reject.html')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
-                  거절
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-border bg-background p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white">
-                  <img src="https://api.dicebear.com/8.x/thumbs/svg?seed=Seoyeon" alt="프로필 이미지" class="h-full w-full object-cover">
-                </div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="truncate text-sm font-semibold">이서연</p>
-                    <span class="text-xs text-muted-foreground">20219876</span>
-                  </div>
-                  <p class="mt-0.5 text-xs text-muted-foreground">신청일자 · 2026-04-23</p>
-                </div>
-              </div>
-              <div class="flex flex-shrink-0 items-center gap-2">
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-approve.html')" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600">
-                  승인
-                </button>
-                <button type="button" onclick="handlePresidentAction(event, 'club-badge-reject.html')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
-                  거절
-                </button>
-              </div>
-            </div>
-          </div>
+        <div id="pending-list" class="space-y-3">
+          <p class="text-sm text-muted-foreground p-4 text-center">신청자 목록을 불러오는 중입니다...</p>
         </div>
 
         <div class="mt-4 rounded-2xl border border-dashed border-border bg-white p-4">
@@ -421,72 +348,101 @@
   </nav>
 
   <script>
-    function handlePresidentAction(event, targetUrl) {
-      event.preventDefault();
-      event.stopPropagation();
+    const API_BASE_URL = "https://daegu-market-api.onrender.com";
+    
+    // 주소창에서 동아리 번호 뽑기 (?id=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const clubId = urlParams.get('id');
 
+    window.addEventListener('DOMContentLoaded', async () => {
       let user = null;
-      try {
-        const userStr = localStorage.getItem('loggedInUser');
-        user = userStr ? JSON.parse(userStr) : null;
-      } catch (e) {
-        user = null;
-      }
+      try { user = JSON.parse(localStorage.getItem('loggedInUser') || 'null'); } catch (e) {}
 
-      if (!user || user.role !== 'PRESIDENT') {
-        alert('📢 이 기능은 동아리 회장 전용입니다. 권한이 없습니다!');
-        return;
-      }
-
-      window.location.href = targetUrl;
-    }
-
-    function handleTransferPresident(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const confirmed = confirm('정말로 회장 권한을 넘기시겠습니까? 이 작업은 되돌릴 수 없습니다.');
-      if (!confirmed) {
-        return;
-      }
-
-      // 실제 구현 시: 회장 상속 페이지/모달로 연결
-      handlePresidentAction(event, 'club-transfer.html');
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      let user = null;
-      try {
-        user = JSON.parse(localStorage.getItem('loggedInUser') || 'null');
-      } catch (e) {
-        user = null;
-      }
-
-      // 유저 정보가 없으면 접근 자체를 막음
       if (!user) {
+        alert('로그인이 필요합니다.');
         window.location.href = 'login.html';
         return;
       }
-
-      // 회장이 아니면 회장 전용 UI 숨김
-      if (user.role !== 'PRESIDENT') {
-        document.querySelectorAll('.president-only').forEach((el) => {
-          el.classList.add('hidden');
-        });
+      if (!clubId) {
+        alert('잘못된 접근입니다.');
+        window.location.href = 'club-main.html';
+        return;
       }
 
-      // 부원 목록 "전체 보기" 토글
-      const toggleBtn = document.getElementById('toggleMembersBtn');
-      if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-          const extras = Array.from(document.querySelectorAll('.member-extra'));
-          const isExpanded = extras.length ? !extras[0].classList.contains('hidden') : false;
-
-          extras.forEach((el) => el.classList.toggle('hidden', isExpanded));
-          toggleBtn.textContent = isExpanded ? '전체 보기' : '접기';
-        });
-      }
+      // 서버에서 진짜 가입 대기자 목록 불러오기
+      loadPendingMembers();
     });
+
+    async function loadPendingMembers() {
+      const pendingListContainer = document.getElementById('pending-list');
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/pending-members`);
+        if (!response.ok) throw new Error('목록 불러오기 실패');
+        
+        const applicants = await response.json();
+
+        if (applicants.length === 0) {
+          pendingListContainer.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">현재 대기 중인 가입 신청이 없습니다.</p>';
+          return;
+        }
+
+        // 받아온 데이터로 HTML 카드 찍어내기
+        pendingListContainer.innerHTML = applicants.map(applicant => `
+          <div class="rounded-2xl border border-border bg-background p-4 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white flex items-center justify-center text-xl">
+                  👤
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="truncate text-sm font-semibold text-foreground">${applicant.name}</p>
+                    <span class="text-xs text-muted-foreground">${applicant.student_id}</span>
+                  </div>
+                  <p class="mt-0.5 text-xs font-semibold text-primary">가입 대기 중 (PENDING)</p>
+                </div>
+              </div>
+              <div class="flex flex-shrink-0 items-center gap-2">
+                <button type="button" onclick="approveMember(${applicant.user_id})" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600 transition-colors">
+                  승인
+                </button>
+                <button type="button" onclick="alert('거절 기능은 준비 중입니다.')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">
+                  거절
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error(error);
+        pendingListContainer.innerHTML = '<p class="text-sm text-rose-500 p-4 text-center border rounded-2xl bg-background">명단을 불러오지 못했습니다.</p>';
+      }
+    }
+
+    // 🌟 대망의 승인 버튼 기능!
+    async function approveMember(applicantId) {
+      if (!confirm('이 학생의 가입을 승인하시겠습니까?')) return;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${applicantId}/approve`, {
+          method: 'PUT'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(result.message);
+          loadPendingMembers(); // 승인 성공하면 명단 새로고침! (목록에서 사라짐)
+        } else {
+          alert('승인 실패: ' + result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert('서버 오류가 발생했습니다.');
+      }
+    }
   </script>
 
 </body>
