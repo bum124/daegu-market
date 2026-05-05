@@ -703,6 +703,28 @@ app.get('/api/clubs/:id', (req, res) => {
   });
 });
 
+app.get('/api/users/:userId/my-clubs', (req, res) => {
+  const userId = req.params.userId; // 요청한 사람의 ID
+  
+  // Clubs 테이블에서 leader_id가 내 ID와 똑같은 것만 찾아오기
+  const sql = `
+    SELECT * 
+    FROM Clubs 
+    WHERE leader_id = ? 
+    ORDER BY created_at DESC
+  `;
+  
+  queryWithTimeout(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('내 동아리 조회 DB 에러:', err);
+      return res.status(500).json({ message: '내 동아리를 불러오는 중 오류가 발생했습니다.' });
+    }
+    
+    // 찾은 동아리 목록(배열)을 프론트로 전달
+    res.json(results);
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 
