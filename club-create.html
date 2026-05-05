@@ -390,7 +390,6 @@
       if (feeAmountRaw === '' || Number.isNaN(Number(feeAmountRaw)) || Number(feeAmountRaw) < 0) return showError('월 회비 금액을 올바르게 입력해주세요.');
       if (!eligibilityAndTips) return showError('지원 자격 & 추천을 입력해주세요.');
 
-      // 1. 현재 로그인한 유저 정보 가져오기 (이름표 호환성 패치!)
       let user = null;
       try {
         user = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -411,13 +410,12 @@
         intro,
         clubMeet,
         clubLocation,
-        meetingInfo: document.getElementById('meetingInfo').value.trim(),
+        meetingInfo,
         feeAmount: Number(feeAmountRaw),
-        feeInfo: document.getElementById('feeInfo').value.trim(),
+        feeInfo,
         eligibilityAndTips,
-        leader_id: presidentId  // ✨ 아까 찾은 만능 ID를 여기에 넣습니다!
+        leader_id: presidentId  // ✨ 옛날 user_id 대신 방금 찾은 만능 ID를 여기에 넣습니다!
       };
-
       // 3. 서버(API)로 데이터 전송 (백엔드 서버 주소)
       // 로컬 테스트 시 http://localhost:3000, 배포 시 https://daegu-market-api.onrender.com
       const API_BASE_URL = "https://daegu-market-api.onrender.com"; 
