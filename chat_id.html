@@ -48,6 +48,7 @@ const socket = io("http://localhost:3001");
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room_id");
 console.log("roomId:", roomId);
+console.log("roomId type:", typeof roomId, roomId);
 
 /* -------------------------
    DOM
@@ -72,6 +73,12 @@ fetch("http://localhost:3000/messages/" + roomId)
 ------------------------- */
 socket.emit("join_room", roomId);
 
+socket.on("loadMessages", (messages) => {
+  messages.forEach(msg => {
+    render(msg.sender, msg.text);
+  });
+});
+
 /* -------------------------
    3. 메시지 받기
 ------------------------- */
@@ -79,22 +86,27 @@ socket.on("receive_message", (data) => {
   render(data.sender, data.text);
 });
 
-/* -------------------------
-   4. 메시지 전송
-------------------------- */
+
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const text = input.value.trim();
   if (!text) return;
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user =
+    JSON.parse(localStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("loggedInUser"));
 
-socket.emit("send_message", {
-  roomId: roomId,
-  sender: user.name,
-  text: text
-});
+  if (!user) {
+    alert("로그인이 필요합니다");
+    return;
+  }
+
+  socket.emit("send_message", {
+    roomId: roomId,
+    sender: user.name,
+    text: text
+  });
 
   input.value = "";
 });

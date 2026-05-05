@@ -53,6 +53,8 @@ function loadChatList() {
   fetch("http://localhost:3000/api/chat-list")
     .then(res => res.json())
     .then(data => {
+      console.log("chat list data:", data);
+
       const list = document.getElementById("list");
       list.innerHTML = "";
 
@@ -82,7 +84,8 @@ function loadChatList() {
 
         list.appendChild(div);
       });
-    });
+    })
+    .catch(err => console.log("API ERROR:", err));
 }
 
 /* -------------------------

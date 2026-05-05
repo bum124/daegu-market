@@ -1092,3 +1092,22 @@ app.get('/api/mypage', (req, res) => {
     }
   );
 });
+
+app.get('/api/chat-list', (req, res) => {
+  const sql = `
+    SELECT 
+      r.id AS room_id,
+      r.product_id,
+      '채팅방' AS name,
+      '' AS last_message,
+      0 AS unread,
+      'market' AS type
+    FROM rooms r
+    ORDER BY r.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).send(err);
+    res.json(results);
+  });
+});
