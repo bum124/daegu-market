@@ -736,7 +736,7 @@ app.post('/api/clubs/:clubId/apply', (req, res) => {
 
   // 🚨 [매우 중요] 범석님의 실제 DB 테이블 이름으로 꼭 바꿔주세요!
   // 예: club_members, ClubMembers, clubmember 등
-  const tableName = 'ClubMembers'; 
+  const tableName = 'Club_Members'; 
 
   // 1단계: 이미 신청했는지 중복 검사
   const checkSql = `SELECT * FROM ${tableName} WHERE club_id = ? AND user_id = ?`;
