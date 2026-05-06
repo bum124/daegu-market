@@ -409,7 +409,8 @@ function normalizeProduct(product) {
     id: product.id,
     title: product.title || "제목 없음",
     category: product.category || "기타",
-    college: product.college || product.seller_college || product.seller_department || "단과대 미지정",
+    college: product.target_college || product.college || product.seller_college || product.seller_department || "관련 단과대 미지정",
+    targetDepartment: product.target_department || "",
     price: Number(product.price || 0),
     location: product.location || "위치 미정",
     posted: product.posted || getTimeAgo(createdAt),
@@ -488,7 +489,7 @@ function getFilteredProducts() {
   const filtered = products.filter(product => {
     const matchesCategory = state.activeCategory === "전체" || product.category === state.activeCategory;
     const matchesCollege = state.activeCollege === "전체" || product.college === state.activeCollege;
-    const matchesKeyword = !keyword || [product.title, product.category, product.college, product.location, product.seller]
+    const matchesKeyword = !keyword || [product.title, product.category, product.college, product.targetDepartment, product.location, product.seller]
       .some(value => String(value || "").toLowerCase().includes(keyword));
 
     return matchesCategory && matchesCollege && matchesKeyword;
@@ -535,7 +536,7 @@ function renderProducts() {
   const filteredProducts = getFilteredProducts();
 
   const categoryLabel = state.activeCategory === "전체" ? "전체 카테고리" : state.activeCategory;
-  const collegeLabel = state.activeCollege === "전체" ? "전체 단과대" : state.activeCollege;
+  const collegeLabel = state.activeCollege === "전체" ? "전체 관련 단과대" : state.activeCollege;
   summary.textContent = `${categoryLabel} · ${collegeLabel} · 상품 ${filteredProducts.length}개`;
   emptyState.classList.toggle("hidden", filteredProducts.length !== 0);
   productGrid.classList.toggle("hidden", filteredProducts.length === 0);
@@ -566,7 +567,7 @@ function renderProducts() {
         <h3 class="line-clamp-2 text-sm font-semibold">${product.title}</h3>
         <p class="mt-2 text-lg font-bold">${formatPrice(product.price)}</p>
         <p class="mt-1 text-xs text-muted-foreground">${product.location} · ${product.seller}</p>
-        <p class="mt-1 text-xs text-muted-foreground">${product.college || "단과대 미지정"}</p>
+        <p class="mt-1 text-xs text-muted-foreground">관련 ${product.college || "단과대 미지정"}${product.targetDepartment ? ` · ${product.targetDepartment}` : ""}</p>
         <div class="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
           <span>관심 ${product.likes}</span>
           <span>조회 ${product.views}</span>

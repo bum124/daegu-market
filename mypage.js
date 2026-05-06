@@ -106,7 +106,8 @@ function normalizeProduct(item) {
     id: item.id,
     title: item.title || '제목 없음',
     category: item.category || '기타',
-    college: item.college || item.seller_college || item.seller_department || '단과대 미지정',
+    college: item.target_college || item.college || item.seller_college || item.seller_department || '관련 단과대 미지정',
+    targetDepartment: item.target_department || '',
     price: Number(item.price || 0),
     location: item.location || '위치 미정',
     posted: item.posted || getTimeAgo(createdAt),
@@ -258,6 +259,7 @@ function renderItems() {
         </div>
         <p class="mt-2 text-base font-bold text-slate-900">${formatPrice(item.price)}</p>
         <p class="mt-1 text-xs text-slate-500">${item.location} · ${item.posted}</p>
+        <p class="mt-1 text-xs text-slate-500">관련 ${item.college}${item.targetDepartment ? ` · ${item.targetDepartment}` : ''}</p>
         <div class="mt-2 flex gap-3 text-xs text-slate-400">
           <span>관심 ${item.likes}</span>
           <span>조회 ${item.views}</span>

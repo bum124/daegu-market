@@ -163,6 +163,58 @@ function ensureUserCollegeColumn(callback) {
   );
 }
 
+function ensureProductTargetColumns(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME IN ('target_college', 'target_department')`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      const existingColumns = new Set(rows.map(row => row.COLUMN_NAME));
+      const alterStatements = [];
+
+      if (!existingColumns.has('target_college')) {
+        alterStatements.push('ALTER TABLE products ADD COLUMN target_college VARCHAR(100) NULL AFTER category');
+      }
+
+      if (!existingColumns.has('target_department')) {
+        alterStatements.push('ALTER TABLE products ADD COLUMN target_department VARCHAR(150) NULL AFTER target_college');
+      }
+
+      if (alterStatements.length === 0) {
+        callback(null);
+        return;
+      }
+
+      let index = 0;
+      const runNextAlter = () => {
+        if (index >= alterStatements.length) {
+          callback(null);
+          return;
+        }
+
+        db.query(alterStatements[index], (alterErr) => {
+          if (alterErr) {
+            callback(alterErr);
+            return;
+          }
+
+          index += 1;
+          runNextAlter();
+        });
+      };
+
+      runNextAlter();
+    }
+  );
+}
+
 function queryWithTimeout(sql, values, callback, timeout = 10000) {
   if (typeof values === 'function') {
     callback = values;
@@ -420,30 +472,37 @@ app.post('/api/change-password', (req, res) => {
 });
 
 app.post('/api/products', (req, res) => {
-  const { seller_id, seller_email, title, category, condition, price, description, location, images } = req.body;
+  const { seller_id, seller_email, title, category, target_college, target_department, condition, price, description, location, images } = req.body;
 
   const insertProduct = (resolvedSellerId) => {
     if (!resolvedSellerId) {
       return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다. 다시 로그인해주세요.' });
     }
 
-    const sql = `
-    INSERT INTO products (seller_id, title, category, \`condition\`, price, description, location, images)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-    db.query(
-      sql,
-      [resolvedSellerId, title, category, condition, price, description, location, JSON.stringify(images)],
-      (err, result) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send('DB 오류');
-        }
-
-        res.json({ message: '등록 완료', product_id: result.insertId });
+    ensureProductTargetColumns((columnErr) => {
+      if (columnErr) {
+        console.error(columnErr);
+        return res.status(500).json({ message: '상품 관련 단과대 컬럼 준비에 실패했습니다.' });
       }
-    );
+
+      const sql = `
+      INSERT INTO products (seller_id, title, category, target_college, target_department, \`condition\`, price, description, location, images)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+      db.query(
+        sql,
+        [resolvedSellerId, title, category, target_college || null, target_department || null, condition, price, description, location, JSON.stringify(images)],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).send('DB 오류');
+          }
+
+          res.json({ message: '등록 완료', product_id: result.insertId });
+        }
+      );
+    });
   };
 
   if (seller_id) {
@@ -974,6 +1033,11 @@ db.getConnection((err, connection) => {
         ensureUserCollegeColumn((columnErr) => {
           if (columnErr) {
             console.log('Users college 컬럼 준비 실패:', columnErr);
+          }
+        });
+        ensureProductTargetColumns((columnErr) => {
+          if (columnErr) {
+            console.log('products target 컬럼 준비 실패:', columnErr);
           }
         });
     }

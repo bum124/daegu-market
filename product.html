@@ -142,6 +142,10 @@
     <span id="category"
       class="inline-flex items-center rounded-full border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600">
     </span>
+
+    <span id="targetCollege"
+      class="hidden inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+    </span>
   </div>
 
   <h1 id="title"
@@ -575,6 +579,7 @@ async function loadRelatedProducts(currentProduct) {
     const relatedProducts = products
       .filter(product => String(product.id) !== String(currentProduct.id))
       .filter(product => product.category === currentProduct.category)
+      .filter(product => !currentProduct.target_college || !product.target_college || product.target_college === currentProduct.target_college)
       .sort((a, b) => Number(isSoldProduct(a)) - Number(isSoldProduct(b)) || new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
       .slice(0, 4);
 
@@ -826,6 +831,10 @@ if (!id) {
     document.getElementById('condition').innerText = window.currentProductStatus;
     syncProductStatusUi();
     document.getElementById('category').innerText = item.category || '기타';
+    const targetCollege = [item.target_college, item.target_department].filter(Boolean).join(' · ');
+    const targetCollegeBadge = document.getElementById('targetCollege');
+    targetCollegeBadge.innerText = targetCollege ? `관련 ${targetCollege}` : '';
+    targetCollegeBadge.classList.toggle('hidden', !targetCollege);
     document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
     document.getElementById('location').innerText = item.location || '위치 미정';
     document.getElementById('views').innerText = Number(item.views || 0);
