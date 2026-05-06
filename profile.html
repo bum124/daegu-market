@@ -64,10 +64,10 @@
               <p id="profileEmail" class="mt-1 text-sm text-gray-500"></p>
               <p id="profileRisk" class="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">거래 신뢰도 확인 중</p>
               <div class="mt-4 flex flex-wrap gap-2">
-                <button onclick="openProfileChat()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
+                <button id="profileChatButton" onclick="openProfileChat()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
                   채팅하기
                 </button>
-                <button onclick="reportProfile()" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                <button id="profileReportButton" onclick="reportProfile()" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
                   신고하기
                 </button>
               </div>
@@ -287,6 +287,15 @@
       badge.textContent = `거래 신뢰도 ${level}`;
     }
 
+    function syncProfileActions() {
+      const user = getLoggedInUser();
+      const currentUserId = user && (user.user_id || user.id);
+      const isMyProfile = currentUserId && userId && String(currentUserId) === String(userId);
+
+      document.getElementById('profileReportButton').classList.toggle('hidden', Boolean(isMyProfile));
+      document.getElementById('profileChatButton').classList.toggle('hidden', Boolean(isMyProfile));
+    }
+
     function isSold(product) {
       return product.status === '판매완료' || product.condition === '판매완료';
     }
@@ -308,6 +317,7 @@
       document.getElementById('trustCount').textContent = totalLikes;
       document.getElementById('profileLoading').classList.add('hidden');
       document.getElementById('profileContent').classList.remove('hidden');
+      syncProfileActions();
     }
 
     function openProfileChat() {
