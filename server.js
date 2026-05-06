@@ -665,7 +665,6 @@ app.get('/api/products', (req, res) => {
         u.college AS seller_college,
         u.department AS seller_department,
         u.email AS seller_email,
-        u.account_status AS seller_account_status,
         COALESCE((
           SELECT SUM(
             CASE r.reason
@@ -687,7 +686,6 @@ app.get('/api/products', (req, res) => {
         ), 0) AS seller_risk_score
       FROM products p
       LEFT JOIN Users u ON u.user_id = p.seller_id
-      WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
       ORDER BY p.id DESC
     `;
 
@@ -714,12 +712,10 @@ app.get('/api/products/:id', (req, res) => {
         u.nickname AS seller_nickname,
         u.college AS seller_college,
         u.department AS seller_department,
-        u.email AS seller_email,
-        u.account_status AS seller_account_status
+        u.email AS seller_email
        FROM products p
        LEFT JOIN Users u ON u.user_id = p.seller_id
-       WHERE p.id = ?
-         AND COALESCE(p.moderation_status, 'visible') <> 'hidden'`,
+       WHERE p.id = ?`,
       [id],
       (err, result) => {
         if (err) return res.status(500).send(err);
