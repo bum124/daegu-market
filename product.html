@@ -217,6 +217,13 @@
               <span id="desktopChatText">채팅으로 거래하기</span>
             </button>
             <button
+              id="desktopEditBtn"
+              onclick="editProduct()"
+              class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-gray-200 px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              수정
+            </button>
+            <button
               id="desktopDeleteBtn"
               onclick="deleteProduct()"
               class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-red-200 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -314,6 +321,13 @@
           <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
         </svg>
         <span id="mobileChatText">채팅으로 거래하기</span>
+      </button>
+      <button
+        id="mobileEditBtn"
+        onclick="editProduct()"
+        class="owner-action hidden inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+      >
+        수정
       </button>
       <button
         id="mobileDeleteBtn"
@@ -771,6 +785,15 @@ async function deleteProduct() {
   }
 
   window.location.href = 'mypage.html';
+}
+
+function editProduct() {
+  if (!id) {
+    alert('상품 정보를 확인하지 못했습니다.');
+    return;
+  }
+
+  window.location.href = `sell.html?id=${encodeURIComponent(id)}`;
 }
 
 const params = new URLSearchParams(location.search);

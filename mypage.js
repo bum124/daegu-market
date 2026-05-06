@@ -269,6 +269,13 @@ function renderItems() {
             ${state.activeTab === 'selling' && item.status !== '판매완료' ? `
               <button
                 type="button"
+                data-edit-id="${item.id}"
+                class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                수정
+              </button>
+              <button
+                type="button"
                 data-sold-id="${item.id}"
                 class="rounded-lg border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
               >
@@ -347,6 +354,14 @@ tabButtons.forEach(button => {
 });
 
 itemList.addEventListener('click', event => {
+  const editButton = event.target.closest('[data-edit-id]');
+
+  if (editButton) {
+    event.stopPropagation();
+    window.location.href = `sell.html?id=${encodeURIComponent(editButton.dataset.editId)}`;
+    return;
+  }
+
   const soldButton = event.target.closest('[data-sold-id]');
 
   if (soldButton) {

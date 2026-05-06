@@ -63,15 +63,15 @@ app.post('/chat/start', (req, res) => {
 });
 
 function resolveUserId(payload, callback) {
-  const { user_id, id, email, user_email } = payload || {};
-  const directUserId = user_id || id;
+  const { user_id, id, seller_id, email, user_email, seller_email } = payload || {};
+  const directUserId = user_id || id || seller_id;
 
   if (directUserId) {
     callback(null, directUserId);
     return;
   }
 
-  const lookupEmail = email || user_email;
+  const lookupEmail = email || user_email || seller_email;
 
   if (!lookupEmail) {
     callback(null, null);
@@ -565,6 +565,92 @@ app.get('/api/products/:id', (req, res) => {
       res.json(result[0]);
     }
   );
+});
+
+app.put('/api/products/:id', (req, res) => {
+  const productId = req.params.id;
+  const {
+    seller_id,
+    seller_email,
+    title,
+    category,
+    target_college,
+    target_department,
+    condition,
+    price,
+    description,
+    location,
+    images
+  } = req.body || {};
+
+  const updateProduct = (resolvedSellerId) => {
+    if (!resolvedSellerId) {
+      return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
+    }
+
+    if (!title || !category || !condition || !price || !description || !location || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ message: '상품 수정에 필요한 정보가 부족합니다.' });
+    }
+
+    ensureProductTargetColumns((columnErr) => {
+      if (columnErr) {
+        console.error(columnErr);
+        return res.status(500).json({ message: '상품 관련 단과대 컬럼 준비에 실패했습니다.' });
+      }
+
+      const sql = `
+        UPDATE products
+        SET title = ?,
+            category = ?,
+            target_college = ?,
+            target_department = ?,
+            \`condition\` = ?,
+            price = ?,
+            description = ?,
+            location = ?,
+            images = ?
+        WHERE id = ? AND seller_id = ?
+      `;
+
+      db.query(
+        sql,
+        [
+          title,
+          category,
+          target_college || null,
+          target_department || null,
+          condition,
+          price,
+          description,
+          location,
+          JSON.stringify(images),
+          productId,
+          resolvedSellerId
+        ],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: '상품 수정 중 DB 오류가 발생했습니다.' });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.status(403).json({ message: '본인이 등록한 상품만 수정할 수 있습니다.' });
+          }
+
+          res.json({ message: '상품이 수정되었습니다.', product_id: productId });
+        }
+      );
+    });
+  };
+
+  resolveUserId({ seller_id, seller_email }, (userErr, userId) => {
+    if (userErr) {
+      console.error(userErr);
+      return res.status(500).json({ message: '사용자 확인 중 DB 오류가 발생했습니다.' });
+    }
+
+    updateProduct(userId);
+  });
 });
 
 
