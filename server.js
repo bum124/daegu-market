@@ -214,6 +214,24 @@ function ensureProductModerationColumn(callback) {
   );
 }
 
+function ensureModerationSchema(callback) {
+  ensureReportsTable((reportErr) => {
+    if (reportErr) {
+      callback(reportErr);
+      return;
+    }
+
+    ensureUserModerationColumn((userErr) => {
+      if (userErr) {
+        callback(userErr);
+        return;
+      }
+
+      ensureProductModerationColumn(callback);
+    });
+  });
+}
+
 function ensureProductStatusColumn(callback) {
   db.query(
     `SELECT COLUMN_NAME
@@ -633,68 +651,82 @@ app.post('/api/products', (req, res) => {
 });
 
 app.get('/api/products', (req, res) => {
-  const sql = `
-    SELECT
-      p.*,
-      u.name AS seller_name,
-      u.nickname AS seller_nickname,
-      u.college AS seller_college,
-      u.department AS seller_department,
-      u.email AS seller_email,
-      u.account_status AS seller_account_status,
-      COALESCE((
-        SELECT SUM(
-          CASE r.reason
-            WHEN 'scam' THEN 5
-            WHEN 'abuse' THEN 2
-            WHEN 'no_show' THEN 3
-            WHEN 'prohibited' THEN 4
-            WHEN 'spam' THEN 2
-            ELSE 1
-          END + CASE WHEN r.status = 'resolved' THEN 8 ELSE 0 END
-        )
-        FROM reports r
-        LEFT JOIN products rp ON r.target_type = 'product' AND r.target_id = rp.id
-        WHERE r.status <> 'rejected'
-          AND (
-            (r.target_type = 'user' AND r.target_id = u.user_id)
-            OR (r.target_type = 'product' AND rp.seller_id = u.user_id)
-          )
-      ), 0) AS seller_risk_score
-    FROM products p
-    LEFT JOIN Users u ON u.user_id = p.seller_id
-    WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
-    ORDER BY p.id DESC
-  `;
+  ensureModerationSchema((schemaErr) => {
+    if (schemaErr) {
+      console.error(schemaErr);
+      return res.status(500).json({ message: '상품 목록 준비 중 오류가 발생했습니다.' });
+    }
 
-  queryWithTimeout(sql, (err, results) => {
-    if (err) return res.status(500).send(err);
-    res.json(results);
+    const sql = `
+      SELECT
+        p.*,
+        u.name AS seller_name,
+        u.nickname AS seller_nickname,
+        u.college AS seller_college,
+        u.department AS seller_department,
+        u.email AS seller_email,
+        u.account_status AS seller_account_status,
+        COALESCE((
+          SELECT SUM(
+            CASE r.reason
+              WHEN 'scam' THEN 5
+              WHEN 'abuse' THEN 2
+              WHEN 'no_show' THEN 3
+              WHEN 'prohibited' THEN 4
+              WHEN 'spam' THEN 2
+              ELSE 1
+            END + CASE WHEN r.status = 'resolved' THEN 8 ELSE 0 END
+          )
+          FROM reports r
+          LEFT JOIN products rp ON r.target_type = 'product' AND r.target_id = rp.id
+          WHERE r.status <> 'rejected'
+            AND (
+              (r.target_type = 'user' AND r.target_id = u.user_id)
+              OR (r.target_type = 'product' AND rp.seller_id = u.user_id)
+            )
+        ), 0) AS seller_risk_score
+      FROM products p
+      LEFT JOIN Users u ON u.user_id = p.seller_id
+      WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
+      ORDER BY p.id DESC
+    `;
+
+    queryWithTimeout(sql, (err, results) => {
+      if (err) return res.status(500).send(err);
+      res.json(results);
+    });
   });
 });
 
 app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
-  queryWithTimeout(
-    `SELECT
-      p.*,
-      u.name AS seller_name,
-      u.nickname AS seller_nickname,
-      u.college AS seller_college,
-      u.department AS seller_department,
-      u.email AS seller_email,
-      u.account_status AS seller_account_status
-     FROM products p
-     LEFT JOIN Users u ON u.user_id = p.seller_id
-     WHERE p.id = ?
-       AND COALESCE(p.moderation_status, 'visible') <> 'hidden'`,
-    [id],
-    (err, result) => {
-      if (err) return res.status(500).send(err);
-      res.json(result[0]);
+  ensureModerationSchema((schemaErr) => {
+    if (schemaErr) {
+      console.error(schemaErr);
+      return res.status(500).json({ message: '상품 정보 준비 중 오류가 발생했습니다.' });
     }
-  );
+
+    queryWithTimeout(
+      `SELECT
+        p.*,
+        u.name AS seller_name,
+        u.nickname AS seller_nickname,
+        u.college AS seller_college,
+        u.department AS seller_department,
+        u.email AS seller_email,
+        u.account_status AS seller_account_status
+       FROM products p
+       LEFT JOIN Users u ON u.user_id = p.seller_id
+       WHERE p.id = ?
+         AND COALESCE(p.moderation_status, 'visible') <> 'hidden'`,
+      [id],
+      (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json(result[0]);
+      }
+    );
+  });
 });
 
 app.put('/api/products/:id', (req, res) => {
