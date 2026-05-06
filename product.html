@@ -224,7 +224,7 @@
       </div>
 
       <!-- Related Products -->
-      <section class="mt-8 px-4 md:px-0">
+      <section class="hidden mt-8 px-4 md:px-0">
         <h2 class="mb-4 text-lg font-semibold text-gray-900">관련 상품</h2>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           
@@ -502,6 +502,93 @@ function formatPrice(price) {
   return Number(price || 0).toLocaleString('ko-KR') + '원';
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function getRelatedSection() {
+  return document.querySelector('main section.mt-8');
+}
+
+function resetRelatedProducts() {
+  const section = getRelatedSection();
+
+  if (!section) {
+    return null;
+  }
+
+  section.classList.add('hidden');
+  section.innerHTML = `
+    <h2 class="mb-4 text-lg font-semibold text-gray-900">관련 상품</h2>
+    <div id="relatedProducts" class="grid grid-cols-2 gap-4 md:grid-cols-4"></div>
+  `;
+
+  return section;
+}
+
+function isSoldProduct(product) {
+  return product.status === '판매완료' || product.condition === '판매완료';
+}
+
+function createRelatedProductCard(product) {
+  const images = parseImages(product.images);
+  const title = product.title || '제목 없음';
+  const image = product.image || product.image_url || images[0] || 'https://via.placeholder.com/400x400?text=Product';
+  const status = isSoldProduct(product) ? '판매완료' : (product.status || product.condition || '판매중');
+  const sold = status === '판매완료';
+
+  return `
+    <a href="product.html?id=${encodeURIComponent(product.id)}" class="group block overflow-hidden rounded-xl border border-gray-200 bg-white ${sold ? 'opacity-80' : ''}">
+      <div class="relative aspect-square bg-gray-100">
+        <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" class="h-full w-full object-cover transition-transform ${sold ? 'grayscale opacity-45' : 'group-hover:scale-105'}">
+        ${sold ? '<div class="absolute inset-0 bg-white/50"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white">판매완료</span></div>' : ''}
+        <span class="absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-medium ${sold ? 'bg-slate-900/80 text-white' : 'bg-white/90 text-gray-700'}">${escapeHtml(status)}</span>
+      </div>
+      <div class="p-3 ${sold ? 'text-slate-500' : ''}">
+        <p class="line-clamp-1 text-sm font-medium text-gray-900">${escapeHtml(title)}</p>
+        <p class="mt-1 font-bold text-gray-900">${formatPrice(product.price)}</p>
+      </div>
+    </a>
+  `;
+}
+
+async function loadRelatedProducts(currentProduct) {
+  const section = resetRelatedProducts();
+
+  if (!section || !currentProduct || !currentProduct.category) {
+    return;
+  }
+
+  try {
+    const response = await fetchWithTimeout('https://daegu-market-api.onrender.com/api/products');
+
+    if (!response.ok) {
+      return;
+    }
+
+    const products = await response.json();
+    const relatedProducts = products
+      .filter(product => String(product.id) !== String(currentProduct.id))
+      .filter(product => product.category === currentProduct.category)
+      .sort((a, b) => Number(isSoldProduct(a)) - Number(isSoldProduct(b)) || new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
+      .slice(0, 4);
+
+    if (!relatedProducts.length) {
+      return;
+    }
+
+    document.getElementById('relatedProducts').innerHTML = relatedProducts.map(createRelatedProductCard).join('');
+    section.classList.remove('hidden');
+  } catch (error) {
+    console.warn('관련 상품 로딩 실패:', error);
+  }
+}
+
 function getLoggedInUser() {
   try {
     return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
@@ -683,6 +770,7 @@ async function deleteProduct() {
 
 const params = new URLSearchParams(location.search);
 const id = params.get('id');
+resetRelatedProducts();
 
 if (!id) {
   document.getElementById('title').innerText = '상품을 찾을 수 없습니다.';
@@ -758,6 +846,7 @@ if (!id) {
 
     // 시간 표시
     document.getElementById('createdAt').innerText = getTimeAgo(item.created_at || item.createdAt);
+    loadRelatedProducts(item);
 
   })
   .catch(error => {
