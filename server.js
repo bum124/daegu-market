@@ -111,6 +111,109 @@ function refreshProductLikeCount(productId, callback) {
   );
 }
 
+function getReportReasonWeight(reason) {
+  const weights = {
+    scam: 5,
+    abuse: 2,
+    no_show: 3,
+    prohibited: 4,
+    spam: 2,
+    other: 1
+  };
+
+  return weights[reason] || 1;
+}
+
+function getRiskLevel(score) {
+  if (score >= 20) return '관리자 확인 필요';
+  if (score >= 10) return '위험';
+  if (score >= 5) return '주의';
+  return '정상';
+}
+
+function calculateRiskScore(reports) {
+  return reports.reduce((score, report) => {
+    if (report.status === 'rejected') {
+      return score;
+    }
+
+    const baseScore = getReportReasonWeight(report.reason);
+    const reviewBonus = report.status === 'resolved' ? 8 : 0;
+    return score + baseScore + reviewBonus;
+  }, 0);
+}
+
+function ensureReportsTable(callback) {
+  db.query(
+    `CREATE TABLE IF NOT EXISTS reports (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      reporter_id INT NOT NULL,
+      target_type VARCHAR(20) NOT NULL,
+      target_id INT NOT NULL,
+      reason VARCHAR(40) NOT NULL,
+      detail TEXT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      admin_action VARCHAR(40) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_report_target (reporter_id, target_type, target_id)
+    )`,
+    callback
+  );
+}
+
+function ensureUserModerationColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'Users'
+       AND COLUMN_NAME = 'account_status'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        "ALTER TABLE Users ADD COLUMN account_status VARCHAR(20) NOT NULL DEFAULT 'active'",
+        callback
+      );
+    }
+  );
+}
+
+function ensureProductModerationColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME = 'moderation_status'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        "ALTER TABLE products ADD COLUMN moderation_status VARCHAR(20) NOT NULL DEFAULT 'visible'",
+        callback
+      );
+    }
+  );
+}
+
 function ensureProductStatusColumn(callback) {
   db.query(
     `SELECT COLUMN_NAME
@@ -360,6 +463,10 @@ app.post('/api/login', (req, res) => {
             return res.status(403).json({ message: '이메일 인증을 먼저 완료해주세요!' });
         }
 
+        if (user.account_status === 'restricted') {
+            return res.status(403).json({ message: '관리자 검토로 이용이 제한된 계정입니다.' });
+        }
+
         // 4. 로그인 성공! 프론트엔드에 필요한 유저 정보(이름, 학과 등)만 쏙 빼서 줍니다. (비밀번호는 주면 안 됨)
         res.json({ 
             message: '로그인 성공!', 
@@ -533,9 +640,30 @@ app.get('/api/products', (req, res) => {
       u.nickname AS seller_nickname,
       u.college AS seller_college,
       u.department AS seller_department,
-      u.email AS seller_email
+      u.email AS seller_email,
+      u.account_status AS seller_account_status,
+      COALESCE((
+        SELECT SUM(
+          CASE r.reason
+            WHEN 'scam' THEN 5
+            WHEN 'abuse' THEN 2
+            WHEN 'no_show' THEN 3
+            WHEN 'prohibited' THEN 4
+            WHEN 'spam' THEN 2
+            ELSE 1
+          END + CASE WHEN r.status = 'resolved' THEN 8 ELSE 0 END
+        )
+        FROM reports r
+        LEFT JOIN products rp ON r.target_type = 'product' AND r.target_id = rp.id
+        WHERE r.status <> 'rejected'
+          AND (
+            (r.target_type = 'user' AND r.target_id = u.user_id)
+            OR (r.target_type = 'product' AND rp.seller_id = u.user_id)
+          )
+      ), 0) AS seller_risk_score
     FROM products p
     LEFT JOIN Users u ON u.user_id = p.seller_id
+    WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
     ORDER BY p.id DESC
   `;
 
@@ -555,10 +683,12 @@ app.get('/api/products/:id', (req, res) => {
       u.nickname AS seller_nickname,
       u.college AS seller_college,
       u.department AS seller_department,
-      u.email AS seller_email
+      u.email AS seller_email,
+      u.account_status AS seller_account_status
      FROM products p
      LEFT JOIN Users u ON u.user_id = p.seller_id
-     WHERE p.id = ?`,
+     WHERE p.id = ?
+       AND COALESCE(p.moderation_status, 'visible') <> 'hidden'`,
     [id],
     (err, result) => {
       if (err) return res.status(500).send(err);
@@ -650,6 +780,261 @@ app.put('/api/products/:id', (req, res) => {
     }
 
     updateProduct(userId);
+  });
+});
+
+app.post('/api/reports', (req, res) => {
+  const { reporter_id, reporter_email, target_type, target_id, reason, detail } = req.body || {};
+  const allowedTypes = ['product', 'user', 'chat'];
+  const allowedReasons = ['scam', 'abuse', 'no_show', 'prohibited', 'spam', 'other'];
+
+  if (!allowedTypes.includes(target_type) || !target_id || !allowedReasons.includes(reason)) {
+    return res.status(400).json({ message: '신고 대상과 사유를 확인해주세요.' });
+  }
+
+  ensureReportsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '신고 테이블 준비에 실패했습니다.' });
+    }
+
+    resolveUserId({ user_id: reporter_id, email: reporter_email }, (userErr, reporterId) => {
+      if (userErr) {
+        console.error(userErr);
+        return res.status(500).json({ message: '신고자 확인 중 오류가 발생했습니다.' });
+      }
+
+      if (!reporterId) {
+        return res.status(400).json({ message: '로그인이 필요합니다.' });
+      }
+
+      db.query(
+        `INSERT INTO reports (reporter_id, target_type, target_id, reason, detail)
+         VALUES (?, ?, ?, ?, ?)`,
+        [reporterId, target_type, target_id, reason, detail || null],
+        (err, result) => {
+          if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+              return res.status(409).json({ message: '이미 신고한 대상입니다. 관리자가 확인할 예정입니다.' });
+            }
+
+            console.error(err);
+            return res.status(500).json({ message: '신고 접수 중 DB 오류가 발생했습니다.' });
+          }
+
+          res.json({ message: '신고가 접수되었습니다.', report_id: result.insertId });
+        }
+      );
+    });
+  });
+});
+
+app.get('/api/users/:id/risk', (req, res) => {
+  const userId = req.params.id;
+
+  ensureReportsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '신고 테이블 준비에 실패했습니다.' });
+    }
+
+    db.query(
+      `SELECT r.*
+       FROM reports r
+       LEFT JOIN products p ON r.target_type = 'product' AND r.target_id = p.id
+       WHERE (r.target_type = 'user' AND r.target_id = ?)
+          OR (r.target_type = 'product' AND p.seller_id = ?)`,
+      [userId, userId],
+      (err, reports) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: '위험 점수 계산 중 오류가 발생했습니다.' });
+        }
+
+        const score = calculateRiskScore(reports);
+        res.json({
+          user_id: Number(userId),
+          risk_score: score,
+          risk_level: getRiskLevel(score),
+          report_count: reports.filter(report => report.status !== 'rejected').length
+        });
+      }
+    );
+  });
+});
+
+app.get('/api/admin/reports', (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
+  const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
+
+  if (adminKey !== expectedKey) {
+    return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
+  }
+
+  ensureReportsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '신고 테이블 준비에 실패했습니다.' });
+    }
+
+    const sql = `
+      SELECT
+        r.*,
+        reporter.nickname AS reporter_nickname,
+        reporter.email AS reporter_email,
+        targetUser.nickname AS target_user_nickname,
+        targetUser.email AS target_user_email,
+        targetProduct.title AS target_product_title,
+        targetProduct.seller_id AS target_product_seller_id
+      FROM reports r
+      LEFT JOIN Users reporter ON reporter.user_id = r.reporter_id
+      LEFT JOIN Users targetUser ON r.target_type = 'user' AND targetUser.user_id = r.target_id
+      LEFT JOIN products targetProduct ON r.target_type = 'product' AND targetProduct.id = r.target_id
+      ORDER BY r.status = 'pending' DESC, r.created_at DESC
+    `;
+
+    queryWithTimeout(sql, (err, reports) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: '신고 목록을 불러오지 못했습니다.' });
+      }
+
+      res.json(reports);
+    });
+  });
+});
+
+app.put('/api/admin/reports/:id', (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
+  const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
+  const { status, admin_action } = req.body || {};
+  const allowedStatuses = ['pending', 'reviewed', 'resolved', 'rejected'];
+  const allowedActions = ['', 'none', 'hide_product', 'show_product', 'warn_user', 'restrict_user'];
+
+  if (adminKey !== expectedKey) {
+    return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
+  }
+
+  if (!allowedStatuses.includes(status) || !allowedActions.includes(admin_action || '')) {
+    return res.status(400).json({ message: '처리 상태나 조치 값을 확인해주세요.' });
+  }
+
+  ensureReportsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '신고 테이블 준비에 실패했습니다.' });
+    }
+
+    db.query('SELECT * FROM reports WHERE id = ?', [req.params.id], (selectErr, reports) => {
+      if (selectErr) {
+        console.error(selectErr);
+        return res.status(500).json({ message: '신고 정보를 불러오지 못했습니다.' });
+      }
+
+      if (reports.length === 0) {
+        return res.status(404).json({ message: '신고를 찾을 수 없습니다.' });
+      }
+
+      const report = reports[0];
+      const finish = () => {
+        db.query(
+          'UPDATE reports SET status = ?, admin_action = ? WHERE id = ?',
+          [status, admin_action || 'none', req.params.id],
+          (updateErr) => {
+            if (updateErr) {
+              console.error(updateErr);
+              return res.status(500).json({ message: '신고 처리 중 DB 오류가 발생했습니다.' });
+            }
+
+            res.json({ message: '신고 처리가 저장되었습니다.' });
+          }
+        );
+      };
+
+      if (admin_action === 'hide_product' || admin_action === 'show_product') {
+        const productStatus = admin_action === 'hide_product' ? 'hidden' : 'visible';
+        const productId = report.target_type === 'product' ? report.target_id : null;
+
+        if (!productId) {
+          finish();
+          return;
+        }
+
+        ensureProductModerationColumn((columnErr) => {
+          if (columnErr) {
+            console.error(columnErr);
+            return res.status(500).json({ message: '상품 제재 컬럼 준비에 실패했습니다.' });
+          }
+
+          db.query(
+            'UPDATE products SET moderation_status = ? WHERE id = ?',
+            [productStatus, productId],
+            (productErr) => {
+              if (productErr) {
+                console.error(productErr);
+                return res.status(500).json({ message: '상품 제재 처리에 실패했습니다.' });
+              }
+
+              finish();
+            }
+          );
+        });
+        return;
+      }
+
+      if (admin_action === 'warn_user' || admin_action === 'restrict_user') {
+        const accountStatus = admin_action === 'restrict_user' ? 'restricted' : 'warned';
+
+        ensureUserModerationColumn((columnErr) => {
+          if (columnErr) {
+            console.error(columnErr);
+            return res.status(500).json({ message: '사용자 제재 컬럼 준비에 실패했습니다.' });
+          }
+
+          const updateUserStatus = (targetUserId) => {
+            if (!targetUserId) {
+              finish();
+              return;
+            }
+
+            db.query(
+              'UPDATE Users SET account_status = ? WHERE user_id = ?',
+              [accountStatus, targetUserId],
+              (userErr) => {
+                if (userErr) {
+                  console.error(userErr);
+                  return res.status(500).json({ message: '사용자 제재 처리에 실패했습니다.' });
+                }
+
+                finish();
+              }
+            );
+          };
+
+          if (report.target_type === 'user') {
+            updateUserStatus(report.target_id);
+            return;
+          }
+
+          if (report.target_type === 'product') {
+            db.query('SELECT seller_id FROM products WHERE id = ?', [report.target_id], (productErr, products) => {
+              if (productErr) {
+                console.error(productErr);
+                return res.status(500).json({ message: '상품 판매자 확인에 실패했습니다.' });
+              }
+
+              updateUserStatus(products[0] && products[0].seller_id);
+            });
+            return;
+          }
+
+          finish();
+        });
+        return;
+      }
+
+      finish();
+    });
   });
 });
 
@@ -1124,6 +1509,21 @@ db.getConnection((err, connection) => {
         ensureProductTargetColumns((columnErr) => {
           if (columnErr) {
             console.log('products target 컬럼 준비 실패:', columnErr);
+          }
+        });
+        ensureReportsTable((tableErr) => {
+          if (tableErr) {
+            console.log('reports 테이블 준비 실패:', tableErr);
+          }
+        });
+        ensureUserModerationColumn((columnErr) => {
+          if (columnErr) {
+            console.log('Users 제재 컬럼 준비 실패:', columnErr);
+          }
+        });
+        ensureProductModerationColumn((columnErr) => {
+          if (columnErr) {
+            console.log('products 제재 컬럼 준비 실패:', columnErr);
           }
         });
     }

@@ -127,9 +127,14 @@
                 <p id="sellerDepartment" class="text-sm text-gray-500">대구대 마켓</p>
               </div>
             </div>
-            <button id="profileButton" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
-              프로필 보기
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button id="profileButton" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+                프로필 보기
+              </button>
+              <button onclick="reportProduct()" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                신고
+              </button>
+            </div>
           </div>
 
           <!-- Title & Price -->
@@ -688,6 +693,69 @@ function openSellerProfile() {
 }
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
+
+function askReportReason(targetName) {
+  const selected = prompt(`${targetName} 신고 사유를 선택해주세요.\n\n1. 사기 의심\n2. 부적절한 상품\n3. 욕설/비매너\n4. 스팸/홍보\n5. 기타`);
+  const reasonMap = {
+    '1': 'scam',
+    '2': 'prohibited',
+    '3': 'abuse',
+    '4': 'spam',
+    '5': 'other'
+  };
+  const reason = reasonMap[String(selected || '').trim()];
+
+  if (!reason) {
+    return null;
+  }
+
+  const detail = prompt('관리자가 확인할 수 있도록 상황을 간단히 적어주세요. 빈칸도 가능합니다.');
+  return { reason, detail: detail || '' };
+}
+
+async function reportProduct() {
+  const user = getLoggedInUser();
+
+  if (!user) {
+    redirectToLogin(`product.html?id=${encodeURIComponent(id || '')}`);
+    return;
+  }
+
+  const sellerId = window.currentSeller && window.currentSeller.id;
+  const reporterId = await resolveUserId(user);
+
+  if (reporterId && sellerId && String(reporterId) === String(sellerId)) {
+    alert('본인이 등록한 상품은 신고할 수 없습니다.');
+    return;
+  }
+
+  const report = askReportReason('상품');
+
+  if (!report) {
+    return;
+  }
+
+  const response = await fetchWithTimeout('https://daegu-market-api.onrender.com/api/reports', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      reporter_id: reporterId,
+      reporter_email: user.email,
+      target_type: 'product',
+      target_id: id,
+      reason: report.reason,
+      detail: report.detail
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    alert(result.message || '신고 접수에 실패했습니다.');
+    return;
+  }
+
+  alert('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
+}
 
 async function openChat() {
   if (window.currentProductStatus === '판매완료') {

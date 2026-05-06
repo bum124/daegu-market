@@ -185,7 +185,7 @@ const state = {
   activeCategory: "전체",
   activeCollege: "전체",
   searchTerm: "",
-  sortBy: "latest"
+  sortBy: "recommended"
 };
 
 const categoryContainer = document.getElementById("category-filter");
@@ -317,7 +317,7 @@ function updateUrl() {
     url.searchParams.delete("q");
   }
 
-  if (state.sortBy && state.sortBy !== "latest") {
+  if (state.sortBy && state.sortBy !== "recommended") {
     url.searchParams.set("sort", state.sortBy);
   } else {
     url.searchParams.delete("sort");
@@ -332,7 +332,7 @@ function initializeStateFromUrl() {
   state.activeCategory = url.searchParams.get("category") || "전체";
   state.activeCollege = url.searchParams.get("college") || "전체";
   state.searchTerm = url.searchParams.get("q") || "";
-  state.sortBy = url.searchParams.get("sort") || "latest";
+  state.sortBy = url.searchParams.get("sort") || "recommended";
 
   searchInput.value = state.searchTerm;
 }
@@ -341,7 +341,7 @@ function resetFilters() {
   state.activeCategory = "전체";
   state.activeCollege = "전체";
   state.searchTerm = "";
-  state.sortBy = "latest";
+  state.sortBy = "recommended";
   searchInput.value = "";
 
   createCategoryButtons();
@@ -401,6 +401,16 @@ function isSold(product) {
   return product.status === "판매완료" || product.condition === "판매완료";
 }
 
+function getExposureScore(product) {
+  const ageHours = Math.max(0, (Date.now() - new Date(product.createdAt).getTime()) / 36e5);
+  const recencyScore = Math.max(0, 48 - ageHours);
+  const reactionScore = product.likes * 2 + product.views * 0.2;
+  const riskPenalty = product.sellerRiskScore * 1.5;
+  const soldPenalty = isSold(product) ? 1000 : 0;
+
+  return recencyScore + reactionScore - riskPenalty - soldPenalty;
+}
+
 function normalizeProduct(product) {
   const images = parseImages(product.images);
   const createdAt = product.createdAt || product.created_at || new Date().toISOString();
@@ -416,6 +426,7 @@ function normalizeProduct(product) {
     posted: product.posted || getTimeAgo(createdAt),
     likes: Number(product.likes || 0),
     views: Number(product.views || 0),
+    sellerRiskScore: Number(product.seller_risk_score || 0),
     seller: product.seller || product.seller_nickname || product.seller_name || (product.seller_id ? `판매자 ${product.seller_id}` : "판매자"),
     image: product.image || product.image_url || images[0] || PLACEHOLDER_IMAGE,
     status: product.status || product.condition || "판매중",
@@ -496,6 +507,10 @@ function getFilteredProducts() {
   });
 
   const compareActiveFirst = (a, b) => Number(isSold(a)) - Number(isSold(b));
+
+  if (state.sortBy === "recommended") {
+    return [...filtered].sort((a, b) => getExposureScore(b) - getExposureScore(a) || new Date(b.createdAt) - new Date(a.createdAt));
+  }
 
   if (state.sortBy === "oldest") {
     return [...filtered].sort((a, b) => compareActiveFirst(a, b) || new Date(a.createdAt) - new Date(b.createdAt));
@@ -673,8 +688,8 @@ bindAuthRequiredLinks();
 initializeStateFromUrl();
 setDataStatus({ loading: true });
 loadProducts().then(() => {
-  if (!["latest", "oldest", "price-low", "price-high"].includes(state.sortBy)) {
-    state.sortBy = "latest";
+  if (!["recommended", "latest", "oldest", "price-low", "price-high"].includes(state.sortBy)) {
+    state.sortBy = "recommended";
   }
 
   if (hasLoadError) {

@@ -62,6 +62,7 @@
               </div>
               <p id="profileDepartment" class="mt-1 text-sm text-gray-500">학과 정보 없음</p>
               <p id="profileEmail" class="mt-1 text-sm text-gray-500"></p>
+              <p id="profileRisk" class="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">거래 신뢰도 확인 중</p>
               <div class="mt-4 flex flex-wrap gap-2">
                 <button onclick="openProfileChat()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
                   채팅하기
@@ -184,6 +185,55 @@
         .replaceAll("'", '&#039;');
     }
 
+    function askReportReason(targetName) {
+      const selected = prompt(`${targetName}님을 신고하는 이유를 선택해주세요.\n\n1. 사기 의심\n2. 욕설/비매너\n3. 거래 파기\n4. 스팸/홍보\n5. 기타`);
+      const reasonMap = {
+        '1': 'scam',
+        '2': 'abuse',
+        '3': 'no_show',
+        '4': 'spam',
+        '5': 'other'
+      };
+      const reason = reasonMap[String(selected || '').trim()];
+
+      if (!reason) {
+        return null;
+      }
+
+      const detail = prompt('관리자가 확인할 수 있도록 상황을 간단히 적어주세요. 빈칸도 가능합니다.');
+      return { reason, detail: detail || '' };
+    }
+
+    async function submitReport(payload) {
+      const response = await fetchWithTimeout(`${API_BASE}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(result.message || '신고 접수에 실패했습니다.');
+        return false;
+      }
+
+      alert('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
+      return true;
+    }
+
+    function renderRiskBadge(risk) {
+      const badge = document.getElementById('profileRisk');
+      const level = risk && risk.risk_level ? risk.risk_level : '정상';
+      const tone = level === '정상'
+        ? 'bg-green-50 text-green-700'
+        : level === '주의'
+          ? 'bg-amber-50 text-amber-700'
+          : 'bg-red-50 text-red-700';
+
+      badge.className = `mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${tone}`;
+      badge.textContent = `거래 신뢰도 ${level}`;
+    }
+
     function isSold(product) {
       return product.status === '판매완료' || product.condition === '판매완료';
     }
@@ -225,7 +275,7 @@
       window.location.href = `chat.html?sellerId=${encodeURIComponent(userId)}`;
     }
 
-    function reportProfile() {
+    async function reportProfile() {
       const user = getLoggedInUser();
 
       if (!user) {
@@ -234,13 +284,20 @@
       }
 
       const displayName = getDisplayName(loadedUser || {});
-      const reason = prompt(`${displayName}님을 신고하는 이유를 입력해주세요.`);
+      const report = askReportReason(displayName);
 
-      if (!reason || !reason.trim()) {
+      if (!report) {
         return;
       }
 
-      alert('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
+      await submitReport({
+        reporter_id: user.user_id || user.id,
+        reporter_email: user.email,
+        target_type: 'user',
+        target_id: userId,
+        reason: report.reason,
+        detail: report.detail
+      });
     }
 
     function createProductCard(product) {
@@ -304,9 +361,10 @@
       }
 
       try {
-        const [userResponse, productsResponse] = await Promise.all([
+        const [userResponse, productsResponse, riskResponse] = await Promise.all([
           fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}`),
-          fetchWithTimeout(`${API_BASE}/api/products`)
+          fetchWithTimeout(`${API_BASE}/api/products`),
+          fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}/risk`)
         ]);
 
         if (!userResponse.ok) {
@@ -317,8 +375,10 @@
         const user = await userResponse.json();
         const allProducts = productsResponse.ok ? await productsResponse.json() : [];
         const products = allProducts.filter(product => String(product.seller_id) === String(userId));
+        const risk = riskResponse.ok ? await riskResponse.json() : null;
 
         renderProfile(user, products);
+        renderRiskBadge(risk);
         renderProducts(products);
       } catch (error) {
         console.error('판매자 프로필 로딩 실패:', error);
