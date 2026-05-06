@@ -344,6 +344,50 @@
     </div>
   </div>
 
+  <div id="toast" class="fixed right-4 top-4 z-[70] hidden rounded-lg border border-green-200 bg-white px-4 py-3 text-sm font-medium text-green-700 shadow-lg"></div>
+
+  <div id="reportModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">신고하기</h2>
+          <p id="reportTargetLabel" class="mt-1 text-sm text-gray-500">관리자가 확인할 수 있도록 사유를 선택해주세요.</p>
+        </div>
+        <button type="button" onclick="closeReportModal()" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="신고 창 닫기">×</button>
+      </div>
+
+      <form id="reportForm" class="mt-5 space-y-4">
+        <div class="grid grid-cols-2 gap-2">
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
+            <input type="radio" name="reason" value="scam" class="mr-2" checked>사기 의심
+          </label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
+            <input type="radio" name="reason" value="prohibited" class="mr-2">부적절한 상품
+          </label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
+            <input type="radio" name="reason" value="abuse" class="mr-2">욕설/비매너
+          </label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
+            <input type="radio" name="reason" value="spam" class="mr-2">스팸/홍보
+          </label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
+            <input type="radio" name="reason" value="other" class="mr-2">기타
+          </label>
+        </div>
+
+        <div>
+          <label for="reportDetail" class="text-sm font-medium text-gray-700">상세 내용</label>
+          <textarea id="reportDetail" rows="4" class="mt-2 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="상황을 간단히 적어주세요. 선택 입력입니다."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeReportModal()" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">취소</button>
+          <button id="reportSubmitButton" type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">신고 접수</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // Image Gallery
     
@@ -694,23 +738,31 @@ function openSellerProfile() {
 
 document.getElementById('profileButton').addEventListener('click', openSellerProfile);
 
-function askReportReason(targetName) {
-  const selected = prompt(`${targetName} 신고 사유를 선택해주세요.\n\n1. 사기 의심\n2. 부적절한 상품\n3. 욕설/비매너\n4. 스팸/홍보\n5. 기타`);
-  const reasonMap = {
-    '1': 'scam',
-    '2': 'prohibited',
-    '3': 'abuse',
-    '4': 'spam',
-    '5': 'other'
-  };
-  const reason = reasonMap[String(selected || '').trim()];
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  const tone = type === 'error'
+    ? 'border-red-200 text-red-700'
+    : 'border-green-200 text-green-700';
 
-  if (!reason) {
-    return null;
-  }
+  toast.className = `fixed right-4 top-4 z-[70] rounded-lg border bg-white px-4 py-3 text-sm font-medium shadow-lg ${tone}`;
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
+}
 
-  const detail = prompt('관리자가 확인할 수 있도록 상황을 간단히 적어주세요. 빈칸도 가능합니다.');
-  return { reason, detail: detail || '' };
+function openReportModal() {
+  document.getElementById('reportForm').reset();
+  document.querySelector('input[name="reason"][value="scam"]').checked = true;
+  document.getElementById('reportDetail').value = '';
+  document.getElementById('reportTargetLabel').textContent = `${window.currentProductTitle || '상품'} 신고 사유를 선택해주세요.`;
+  document.getElementById('reportModal').classList.remove('hidden');
+  document.getElementById('reportModal').classList.add('flex');
+}
+
+function closeReportModal() {
+  document.getElementById('reportModal').classList.add('hidden');
+  document.getElementById('reportModal').classList.remove('flex');
 }
 
 async function reportProduct() {
@@ -725,15 +777,36 @@ async function reportProduct() {
   const reporterId = await resolveUserId(user);
 
   if (reporterId && sellerId && String(reporterId) === String(sellerId)) {
-    alert('본인이 등록한 상품은 신고할 수 없습니다.');
+    showToast('본인이 등록한 상품은 신고할 수 없습니다.', 'error');
     return;
   }
 
-  const report = askReportReason('상품');
+  openReportModal();
+}
 
-  if (!report) {
+document.getElementById('reportModal').addEventListener('click', event => {
+  if (event.target.id === 'reportModal') {
+    closeReportModal();
+  }
+});
+
+document.getElementById('reportForm').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const user = getLoggedInUser();
+  const reporterId = await resolveUserId(user);
+
+  if (!user || !reporterId) {
+    closeReportModal();
+    redirectToLogin(`product.html?id=${encodeURIComponent(id || '')}`);
     return;
   }
+
+  const submitButton = document.getElementById('reportSubmitButton');
+  const reason = document.querySelector('input[name="reason"]:checked').value;
+  const detail = document.getElementById('reportDetail').value.trim();
+  submitButton.disabled = true;
+  submitButton.textContent = '접수 중';
 
   const response = await fetchWithTimeout('https://daegu-market-api.onrender.com/api/reports', {
     method: 'POST',
@@ -743,19 +816,22 @@ async function reportProduct() {
       reporter_email: user.email,
       target_type: 'product',
       target_id: id,
-      reason: report.reason,
-      detail: report.detail
+      reason,
+      detail
     })
   });
   const result = await response.json().catch(() => ({}));
+  submitButton.disabled = false;
+  submitButton.textContent = '신고 접수';
 
   if (!response.ok) {
-    alert(result.message || '신고 접수에 실패했습니다.');
+    showToast(result.message || '신고 접수에 실패했습니다.', 'error');
     return;
   }
 
-  alert('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
-}
+  closeReportModal();
+  showToast('신고가 접수되었습니다. 관리자가 확인할 예정입니다.');
+});
 
 async function openChat() {
   if (window.currentProductStatus === '판매완료') {
