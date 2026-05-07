@@ -32,6 +32,8 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { font-family: 'Pretendard', sans-serif; }
     input:focus, textarea:focus, select:focus, button:focus {
@@ -227,41 +229,15 @@
           거래 희망 장소
           <span class="ml-1 text-destructive">*</span>
         </label>
-        <div class="relative mt-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <select
-            id="location"
-            name="location"
-            class="w-full h-10 pl-9 pr-8 rounded-lg border border-input bg-white text-sm focus:border-primary appearance-none cursor-pointer"
-            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23737373%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;"
-          >
-            <option value="">거래 희망 장소를 선택하세요</option>
-            <option value="중앙도서관 앞">중앙도서관 앞</option>
-            <option value="학생회관">학생회관</option>
-            <option value="정문">정문</option>
-            <option value="후문">후문</option>
-            <option value="기숙사 앞">기숙사 앞</option>
-            <option value="체육관">체육관</option>
-            <option value="공학관">공학관 앞</option>
-            <option value="경상관">경상관 앞</option>
-            <option value="예술대학">예술대학 앞</option>
-            <option value="사범대학 앞">사범대학 앞</option>
-            <option value="사회과학대학 앞">사회과학대학 앞</option>
-            <option value="기타 (협의)">기타 (협의)</option>
-          </select>
-        </div>
-        <div id="locationMapPreview" class="mt-3 hidden overflow-hidden rounded-xl border border-border bg-muted">
-          <iframe
-            id="locationMapFrame"
-            title="거래 장소 지도"
-            class="h-56 w-full"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-          ></iframe>
-          <p id="locationMapText" class="border-t border-border bg-white px-3 py-2 text-xs text-muted-foreground"></p>
+        <input type="hidden" id="location" name="location">
+        <input type="hidden" id="locationLat" name="locationLat">
+        <input type="hidden" id="locationLng" name="locationLng">
+        <div class="mt-2 overflow-hidden rounded-xl border border-border bg-white">
+          <div id="locationMap" class="h-72 w-full bg-muted"></div>
+          <div class="flex flex-col gap-2 border-t border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p id="locationMapText" class="text-sm text-muted-foreground">지도에서 거래할 위치를 눌러주세요.</p>
+            <button type="button" id="locationFallbackButton" class="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted">기타 (협의)</button>
+          </div>
         </div>
         <p class="mt-1 text-sm text-destructive hidden" id="locationError">거래 희망 장소를 선택해주세요.</p>
       </div>
@@ -340,10 +316,14 @@
 
     const targetCollegeSelect = document.getElementById('targetCollege');
     const targetDepartmentSelect = document.getElementById('targetDepartment');
-    const locationSelect = document.getElementById('location');
-    const locationMapPreview = document.getElementById('locationMapPreview');
-    const locationMapFrame = document.getElementById('locationMapFrame');
+    const locationInput = document.getElementById('location');
+    const locationLatInput = document.getElementById('locationLat');
+    const locationLngInput = document.getElementById('locationLng');
     const locationMapText = document.getElementById('locationMapText');
+    const locationFallbackButton = document.getElementById('locationFallbackButton');
+    const daeguUniversityCenter = [35.9007, 128.8426];
+    let locationMap;
+    let locationMarker;
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -474,26 +454,49 @@
       populateTargetDepartmentOptions(targetCollegeSelect.value);
     });
 
-    function getMapUrl(locationName) {
-      return `https://maps.google.com/maps?q=${encodeURIComponent(`대구대학교 ${locationName}`)}&output=embed`;
+    function formatCoordinate(value) {
+      return Number(value).toFixed(5);
     }
 
-    function updateLocationMap() {
-      const locationName = locationSelect.value;
+    function setSelectedLocation(lat, lng) {
+      locationInput.value = '지도 선택 위치';
+      locationLatInput.value = String(lat);
+      locationLngInput.value = String(lng);
+      locationMapText.textContent = `선택 위치: 위도 ${formatCoordinate(lat)}, 경도 ${formatCoordinate(lng)}`;
 
-      if (!locationName || locationName.includes('기타')) {
-        locationMapPreview.classList.toggle('hidden', !locationName);
-        locationMapFrame.removeAttribute('src');
-        locationMapText.textContent = locationName ? '정확한 거래 장소는 채팅으로 협의해 주세요.' : '';
-        return;
+      if (!locationMarker) {
+        locationMarker = L.marker([lat, lng]).addTo(locationMap);
+      } else {
+        locationMarker.setLatLng([lat, lng]);
       }
-
-      locationMapFrame.src = getMapUrl(locationName);
-      locationMapText.textContent = `${locationName} 근처에서 거래하도록 표시됩니다.`;
-      locationMapPreview.classList.remove('hidden');
     }
 
-    locationSelect.addEventListener('change', updateLocationMap);
+    function setFallbackLocation() {
+      locationInput.value = '기타 (협의)';
+      locationLatInput.value = '';
+      locationLngInput.value = '';
+      locationMapText.textContent = '정확한 거래 장소는 채팅으로 협의해 주세요.';
+
+      if (locationMarker) {
+        locationMap.removeLayer(locationMarker);
+        locationMarker = null;
+      }
+    }
+
+    function initializeLocationMap() {
+      locationMap = L.map('locationMap', {
+        scrollWheelZoom: false
+      }).setView(daeguUniversityCenter, 16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(locationMap);
+      locationMap.on('click', event => {
+        setSelectedLocation(event.latlng.lat, event.latlng.lng);
+      });
+      setTimeout(() => locationMap.invalidateSize(), 200);
+    }
+
+    locationFallbackButton.addEventListener('click', setFallbackLocation);
 
     function parseImages(value) {
       if (Array.isArray(value)) {
@@ -530,8 +533,16 @@
       document.getElementById('condition').value = item.condition || item.status || '';
       priceInput.value = item.price ? new Intl.NumberFormat('ko-KR').format(Number(item.price)) : '';
       document.getElementById('description').value = item.description || '';
-      document.getElementById('location').value = item.location || '';
-      updateLocationMap();
+
+      if (item.location_lat && item.location_lng) {
+        setSelectedLocation(Number(item.location_lat), Number(item.location_lng));
+        locationMap.setView([Number(item.location_lat), Number(item.location_lng)], 17);
+      } else if (item.location === '기타 (협의)') {
+        setFallbackLocation();
+      } else {
+        locationInput.value = item.location || '';
+        locationMapText.textContent = item.location ? `${item.location} 위치를 지도에서 다시 선택해주세요.` : '지도에서 거래할 위치를 눌러주세요.';
+      }
 
       const targetCollege = item.target_college || item.college || '';
       targetCollegeSelect.value = targetCollege;
@@ -718,7 +729,7 @@
         document.getElementById('descriptionError').classList.remove('hidden');
         hasError = true;
       }
-      if (!document.getElementById('location').value) {
+      if (!locationInput.value) {
         document.getElementById('locationError').classList.remove('hidden');
         hasError = true;
       }
@@ -760,7 +771,9 @@
         condition: document.getElementById('condition').value,
         price: parseInt(priceInput.value.replace(/[^0-9]/g, '')),
         description: document.getElementById('description').value,
-        location: document.getElementById('location').value,
+        location: locationInput.value,
+        location_lat: locationLatInput.value || null,
+        location_lng: locationLngInput.value || null,
         images: uploadedImages
       };
 
@@ -795,6 +808,7 @@
     }); // 폼 제출 이벤트 끝나는 괄호
 
     populateTargetCollegeOptions();
+    initializeLocationMap();
     setEditModeHeader();
     loadProductForEdit();
   </script>

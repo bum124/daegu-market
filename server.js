@@ -336,6 +336,58 @@ function ensureProductTargetColumns(callback) {
   );
 }
 
+function ensureProductLocationColumns(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME IN ('location_lat', 'location_lng')`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      const existingColumns = new Set(rows.map(row => row.COLUMN_NAME));
+      const alterStatements = [];
+
+      if (!existingColumns.has('location_lat')) {
+        alterStatements.push('ALTER TABLE products ADD COLUMN location_lat DECIMAL(10, 7) NULL AFTER location');
+      }
+
+      if (!existingColumns.has('location_lng')) {
+        alterStatements.push('ALTER TABLE products ADD COLUMN location_lng DECIMAL(10, 7) NULL AFTER location_lat');
+      }
+
+      if (alterStatements.length === 0) {
+        callback(null);
+        return;
+      }
+
+      let index = 0;
+      const runNextAlter = () => {
+        if (index >= alterStatements.length) {
+          callback(null);
+          return;
+        }
+
+        db.query(alterStatements[index], (alterErr) => {
+          if (alterErr) {
+            callback(alterErr);
+            return;
+          }
+
+          index += 1;
+          runNextAlter();
+        });
+      };
+
+      runNextAlter();
+    }
+  );
+}
+
 function queryWithTimeout(sql, values, callback, timeout = 10000) {
   if (typeof values === 'function') {
     callback = values;
@@ -597,36 +649,43 @@ app.post('/api/change-password', (req, res) => {
 });
 
 app.post('/api/products', (req, res) => {
-  const { seller_id, seller_email, title, category, target_college, target_department, condition, price, description, location, images } = req.body;
+  const { seller_id, seller_email, title, category, target_college, target_department, condition, price, description, location, location_lat, location_lng, images } = req.body;
 
   const insertProduct = (resolvedSellerId) => {
     if (!resolvedSellerId) {
       return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다. 다시 로그인해주세요.' });
     }
 
-    ensureProductTargetColumns((columnErr) => {
-      if (columnErr) {
-        console.error(columnErr);
+    ensureProductTargetColumns((targetColumnErr) => {
+      if (targetColumnErr) {
+        console.error(targetColumnErr);
         return res.status(500).json({ message: '상품 관련 단과대 컬럼 준비에 실패했습니다.' });
       }
 
-      const sql = `
-      INSERT INTO products (seller_id, title, category, target_college, target_department, \`condition\`, price, description, location, images)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-      db.query(
-        sql,
-        [resolvedSellerId, title, category, target_college || null, target_department || null, condition, price, description, location, JSON.stringify(images)],
-        (err, result) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).send('DB 오류');
-          }
-
-          res.json({ message: '등록 완료', product_id: result.insertId });
+      ensureProductLocationColumns((locationColumnErr) => {
+        if (locationColumnErr) {
+          console.error(locationColumnErr);
+          return res.status(500).json({ message: '상품 거래 장소 컬럼 준비에 실패했습니다.' });
         }
-      );
+
+        const sql = `
+        INSERT INTO products (seller_id, title, category, target_college, target_department, \`condition\`, price, description, location, location_lat, location_lng, images)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+        db.query(
+          sql,
+          [resolvedSellerId, title, category, target_college || null, target_department || null, condition, price, description, location, location_lat || null, location_lng || null, JSON.stringify(images)],
+          (err, result) => {
+            if (err) {
+              console.error(err);
+              return res.status(500).send('DB 오류');
+            }
+
+            res.json({ message: '등록 완료', product_id: result.insertId });
+          }
+        );
+      });
     });
   };
 
@@ -738,6 +797,8 @@ app.put('/api/products/:id', (req, res) => {
     price,
     description,
     location,
+    location_lat,
+    location_lng,
     images
   } = req.body || {};
 
@@ -750,54 +811,65 @@ app.put('/api/products/:id', (req, res) => {
       return res.status(400).json({ message: '상품 수정에 필요한 정보가 부족합니다.' });
     }
 
-    ensureProductTargetColumns((columnErr) => {
-      if (columnErr) {
-        console.error(columnErr);
+    ensureProductTargetColumns((targetColumnErr) => {
+      if (targetColumnErr) {
+        console.error(targetColumnErr);
         return res.status(500).json({ message: '상품 관련 단과대 컬럼 준비에 실패했습니다.' });
       }
 
-      const sql = `
-        UPDATE products
-        SET title = ?,
-            category = ?,
-            target_college = ?,
-            target_department = ?,
-            \`condition\` = ?,
-            price = ?,
-            description = ?,
-            location = ?,
-            images = ?
-        WHERE id = ? AND seller_id = ?
-      `;
-
-      db.query(
-        sql,
-        [
-          title,
-          category,
-          target_college || null,
-          target_department || null,
-          condition,
-          price,
-          description,
-          location,
-          JSON.stringify(images),
-          productId,
-          resolvedSellerId
-        ],
-        (err, result) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ message: '상품 수정 중 DB 오류가 발생했습니다.' });
-          }
-
-          if (result.affectedRows === 0) {
-            return res.status(403).json({ message: '본인이 등록한 상품만 수정할 수 있습니다.' });
-          }
-
-          res.json({ message: '상품이 수정되었습니다.', product_id: productId });
+      ensureProductLocationColumns((locationColumnErr) => {
+        if (locationColumnErr) {
+          console.error(locationColumnErr);
+          return res.status(500).json({ message: '상품 거래 장소 컬럼 준비에 실패했습니다.' });
         }
-      );
+
+        const sql = `
+          UPDATE products
+          SET title = ?,
+              category = ?,
+              target_college = ?,
+              target_department = ?,
+              \`condition\` = ?,
+              price = ?,
+              description = ?,
+              location = ?,
+              location_lat = ?,
+              location_lng = ?,
+              images = ?
+          WHERE id = ? AND seller_id = ?
+        `;
+
+        db.query(
+          sql,
+          [
+            title,
+            category,
+            target_college || null,
+            target_department || null,
+            condition,
+            price,
+            description,
+            location,
+            location_lat || null,
+            location_lng || null,
+            JSON.stringify(images),
+            productId,
+            resolvedSellerId
+          ],
+          (err, result) => {
+            if (err) {
+              console.error(err);
+              return res.status(500).json({ message: '상품 수정 중 DB 오류가 발생했습니다.' });
+            }
+
+            if (result.affectedRows === 0) {
+              return res.status(403).json({ message: '본인이 등록한 상품만 수정할 수 있습니다.' });
+            }
+
+            res.json({ message: '상품이 수정되었습니다.', product_id: productId });
+          }
+        );
+      });
     });
   };
 
@@ -1537,6 +1609,11 @@ db.getConnection((err, connection) => {
         ensureProductTargetColumns((columnErr) => {
           if (columnErr) {
             console.log('products target 컬럼 준비 실패:', columnErr);
+          }
+        });
+        ensureProductLocationColumns((columnErr) => {
+          if (columnErr) {
+            console.log('products location 컬럼 준비 실패:', columnErr);
           }
         });
         ensureReportsTable((tableErr) => {

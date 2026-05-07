@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>상품 상세 - 대구대 마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -208,15 +210,7 @@
               <h2 class="font-semibold text-gray-900">거래 희망 장소</h2>
               <span id="tradeMapLabel" class="text-sm text-gray-500"></span>
             </div>
-            <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-              <iframe
-                id="tradeMapFrame"
-                title="거래 희망 장소 지도"
-                class="h-64 w-full"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-              ></iframe>
-            </div>
+            <div id="tradeMap" class="h-64 overflow-hidden rounded-xl border border-gray-200 bg-gray-100"></div>
             <p class="mt-2 text-xs text-gray-500">정확한 시간과 세부 위치는 채팅으로 한 번 더 확인하세요.</p>
           </div>
 
@@ -619,24 +613,31 @@ function isSoldProduct(product) {
   return product.status === '판매완료' || product.condition === '판매완료';
 }
 
-function getTradeMapUrl(locationName) {
-  return `https://maps.google.com/maps?q=${encodeURIComponent(`대구대학교 ${locationName}`)}&output=embed`;
-}
-
-function renderTradeMap(locationName) {
+function renderTradeMap(locationName, lat, lng) {
   const section = document.getElementById('tradeMapSection');
-  const frame = document.getElementById('tradeMapFrame');
   const label = document.getElementById('tradeMapLabel');
+  const hasCoordinate = lat && lng;
 
-  if (!locationName || locationName.includes('기타')) {
+  if (!hasCoordinate || !locationName || locationName.includes('기타')) {
     section.classList.add('hidden');
-    frame.removeAttribute('src');
     return;
   }
 
   label.textContent = locationName;
-  frame.src = getTradeMapUrl(locationName);
   section.classList.remove('hidden');
+
+  const coordinate = [Number(lat), Number(lng)];
+  setTimeout(() => {
+    const map = L.map('tradeMap', {
+      scrollWheelZoom: false,
+      dragging: false
+    }).setView(coordinate, 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.marker(coordinate).addTo(map);
+    map.invalidateSize();
+  }, 0);
 }
 
 function createRelatedProductCard(product) {
@@ -1042,7 +1043,7 @@ if (!id) {
     targetCollegeBadge.classList.toggle('hidden', !targetCollege);
     document.getElementById('description').innerText = item.description || '등록된 상품 설명이 없습니다.';
     document.getElementById('location').innerText = item.location || '위치 미정';
-    renderTradeMap(item.location);
+    renderTradeMap(item.location, item.location_lat, item.location_lng);
     document.getElementById('views').innerText = Number(item.views || 0);
     document.getElementById('likes').innerText = Number(item.likes || 0);
     const sellerName = item.seller_nickname || item.seller_name || item.seller || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자');
