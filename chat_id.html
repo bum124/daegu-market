@@ -58,22 +58,16 @@ const form = document.querySelector("form");
 const input = document.getElementById("msgInput");
 
 /* -------------------------
-   1. 과거 메시지 불러오기 (한 번만)
-------------------------- */
-fetch("http://localhost:3000/messages/" + roomId)
-  .then(res => res.json())
-  .then(data => {
-    data.forEach(msg => {
-      render(msg.sender, msg.text);
-    });
-  });
-
-/* -------------------------
    2. 방 입장
 ------------------------- */
 socket.emit("join_room", roomId);
 
 socket.on("loadMessages", (messages) => {
+
+  console.log("loadMessages 실행됨");
+
+  chatBody.innerHTML = "";
+
   messages.forEach(msg => {
     render(msg.sender, msg.text);
   });
