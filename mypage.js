@@ -101,6 +101,7 @@ function getTimeAgo(dateString) {
 function normalizeProduct(item) {
   const images = parseImages(item.images);
   const createdAt = item.createdAt || item.created_at || new Date().toISOString();
+  const status = normalizeStatus(item.status || item.condition);
 
   return {
     id: item.id,
@@ -115,14 +116,28 @@ function normalizeProduct(item) {
     views: Number(item.views || 0),
     seller: item.seller || item.seller_nickname || item.seller_name || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자'),
     image: item.image || item.image_url || images[0] || PLACEHOLDER_IMAGE,
-    status: item.status || item.condition || '판매중',
+    status,
     createdAt,
     sellerId: item.seller_id || item.sellerId || null
   };
 }
 
+function normalizeStatus(value) {
+  const status = String(value || '판매중').trim();
+
+  if (status.includes('판매완료')) {
+    return '판매완료';
+  }
+
+  if (status.includes('예약')) {
+    return '예약중';
+  }
+
+  return '판매중';
+}
+
 function isSold(item) {
-  return item.status === '판매완료' || item.condition === '판매완료';
+  return normalizeStatus(item.status || item.condition) === '판매완료';
 }
 
 function normalizeMyPageData(data, loggedInUser) {
@@ -158,9 +173,11 @@ async function loadProductFallback(loggedInUser) {
 
   const products = (await response.json()).map(normalizeProduct);
   const userId = loggedInUser.user_id || loggedInUser.id || null;
-  const selling = userId
+  const myProducts = userId
     ? products.filter(product => String(product.sellerId || '') === String(userId))
     : [];
+  const selling = myProducts.filter(product => !isSold(product));
+  const sold = myProducts.filter(isSold);
 
   return {
     user: {
@@ -172,11 +189,11 @@ async function loadProductFallback(loggedInUser) {
     },
     stats: {
       sellingCount: selling.length,
-      soldCount: 0,
+      soldCount: sold.length,
       likedCount: 0
     },
     selling,
-    sold: [],
+    sold,
     liked: []
   };
 }

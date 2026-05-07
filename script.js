@@ -397,8 +397,22 @@ function getTimeAgo(dateString) {
   return `${Math.floor(diffHours / 24)}일 전`;
 }
 
+function normalizeStatus(value) {
+  const status = String(value || "판매중").trim();
+
+  if (status.includes("판매완료")) {
+    return "판매완료";
+  }
+
+  if (status.includes("예약")) {
+    return "예약중";
+  }
+
+  return "판매중";
+}
+
 function isSold(product) {
-  return product.status === "판매완료" || product.condition === "판매완료";
+  return normalizeStatus(product.status || product.condition) === "판매완료";
 }
 
 function getExposureScore(product) {
@@ -429,7 +443,7 @@ function normalizeProduct(product) {
     sellerRiskScore: Number(product.seller_risk_score || 0),
     seller: product.seller || product.seller_nickname || product.seller_name || (product.seller_id ? `판매자 ${product.seller_id}` : "판매자"),
     image: product.image || product.image_url || images[0] || PLACEHOLDER_IMAGE,
-    status: product.status || product.condition || "판매중",
+    status: normalizeStatus(product.status || product.condition),
     createdAt
   };
 }

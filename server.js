@@ -143,6 +143,20 @@ function calculateRiskScore(reports) {
   }, 0);
 }
 
+function normalizeProductStatus(product) {
+  const rawStatus = String(product.status || product.condition || '판매중').trim();
+
+  if (rawStatus.includes('판매완료')) {
+    return '판매완료';
+  }
+
+  if (rawStatus.includes('예약')) {
+    return '예약중';
+  }
+
+  return '판매중';
+}
+
 function ensureReportsTable(callback) {
   db.query(
     `CREATE TABLE IF NOT EXISTS reports (
@@ -1770,8 +1784,12 @@ app.get('/api/mypage', (req, res) => {
           db.query(likedSql, [userId], (likedErr, liked) => {
             if (likedErr) return res.status(500).send(likedErr);
 
-            const selling = products.filter(product => product.status !== '판매완료');
-            const sold = products.filter(product => product.status === '판매완료');
+            const normalizedProducts = products.map(product => ({
+              ...product,
+              status: normalizeProductStatus(product)
+            }));
+            const selling = normalizedProducts.filter(product => product.status !== '판매완료');
+            const sold = normalizedProducts.filter(product => product.status === '판매완료');
 
             res.json({
               user: {

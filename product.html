@@ -609,8 +609,22 @@ function resetRelatedProducts() {
   return section;
 }
 
+function normalizeStatus(value) {
+  const status = String(value || '판매중').trim();
+
+  if (status.includes('판매완료')) {
+    return '판매완료';
+  }
+
+  if (status.includes('예약')) {
+    return '예약중';
+  }
+
+  return '판매중';
+}
+
 function isSoldProduct(product) {
-  return product.status === '판매완료' || product.condition === '판매완료';
+  return normalizeStatus(product.status || product.condition) === '판매완료';
 }
 
 function renderTradeMap(locationName, lat, lng) {
@@ -632,8 +646,10 @@ function renderTradeMap(locationName, lat, lng) {
       scrollWheelZoom: false,
       dragging: false
     }).setView(coordinate, 17);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(map);
     L.marker(coordinate).addTo(map);
     map.invalidateSize();
@@ -644,7 +660,7 @@ function createRelatedProductCard(product) {
   const images = parseImages(product.images);
   const title = product.title || '제목 없음';
   const image = product.image || product.image_url || images[0] || 'https://via.placeholder.com/400x400?text=Product';
-  const status = isSoldProduct(product) ? '판매완료' : (product.status || product.condition || '판매중');
+  const status = normalizeStatus(product.status || product.condition);
   const sold = status === '판매완료';
 
   return `
@@ -1033,7 +1049,7 @@ if (!id) {
     // 상품 정보
     document.getElementById('title').innerText = item.title || '제목 없음';
     document.getElementById('price').innerText = formatPrice(item.price);
-    window.currentProductStatus = item.status || item.condition || '판매중';
+    window.currentProductStatus = normalizeStatus(item.status || item.condition);
     document.getElementById('condition').innerText = window.currentProductStatus;
     syncProductStatusUi();
     document.getElementById('category').innerText = item.category || '기타';
