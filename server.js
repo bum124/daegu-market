@@ -1674,6 +1674,33 @@ app.get('/messages/:roomId', (req, res) => {
   );
 });
 
+app.post('/messages', (req, res) => {
+  const { room_id, sender_id, message } = req.body;
+
+  if (!room_id || !sender_id || !message) {
+    return res.status(400).json({
+      message: '필수값 누락'
+    });
+  }
+
+  const sql = `
+    INSERT INTO messages (room_id, sender_id, message)
+    VALUES (?, ?, ?)
+  `;
+
+  db.query(sql, [room_id, sender_id, message], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send(err);
+    }
+
+    res.json({
+      message: '메시지 저장 완료',
+      id: result.insertId
+    });
+  });
+});
+
 app.get('/api/users/:id', (req, res) => {
     const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE user_id = ?';
 
