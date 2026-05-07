@@ -245,12 +245,23 @@
             <option value="후문">후문</option>
             <option value="기숙사 앞">기숙사 앞</option>
             <option value="체육관">체육관</option>
-            <option value="공학관">공학관</option>
-            <option value="경상관">경상관</option>
-            <option value="예술대학">예술대학</option>
-            <option value="대구역">대구역</option>
+            <option value="공학관">공학관 앞</option>
+            <option value="경상관">경상관 앞</option>
+            <option value="예술대학">예술대학 앞</option>
+            <option value="사범대학 앞">사범대학 앞</option>
+            <option value="사회과학대학 앞">사회과학대학 앞</option>
             <option value="기타 (협의)">기타 (협의)</option>
           </select>
+        </div>
+        <div id="locationMapPreview" class="mt-3 hidden overflow-hidden rounded-xl border border-border bg-muted">
+          <iframe
+            id="locationMapFrame"
+            title="거래 장소 지도"
+            class="h-56 w-full"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
+          <p id="locationMapText" class="border-t border-border bg-white px-3 py-2 text-xs text-muted-foreground"></p>
         </div>
         <p class="mt-1 text-sm text-destructive hidden" id="locationError">거래 희망 장소를 선택해주세요.</p>
       </div>
@@ -329,6 +340,10 @@
 
     const targetCollegeSelect = document.getElementById('targetCollege');
     const targetDepartmentSelect = document.getElementById('targetDepartment');
+    const locationSelect = document.getElementById('location');
+    const locationMapPreview = document.getElementById('locationMapPreview');
+    const locationMapFrame = document.getElementById('locationMapFrame');
+    const locationMapText = document.getElementById('locationMapText');
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -459,6 +474,27 @@
       populateTargetDepartmentOptions(targetCollegeSelect.value);
     });
 
+    function getMapUrl(locationName) {
+      return `https://maps.google.com/maps?q=${encodeURIComponent(`대구대학교 ${locationName}`)}&output=embed`;
+    }
+
+    function updateLocationMap() {
+      const locationName = locationSelect.value;
+
+      if (!locationName || locationName.includes('기타')) {
+        locationMapPreview.classList.toggle('hidden', !locationName);
+        locationMapFrame.removeAttribute('src');
+        locationMapText.textContent = locationName ? '정확한 거래 장소는 채팅으로 협의해 주세요.' : '';
+        return;
+      }
+
+      locationMapFrame.src = getMapUrl(locationName);
+      locationMapText.textContent = `${locationName} 근처에서 거래하도록 표시됩니다.`;
+      locationMapPreview.classList.remove('hidden');
+    }
+
+    locationSelect.addEventListener('change', updateLocationMap);
+
     function parseImages(value) {
       if (Array.isArray(value)) {
         return value.filter(Boolean);
@@ -495,6 +531,7 @@
       priceInput.value = item.price ? new Intl.NumberFormat('ko-KR').format(Number(item.price)) : '';
       document.getElementById('description').value = item.description || '';
       document.getElementById('location').value = item.location || '';
+      updateLocationMap();
 
       const targetCollege = item.target_college || item.college || '';
       targetCollegeSelect.value = targetCollege;
