@@ -1849,9 +1849,18 @@ app.get('/api/chat-list', (req, res) => {
       r.id AS room_id,
       r.product_id,
       '채팅방' AS name,
-      '' AS last_message,
+
+      (
+        SELECT text
+        FROM messages m
+        WHERE m.room_id = r.id
+        ORDER BY m.id DESC
+        LIMIT 1
+      ) AS last_message,
+
       0 AS unread,
       'market' AS type
+
     FROM rooms r
     ORDER BY r.id DESC
   `;
