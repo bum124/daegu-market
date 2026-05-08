@@ -33,6 +33,12 @@ app.use(express.static(path.join(__dirname)));
 app.post('/chat/start', (req, res) => {
   const { product_id, buyer_id, seller_id } = req.body;
 
+  if (buyer_id === seller_id) {
+  return res.status(400).json({
+    message: "본인과는 채팅할 수 없습니다."
+  });
+}
+
   const checkRoomSql = `
     SELECT r.id 
     FROM rooms r
