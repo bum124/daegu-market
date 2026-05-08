@@ -902,10 +902,15 @@ async function openChat() {
   const buyerId = await resolveUserId(user);
   const sellerId = window.currentSeller && window.currentSeller.id;
 
-  if (!buyerId || !sellerId) {
-    alert("사용자 정보가 부족합니다.");
-    return;
-  }
+if (!sellerId) {
+  alert("상품 정보를 아직 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
+  return;
+}
+
+if (!buyerId) {
+  alert("로그인이 필요합니다.");
+  return;
+}
 
   // 채팅방 생성 or 찾기 요청
   const res = await fetchWithTimeout("https://daegu-market-api.onrender.com/chat/start", {
