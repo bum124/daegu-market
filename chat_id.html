@@ -9,8 +9,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- 소켓 -->
-  <script src="https://daegu-market-api.onrender.com/socket.io/socket.io.js"></script>
-
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  
   <style>
     body { font-family: sans-serif; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
@@ -40,7 +40,7 @@
 </div>
 
 <script>
-const socket = io("https://daegu-market-api.onrender.com");
+const socket = io("http://localhost:3000");
 
 /* -------------------------
    URL
