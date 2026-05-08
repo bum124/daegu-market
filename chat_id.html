@@ -82,6 +82,7 @@ socket.on("loadMessages", (messages) => {
    3. 메시지 받기
 ------------------------- */
 socket.on("receive_message", (data) => {
+   console.log("받은 메시지:", data);
   render(data.sender, data.text);
 });
 
