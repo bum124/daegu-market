@@ -101,6 +101,12 @@ form.addEventListener("submit", (e) => {
     return;
   }
 
+ console.log("보내는 데이터:", {
+  roomId: roomId,
+  sender: user.user_id,
+  text: text
+  });
+
   socket.emit("send_message", {
     roomId: roomId,
     sender: user.user_id,
