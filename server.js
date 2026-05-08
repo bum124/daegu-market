@@ -2003,6 +2003,7 @@ io.on('connection', (socket) => {
 
   // 방 입장
   socket.on('join_room', (roomId) => {
+    console.log("방 입장 요청:", roomId);
     socket.join(roomId);
 
     db.query(
