@@ -286,6 +286,78 @@
         submitBtn.textContent = '등록하기';
         submitBtn.disabled = false;
       }
+
+    });
+    // 4) 로그인 확인 (회장 검사는 백엔드에서 완벽하게 해줍니다!)
+    window.addEventListener('DOMContentLoaded', () => {
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+      } catch (e) {
+        user = null;
+      }
+
+      if (!user) {
+        alert('로그인이 필요합니다.');
+        window.location.href = 'login.html';
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.location.href = 'club-admin.html';
+    });
+
+    // 🌟 실제 서버와 통신하는 '진짜' 등록 로직!
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      let user = null;
+      try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch(e) {}
+      if (!user) return showError('로그인 정보가 없습니다.');
+
+      const author_id = user.user_id || user.id || user.student_id;
+      const postType = (new FormData(form)).get('postType');
+      const category = categorySelect.value;
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (!postType) return showError('게시 유형을 선택해주세요.');
+      if (!category) return showError('카테고리를 선택해주세요.');
+      if (!title || title.length < 4) return showError('제목은 4자 이상으로 입력해주세요.');
+      if (!content) return showError('본문을 입력해주세요.');
+
+      submitBtn.textContent = '등록 중...';
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('https://daegu-market-api.onrender.com/api/club-posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            author_id: author_id,
+            post_type: postType,
+            category: category,
+            title: title,
+            content: content
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(result.message);
+          window.location.href = 'club-board.html'; // 성공하면 소식통(게시판)으로 바로 이동!
+        } else {
+          showError(result.message || '등록에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error(error);
+        showError('서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      } finally {
+        submitBtn.textContent = '등록하기';
+        submitBtn.disabled = false;
+      }
     });
   </script>
 </body>
