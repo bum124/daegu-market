@@ -1940,11 +1940,16 @@ app.get('/api/mypage', (req, res) => {
 });
 
 app.get('/api/chat-list', (req, res) => {
+  const userId = req.query.user_id;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'user_id가 필요합니다.' });
+  }
+
   const sql = `
     SELECT 
       r.id AS room_id,
       r.product_id,
-
       p.title AS name,
 
       (
@@ -1959,14 +1964,17 @@ app.get('/api/chat-list', (req, res) => {
       'market' AS type
 
     FROM rooms r
-
+    JOIN room_users ru
+      ON r.id = ru.room_id
     JOIN products p
       ON r.product_id = p.id
+
+    WHERE ru.user_id = ?
 
     ORDER BY r.id DESC
   `;
 
-  db.query(sql, (err, results) => {
+  db.query(sql, [userId], (err, results) => {
     if (err) return res.status(500).send(err);
 
     res.json(results);

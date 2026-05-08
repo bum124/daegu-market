@@ -50,7 +50,11 @@
    서버에서 채팅 목록 가져오기
 ------------------------- */
 function loadChatList() {
-  fetch("https://daegu-market-api.onrender.com/api/chat-list")
+  const user =
+    JSON.parse(localStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("loggedInUser"));
+
+    fetch(`https://daegu-market-api.onrender.com/api/chat-list?user_id=${user.user_id}`)
     .then(res => res.json())
     .then(data => {
       console.log("chat list data:", data);
