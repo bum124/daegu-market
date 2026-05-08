@@ -73,12 +73,8 @@
       </a>
 
       <nav class="hidden items-center gap-2 md:flex">
-        <a href="index.html" class="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">홈</a>
-        <a href="sell.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
-          판매하기
-        </a>
-        <a href="club-admin.html" class="rounded-lg bg-muted px-3 py-2 text-sm font-medium text-foreground">동아리 관리자</a>
-
+        <a href="index.html" class="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">중고장터 홈</a>
+        <a href="club-main.html" class="rounded-lg px-3 py-2 text-sm font-medium text-primary bg-green-50 hover:bg-green-100">동아리 홈</a>
         <a href="login.html" id="nav-login-btn" class="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">로그인</a>
         <a href="register.html" id="nav-signup-btn" class="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">회원가입</a>
 
@@ -353,6 +349,18 @@
     // 주소창에서 동아리 번호 뽑기 (?id=1)
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
+
+    function handlePresidentAction(event, targetUrl) {
+      event.preventDefault();
+      window.location.href = targetUrl;
+    }
+
+    function handleTransferPresident(event) {
+      event.preventDefault();
+      if(confirm('정말로 회장 권한을 넘기시겠습니까?')) {
+        window.location.href = 'club-transfer.html';
+      }
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
       let user = null;
