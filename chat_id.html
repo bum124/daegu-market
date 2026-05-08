@@ -60,8 +60,6 @@ const input = document.getElementById("msgInput");
 /* -------------------------
    2. 방 입장
 ------------------------- */
-socket.emit("join_room", roomId);
-
 socket.on("loadMessages", (messages) => {
 
   console.log("loadMessages 실행됨");
@@ -69,7 +67,7 @@ socket.on("loadMessages", (messages) => {
   chatBody.innerHTML = "";
 
   messages.forEach(msg => {
-    render(msg.sender, msg.text);
+    render(msg.sender_id, msg.message);
   });
 });
 

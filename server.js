@@ -2018,20 +2018,22 @@ io.on('connection', (socket) => {
 
   // 메시지 보내기
   socket.on('send_message', (data) => {
-
+   console.log("send_message 들어옴:", data);
     // 실시간 전송
     io.to(data.roomId).emit('receive_message', data);
 
     // DB 저장
     db.query(
-      'INSERT INTO messages (room_id, sende_id, message) VALUES (?, ?, ?)',
-      [data.roomId, data.sender, data.text],
-      (err) => {
-        if (err) {
-          console.log('메시지 저장 실패:', err);
-        }
-      }
-    );
+  'INSERT INTO messages (room_id, sender_id, message) VALUES (?, ?, ?)',
+  [data.roomId, data.sender, data.text],
+  (err) => {
+    if (err) {
+      console.log('메시지 저장 실패:', err);
+    } else {
+      console.log('메시지 저장 성공');
+    }
+  }
+);
   });
 
   socket.on('disconnect', () => {
