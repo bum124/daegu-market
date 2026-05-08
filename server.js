@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const mysql = require('mysql2');
 const cors = require('cors');
 const sgMail = require('@sendgrid/mail');
@@ -10,6 +12,13 @@ dns.setDefaultResultOrder('ipv4first');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -1841,9 +1850,8 @@ app.put('/api/users/:id', (req, res) => {
     });
 });
 
-// 3. 서버 켜기 (3000번 포트 사용)
-app.listen(PORT, () => {
-    console.log(`서버가 ${PORT}번 포트에서 돌아가고 있습니다.`);
+server.listen(PORT, () => {
+    console.log(`서버 실행중: ${PORT}`);
 });
 
 app.get('/api/mypage', (req, res) => {
@@ -1987,5 +1995,46 @@ app.post('/messages', (req, res) => {
       message: '메시지 저장 완료',
       id: result.insertId
     });
+  });
+});
+
+io.on('connection', (socket) => {
+  console.log('유저 접속:', socket.id);
+
+  // 방 입장
+  socket.on('join_room', (roomId) => {
+    socket.join(roomId);
+
+    db.query(
+      'SELECT * FROM messages WHERE room_id = ? ORDER BY id ASC',
+      [roomId],
+      (err, results) => {
+        if (!err) {
+          socket.emit('loadMessages', results);
+        }
+      }
+    );
+  });
+
+  // 메시지 보내기
+  socket.on('send_message', (data) => {
+
+    // 실시간 전송
+    io.to(data.roomId).emit('receive_message', data);
+
+    // DB 저장
+    db.query(
+      'INSERT INTO messages (room_id, sende_id, message) VALUES (?, ?, ?)',
+      [data.roomId, data.sender, data.text],
+      (err) => {
+        if (err) {
+          console.log('메시지 저장 실패:', err);
+        }
+      }
+    );
+  });
+
+  socket.on('disconnect', () => {
+    console.log('유저 나감:', socket.id);
   });
 });
