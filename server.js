@@ -1562,6 +1562,88 @@ app.get('/api/club-posts/:postId', (req, res) => {
   });
 });
 
+// 11. 동아리 내부 공지 불러오기 API (철통 보안! 부원/회장 전용)
+app.get('/api/clubs/:clubId/internal-posts', (req, res) => {
+  const clubId = req.params.clubId;
+  const userId = req.query.userId; // 프론트엔드에서 보내준 내 신분증 번호
+
+  if (!userId) {
+    return res.status(403).json({ message: '로그인이 필요합니다.' });
+  }
+
+  // 1. 일반 부원(APPROVED 상태)인지 먼저 검사합니다. (Club_Members 테이블)
+  const checkMemberSql = `SELECT * FROM Club_Members WHERE club_id = ? AND user_id = ? AND status = 'APPROVED'`;
+  
+  queryWithTimeout(checkMemberSql, [clubId, userId], (checkErr, members) => {
+    if (checkErr) return res.status(500).json({ message: '권한 확인 중 오류가 발생했습니다.' });
+
+    // 2. 부원이 아니면 혹시 이 동아리 회장님인지 검사합니다. (Clubs 테이블)
+    const checkLeaderSql = `SELECT * FROM Clubs WHERE club_id = ? AND leader_id = ?`;
+    
+    queryWithTimeout(checkLeaderSql, [clubId, userId], (leaderErr, leaders) => {
+      if (leaderErr) return res.status(500).json({ message: '권한 확인 중 오류가 발생했습니다.' });
+      
+      // 부원 명단에도 없고 회장도 아니면 바로 쫓아냅니다! 🔒
+      if (members.length === 0 && leaders.length === 0) {
+        return res.status(403).json({ message: '동아리 부원만 볼 수 있는 공지입니다.' });
+      }
+
+      // 권한 검사 통과! 내부 공지(INTERNAL)만 모아서 보내줍니다.
+      const postSql = `
+        SELECT cp.*, u.name AS author_name 
+        FROM Club_Posts cp
+        JOIN Users u ON cp.author_id = u.user_id
+        WHERE cp.club_id = ? AND cp.post_type = 'INTERNAL'
+        ORDER BY cp.created_at DESC
+      `;
+
+      queryWithTimeout(postSql, [clubId], (postErr, posts) => {
+        if (postErr) return res.status(500).json({ message: '공지를 불러오지 못했습니다.' });
+        res.json(posts);
+      });
+    });
+  });
+});
+
+// 12. 동아리 승인된 부원(기존 부원) 목록 불러오기 API
+app.get('/api/clubs/:clubId/approved-members', (req, res) => {
+  const clubId = req.params.clubId;
+  const sql = `
+    SELECT cm.user_id, cm.status, u.name, u.student_id 
+    FROM Club_Members cm
+    JOIN Users u ON cm.user_id = u.user_id
+    WHERE cm.club_id = ? AND cm.status = 'APPROVED'
+    ORDER BY cm.created_at ASC
+  `;
+  
+  queryWithTimeout(sql, [clubId], (err, results) => {
+    if (err) return res.status(500).json({ message: '부원 목록 DB 에러' });
+    res.json(results);
+  });
+});
+
+// 13. 동아리 부원 뱃지 회수(추방) API
+app.delete('/api/clubs/:clubId/members/:userId', (req, res) => {
+  const { clubId, userId } = req.params;
+  const sql = `DELETE FROM Club_Members WHERE club_id = ? AND user_id = ?`;
+  
+  queryWithTimeout(sql, [clubId, userId], (err) => {
+    if (err) return res.status(500).json({ message: '뱃지 회수 중 오류가 발생했습니다.' });
+    res.json({ message: '해당 부원의 인증 뱃지가 회수(내보내기) 되었습니다.' });
+  });
+});
+
+// 14. 동아리 폐부(삭제) API - CASCADE 덕분에 소식/부원 데이터도 자동 삭제됨!
+app.delete('/api/clubs/:clubId', (req, res) => {
+  const clubId = req.params.clubId;
+  const sql = 'DELETE FROM Clubs WHERE club_id = ?';
+
+  queryWithTimeout(sql, [clubId], (err) => {
+    if (err) return res.status(500).json({ message: '폐부 처리 중 오류가 발생했습니다.' });
+    res.json({ message: '동아리가 안전하게 폐부되었습니다. 그동안 고생 많으셨습니다!' });
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 
@@ -2105,3 +2187,24 @@ app.delete('/chat/rooms/:roomId/leave', (req, res) => {
     });
   });
 });
+
+// --- 🧹 동아리 게시판 데이터베이스 자동 정리 (6개월 경과 게시글 삭제) ---
+function cleanupOldPosts() {
+  // 💡 DELETE 문을 사용하여 6개월이 지난 데이터를 실제로 삭제합니다.
+  const sql = "DELETE FROM Club_Posts WHERE created_at < DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+  
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('데이터 자동 정리 중 오류 발생:', err);
+    } else if (result.affectedRows > 0) {
+      // 삭제된 데이터가 있을 때만 로그를 남깁니다.
+      console.log(`[자동 정리 완료] 6개월이 경과한 게시글 ${result.affectedRows}건이 삭제되었습니다.`);
+    }
+  });
+}
+
+// 24시간(1000ms * 60s * 60m * 24h)마다 청소 함수 실행
+setInterval(cleanupOldPosts, 24 * 60 * 60 * 1000);
+
+// 서버가 처음 켜질 때도 한 번 실행해서 밀린 숙제를 하게 합니다.
+cleanupOldPosts();
