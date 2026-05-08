@@ -21,10 +21,12 @@
 <div class="max-w-2xl mx-auto h-screen flex flex-col bg-white">
 
   <!-- HEADER -->
-  <header class="p-4 border-b flex justify-between">
-    <a href="chat.html">←</a>
-    <div>채팅</div>
-    <div></div>
+  <header class="p-4 border-b flex justify-between items-center">
+   <a href="chat.html">←</a>
+   <div>채팅</div>
+   <button id="leaveBtn" class="text-red-500 text-sm">
+    나가기
+   </button>
   </header>
 
   <!-- CHAT -->
@@ -116,6 +118,41 @@ form.addEventListener("submit", (e) => {
   });
 
   input.value = "";
+});
+
+document.getElementById("leaveBtn").addEventListener("click", async () => {
+  const user =
+    JSON.parse(localStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("loggedInUser"));
+
+  if (!user) {
+    alert("로그인이 필요합니다.");
+    return;
+  }
+
+  if (!confirm("이 채팅방에서 나가시겠습니까?")) {
+    return;
+  }
+
+  const res = await fetch(`https://daegu-market-api.onrender.com/chat/rooms/${roomId}/leave`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: user.user_id || user.id
+    })
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    alert(data.message || "채팅방 나가기에 실패했습니다.");
+    return;
+  }
+
+  alert("채팅방에서 나갔습니다.");
+  window.location.href = "chat.html";
 });
 
 /* -------------------------

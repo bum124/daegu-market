@@ -2067,3 +2067,32 @@ io.on('connection', (socket) => {
     console.log('유저 나감:', socket.id);
   });
 });
+
+app.delete('/chat/rooms/:roomId/leave', (req, res) => {
+  const roomId = req.params.roomId;
+  const { user_id } = req.body;
+
+  if (!user_id) {
+    return res.status(400).json({
+      message: 'user_id가 필요합니다.'
+    });
+  }
+
+  const sql = `
+    DELETE FROM room_users
+    WHERE room_id = ? AND user_id = ?
+  `;
+
+  db.query(sql, [roomId, user_id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: '채팅방 나가기 실패'
+      });
+    }
+
+    res.json({
+      message: '채팅방 나가기 완료'
+    });
+  });
+});
