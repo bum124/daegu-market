@@ -1936,10 +1936,11 @@ app.get('/api/chat-list', (req, res) => {
     SELECT 
       r.id AS room_id,
       r.product_id,
-      '채팅방' AS name,
+
+      p.title AS name,
 
       (
-        SELECT text
+        SELECT m.text
         FROM messages m
         WHERE m.room_id = r.id
         ORDER BY m.id DESC
@@ -1950,11 +1951,16 @@ app.get('/api/chat-list', (req, res) => {
       'market' AS type
 
     FROM rooms r
+
+    JOIN products p
+      ON r.product_id = p.id
+
     ORDER BY r.id DESC
   `;
 
   db.query(sql, (err, results) => {
     if (err) return res.status(500).send(err);
+
     res.json(results);
   });
 });
