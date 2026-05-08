@@ -67,7 +67,7 @@ socket.on("loadMessages", (messages) => {
   chatBody.innerHTML = "";
 
   messages.forEach(msg => {
-    render(msg.sender_id, msg.message);
+    render(msg.sender, msg.text);
   });
 });
 

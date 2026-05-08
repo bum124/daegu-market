@@ -2024,7 +2024,7 @@ io.on('connection', (socket) => {
 
     // DB 저장
     db.query(
-  'INSERT INTO messages (room_id, sender_id, message) VALUES (?, ?, ?)',
+  'INSERT INTO messages (room_id, sender, text) VALUES (?, ?, ?)',
   [data.roomId, data.sender, data.text],
   (err) => {
     if (err) {
