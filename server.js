@@ -2030,7 +2030,7 @@ io.on('connection', (socket) => {
 
   // 방 입장
   socket.on('join_room', (roomId) => {
-    console.log("방 입장 요청:", roomId);
+    console.log('방 입장 요청:', roomId);
     socket.join(roomId);
 
     db.query(
@@ -2046,22 +2046,29 @@ io.on('connection', (socket) => {
 
   // 메시지 보내기
   socket.on('send_message', (data) => {
-   console.log("send_message 들어옴:", data);
+    console.log('send_message 들어옴:', data);
+
     // 실시간 전송
     io.to(data.roomId).emit('receive_message', data);
 
     // DB 저장
     db.query(
-  'INSERT INTO messages (room_id, sender, text) VALUES (?, ?, ?)',
-  [data.roomId, data.sender, data.text],
-  (err) => {
-    if (err) {
-      console.log('메시지 저장 실패:', err);
-    } else {
-      console.log('메시지 저장 성공');
-    }
-  }
-);
+      'INSERT INTO messages (room_id, sender, text) VALUES (?, ?, ?)',
+      [data.roomId, data.sender, data.text],
+      (err) => {
+        if (err) {
+          console.log('메시지 저장 실패:', err);
+        } else {
+          console.log('메시지 저장 성공');
+
+          // 누군가 메시지를 보내면 나갔던 사용자도 다시 목록에 보이게 복구
+          db.query(
+            'UPDATE room_users SET is_active = 1 WHERE room_id = ?',
+            [data.roomId]
+          );
+        }
+      }
+    );
   });
 
   socket.on('disconnect', () => {
