@@ -1988,6 +1988,7 @@ app.get('/api/chat-list', (req, res) => {
       ON r.product_id = p.id
 
     WHERE my_ru.user_id = ?
+      AND my_ru.is_active = 1
 
     ORDER BY r.id DESC
   `;
@@ -2081,8 +2082,7 @@ app.delete('/chat/rooms/:roomId/leave', (req, res) => {
   const sql = `
     UPDATE room_users
     SET is_active = 0
-    WHERE my_ru.user_id = ?
-    AND my_ru.is_active = 1
+    WHERE room_id = ? AND user_id = ?
   `;
 
   db.query(sql, [roomId, user_id], (err, result) => {
