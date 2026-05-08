@@ -1498,6 +1498,55 @@ app.post('/api/club-posts', (req, res) => {
   });
 });
 
+// 9. 캠퍼스 소식통(전체 게시글) 불러오기 API
+app.get('/api/club-posts', (req, res) => {
+  // 💡 센스 포인트: post_type이 'PUBLIC(전체 홍보)'인 글만 가져옵니다! 
+  // (INTERNAL(내부 공지)은 나중에 내 동아리 상세 페이지에서만 보이게 할 겁니다)
+  const sql = `
+    SELECT cp.*, c.name AS club_name, u.name AS author_name 
+    FROM Club_Posts cp
+    JOIN Clubs c ON cp.club_id = c.club_id
+    JOIN Users u ON cp.author_id = u.user_id
+    WHERE cp.post_type = 'PUBLIC'
+    ORDER BY cp.created_at DESC
+  `;
+  
+  queryWithTimeout(sql, (err, results) => {
+    if (err) {
+      console.error('게시글 목록 DB 에러:', err);
+      return res.status(500).json({ message: '소식을 불러오는 중 오류가 발생했습니다.' });
+    }
+    res.json(results);
+  });
+});
+
+// 10. 특정 소식(게시글) 상세 보기 API
+app.get('/api/club-posts/:postId', (req, res) => {
+  const postId = req.params.postId;
+  
+  // 글 정보와 함께, 이 글을 쓴 동아리의 이름(club_name)과 번호(club_id)도 같이 가져옵니다.
+  const sql = `
+    SELECT cp.*, c.name AS club_name, c.club_id 
+    FROM Club_Posts cp
+    JOIN Clubs c ON cp.club_id = c.club_id
+    WHERE cp.post_id = ?
+  `;
+  
+  queryWithTimeout(sql, [postId], (err, results) => {
+    if (err) {
+      console.error('게시글 상세 조회 DB 에러:', err);
+      return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+    
+    if (results.length === 0) {
+      return res.status(404).json({ message: '해당 글을 찾을 수 없습니다.' });
+    }
+    
+    // 딱 1개의 글 데이터만 프론트로 보냅니다.
+    res.json(results[0]);
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

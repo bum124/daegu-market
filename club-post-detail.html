@@ -126,16 +126,74 @@
   </main>
 
   <script>
-    // ===== 이미지 슬라이더(product/club-detail 구조 참고) =====
-    window.images = [
-      "https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80"
-    ];
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id');
+    const API_BASE_URL = "https://daegu-market-api.onrender.com";
+
+    // 🌟 시간 계산 도우미 (3일 전, 2시간 전 등)
+    function getTimeAgo(dateString) {
+      const now = new Date();
+      const past = new Date(dateString);
+      const diffMs = now - past;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 60) return `${diffMins || 1}분 전`;
+      if (diffHours < 24) return `${diffHours}시간 전`;
+      return `${diffDays}일 전`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!postId) {
+        alert('잘못된 접근입니다.');
+        window.location.href = 'club-board.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/club-posts/${postId}`);
+        if (!response.ok) throw new Error('게시글을 불러오지 못했습니다.');
+        
+        const post = await response.json();
+
+        // 1. 진짜 데이터 꽂아넣기!
+        document.getElementById('postTitle').textContent = post.title;
+        document.getElementById('postBody').textContent = post.content;
+        document.getElementById('clubName').textContent = post.club_name;
+        document.getElementById('createdAt').textContent = getTimeAgo(post.created_at);
+        document.getElementById('likeText').textContent = `관심 ${post.likes || 0}`;
+        
+        // 2. 카테고리 뱃지 글자 바꾸기
+        const categoryBadge = document.querySelector('.bg-green-50.text-green-700');
+        if (categoryBadge) categoryBadge.textContent = post.category;
+
+        // 3. ✨ [핵심 디테일] 이 동아리 정보 보기 버튼을 누르면 해당 동아리 상세페이지로 이동!
+        const clubLinkBtn = document.querySelector('a[href="club-detail.html"]');
+        if (clubLinkBtn) {
+          clubLinkBtn.href = `club-detail.html?id=${post.club_id}`;
+        }
+
+        // 4. 이미지 슬라이더 연동 (사진이 없으면 대구대 느낌의 기본 사진으로!)
+        window.images = post.images && post.images.length > 0 
+          ? post.images 
+          : ["https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80"];
+        
+        window.currentIndex = 0;
+        initGallery(); 
+
+      } catch (error) {
+        console.error(error);
+        alert('게시글을 불러오는 중 오류가 발생했습니다.');
+        window.location.href = 'club-board.html';
+      }
+    });
+
+    // ===== 이하 기존 이미지 슬라이더 로직 =====
     window.currentIndex = 0;
 
     function updateImage() {
-      if (!window.images.length) return;
+      if (!window.images || !window.images.length) return;
       document.getElementById("mainImage").src = window.images[window.currentIndex];
 
       const dots = document.getElementById("imageDots").children;
@@ -145,13 +203,13 @@
     }
 
     function prevImage() {
-      if (!window.images.length) return;
+      if (!window.images || !window.images.length) return;
       window.currentIndex = window.currentIndex === 0 ? window.images.length - 1 : window.currentIndex - 1;
       updateImage();
     }
 
     function nextImage() {
-      if (!window.images.length) return;
+      if (!window.images || !window.images.length) return;
       window.currentIndex = window.currentIndex === window.images.length - 1 ? 0 : window.currentIndex + 1;
       updateImage();
     }
@@ -161,9 +219,12 @@
       updateImage();
     }
 
-    (function initGallery() {
+    function initGallery() {
       const dotsContainer = document.getElementById("imageDots");
+      if(!dotsContainer) return;
       dotsContainer.innerHTML = "";
+      if (!window.images) return;
+      
       window.images.forEach((_, index) => {
         const dot = document.createElement("button");
         dot.type = "button";
@@ -172,19 +233,21 @@
         dotsContainer.appendChild(dot);
       });
       updateImage();
-    })();
+    }
 
-    // ===== 관심(좋아요) 토글(데모) =====
+    // ===== 관심(좋아요) 토글 (데모) =====
     let liked = false;
     const likeBtn = document.getElementById("likeBtn");
-    likeBtn.addEventListener("click", () => {
-      liked = !liked;
-      likeBtn.setAttribute("aria-pressed", String(liked));
-      document.getElementById("likeIcon").textContent = liked ? "♥" : "♡";
-      likeBtn.classList.toggle("text-primary", liked);
-      likeBtn.classList.toggle("border-green-200", liked);
-      likeBtn.classList.toggle("bg-green-50", liked);
-    });
+    if(likeBtn) {
+      likeBtn.addEventListener("click", () => {
+        liked = !liked;
+        likeBtn.setAttribute("aria-pressed", String(liked));
+        document.getElementById("likeIcon").textContent = liked ? "♥" : "♡";
+        likeBtn.classList.toggle("text-primary", liked);
+        likeBtn.classList.toggle("border-green-200", liked);
+        likeBtn.classList.toggle("bg-green-50", liked);
+      });
+    }
   </script>
 </body>
 </html>
