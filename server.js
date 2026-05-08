@@ -2081,7 +2081,8 @@ app.delete('/chat/rooms/:roomId/leave', (req, res) => {
   const sql = `
     UPDATE room_users
     SET is_active = 0
-    WHERE room_id = ? AND user_id = 1
+    WHERE ru.user_id = ?
+    AND ru.is_active = 1
   `;
 
   db.query(sql, [roomId, user_id], (err, result) => {
