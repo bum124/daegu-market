@@ -1459,6 +1459,45 @@ app.put('/api/clubs/:clubId/members/:userId/approve', (req, res) => {
   });
 });
 
+// 8. 동아리 소식(게시글) 작성 API
+app.post('/api/club-posts', (req, res) => {
+  const { author_id, post_type, category, title, content } = req.body;
+
+  if (!author_id) {
+    return res.status(400).json({ message: '로그인이 필요합니다.' });
+  }
+
+  // 1단계: 글쓴이(author_id)가 회장으로 있는 동아리의 번호(club_id)를 몰래 찾아옵니다!
+  const findClubSql = 'SELECT club_id FROM Clubs WHERE leader_id = ?';
+
+  queryWithTimeout(findClubSql, [author_id], (findErr, clubs) => {
+    if (findErr) {
+      console.error('동아리 찾기 에러:', findErr);
+      return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    }
+
+    if (clubs.length === 0) {
+      return res.status(403).json({ message: '동아리 회장님만 글을 쓸 수 있습니다!' });
+    }
+
+    const clubId = clubs[0].club_id; // 찾은 동아리 번호
+
+    // 2단계: 찾아낸 club_id와 함께 Club_Posts 테이블에 글을 등록합니다!
+    const insertSql = `
+      INSERT INTO Club_Posts (club_id, author_id, post_type, category, title, content)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    queryWithTimeout(insertSql, [clubId, author_id, post_type, category, title, content], (insertErr) => {
+      if (insertErr) {
+        console.error('게시글 등록 DB 에러:', insertErr);
+        return res.status(500).json({ message: '글 등록 중 오류가 발생했습니다.' });
+      }
+      res.json({ message: '동아리 소식이 성공적으로 등록되었습니다! 🎉' });
+    });
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 
