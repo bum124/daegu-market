@@ -75,7 +75,7 @@ socket.on("loadMessages", (messages) => {
   chatBody.innerHTML = "";
 
   messages.forEach(msg => {
-    render(msg.sender, msg.text);
+    render(Number(msg.sender), msg.text);
   });
 });
 
@@ -124,7 +124,7 @@ form.addEventListener("submit", (e) => {
 function render(sender, text) {
   const user = JSON.parse(localStorage.getItem("loggedInUser"));
 
-  const isMe = user && sender === user.user_id;
+  const isMe = user && String(sender) === String(user.user_id || user.id);
 
   const div = document.createElement("div");
   div.className = `flex ${isMe ? "justify-end" : "justify-start"} mb-2`;
