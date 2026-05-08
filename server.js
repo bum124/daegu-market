@@ -1958,6 +1958,9 @@ app.get('/api/chat-list', (req, res) => {
       r.product_id,
       p.title AS name,
 
+      opponent.nickname AS opponent_nickname,
+      opponent.name AS opponent_name,
+
       (
         SELECT m.text
         FROM messages m
@@ -1970,12 +1973,21 @@ app.get('/api/chat-list', (req, res) => {
       'market' AS type
 
     FROM rooms r
-    JOIN room_users ru
-      ON r.id = ru.room_id
+
+    JOIN room_users my_ru
+      ON r.id = my_ru.room_id
+
+    LEFT JOIN room_users other_ru
+      ON r.id = other_ru.room_id
+      AND other_ru.user_id <> my_ru.user_id
+
+    LEFT JOIN Users opponent
+      ON opponent.user_id = other_ru.user_id
+
     JOIN products p
       ON r.product_id = p.id
 
-    WHERE ru.user_id = ?
+    WHERE my_ru.user_id = ?
 
     ORDER BY r.id DESC
   `;
