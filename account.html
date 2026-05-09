@@ -44,8 +44,17 @@
       </div>
 
       <div>
+        <label for="college" class="text-sm font-medium text-slate-700">단과대학</label>
+        <select id="college" required class="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+          <option value="">단과대학을 선택하세요</option>
+        </select>
+      </div>
+
+      <div>
         <label for="department" class="text-sm font-medium text-slate-700">학과</label>
-        <input id="department" type="text" required class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+        <select id="department" required disabled class="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm disabled:bg-slate-100 disabled:text-slate-500">
+          <option value="">단과대학을 먼저 선택하세요</option>
+        </select>
       </div>
 
       <div class="border-t border-slate-100 pt-4">
@@ -77,10 +86,145 @@
       email: document.getElementById('email'),
       name: document.getElementById('name'),
       nickname: document.getElementById('nickname'),
+      college: document.getElementById('college'),
       department: document.getElementById('department'),
       currentPassword: document.getElementById('currentPassword'),
       newPassword: document.getElementById('newPassword')
     };
+
+    const departmentData = {
+      '공공인재대학': [
+        '공공안전학부 소방·행정학전공',
+        '공공안전학부 공직법무전공',
+        '경찰학부 경찰행정학전공',
+        '경찰학부 자치경찰학전공',
+        '국방군사학과',
+        '부동산·지적학과'
+      ],
+      '글로벌경영대학': [
+        '경영학부 경영학전공',
+        '경영학부 회계학전공',
+        '경제금융통상학과',
+        '호텔관광경영학부 관광항공경영전공',
+        '호텔관광경영학부 호텔관광외식서비스전공',
+        '일본어일본학과'
+      ],
+      '사회과학대학': [
+        '사회복지학과',
+        '청소년상담복지학과',
+        '아동가정복지학과',
+        '평생교육실버복지학과',
+        '미디어커뮤니케이션학부 영상콘텐츠전공',
+        '미디어커뮤니케이션학부 광고PR전공',
+        '문헌정보학과',
+        '심리학과'
+      ],
+      '보건바이오대학': [
+        '보건의료학과',
+        '응급구조학과',
+        '동물자원학과',
+        '반려동물산업학과',
+        '스마트원예학과',
+        '식품가공학과',
+        '난임의료산업학과'
+      ],
+      'IT·공과대학': [
+        '건축공학과',
+        '소방안전방재학과',
+        '기계자동차공학부 기계공학전공',
+        '기계자동차공학부 미래자동차공학전공',
+        '식품영양학과',
+        '조경산림정원학과',
+        '친환경에너지학과',
+        '전자전기공학부 반도체전자공학전공',
+        '전자전기공학부 전기공학전공',
+        '전자전기공학부 정보통신공학전공',
+        '컴퓨터정보공학부 컴퓨터공학전공',
+        '컴퓨터정보공학부 컴퓨터소프트웨어전공',
+        '컴퓨터정보공학부 사이버보안전공',
+        '신소재에너지시스템공학부 신소재에너지공학전공',
+        '건설시스템공학과',
+        '환경기술공학과',
+        '생명공학과',
+        '화학공학과',
+        'AI학과',
+        'IT융합학과',
+        '메카트로닉스공학과'
+      ],
+      '디자인예술대학': [
+        '웹툰영상애니메이션학부 영상애니메이션전공',
+        '웹툰영상애니메이션학부 웹툰전공',
+        '시각디자인융합학부 시각디자인전공',
+        '시각디자인융합학부 서비스마케팅디자인전공',
+        '산업디자인학과',
+        '패션디자인학과',
+        '뷰티학부 헤어디자인전공',
+        '뷰티학부 메이크업·피부전공',
+        '실내건축디자인학과',
+        '게임학과',
+        '융합예술학부 아트앤디자인전공',
+        '주얼리디자인학과'
+      ],
+      '사범대학': [
+        '국어교육과',
+        '영어교육과',
+        '역사교육과',
+        '일반사회교육과',
+        '지리교육과',
+        '유아교육과',
+        '특수교육과',
+        '초등특수교육과',
+        '유아특수교육과',
+        '수학교육과',
+        '물리교육과',
+        '화학교육과',
+        '생물교육과',
+        '지구과학교육과'
+      ],
+      '재활과학대학': [
+        '물리치료학과',
+        '작업치료학과',
+        '언어치료학과',
+        '재활상담심리치료학과',
+        '의료재활학과',
+        '재활건강증진학과',
+        '특수창의융합학과'
+      ],
+      '간호대학': ['간호학과'],
+      '체육레저학부': ['체육학과', '스포츠레저학과', '스포츠헬스케어학과'],
+      '문화콘텐츠학부': ['문화콘텐츠학부'],
+      '자유전공학부': ['자유전공학부'],
+      '글로컬라이프대학': [
+        '휴먼케어창의학부 실버복지·복지상담학전공',
+        '휴먼케어창의학부 자산관리·6차산업학전공',
+        '글로컬융합학부 평생교육·청소년학전공',
+        '글로컬라이프대학'
+      ],
+      '국제 대학': ['글로벌한국학부', '글로벌인재학부', '글로벌자율학부']
+    };
+
+    function populateCollegeOptions() {
+      fields.college.innerHTML = '<option value="">단과대학을 선택하세요</option>' + Object.keys(departmentData)
+        .map(college => `<option value="${college}">${college}</option>`)
+        .join('');
+    }
+
+    function populateDepartmentOptions(college) {
+      const departments = departmentData[college] || [];
+
+      fields.department.disabled = departments.length === 0;
+      fields.department.innerHTML = departments.length
+        ? '<option value="">학과를 선택하세요</option>' + departments.map(department => `<option value="${department}">${department}</option>`).join('')
+        : '<option value="">단과대학을 먼저 선택하세요</option>';
+    }
+
+    function findCollegeByDepartment(department) {
+      return Object.entries(departmentData).find(([, departments]) => departments.includes(department))?.[0] || '';
+    }
+
+    fields.college.addEventListener('change', () => {
+      populateDepartmentOptions(fields.college.value);
+    });
 
     function getLoggedInUser() {
       try {
@@ -125,7 +269,11 @@
       fields.email.value = data.email || user.email || '';
       fields.name.value = data.name || user.name || '';
       fields.nickname.value = data.nickname || user.nickname || '';
-      fields.department.value = data.department || user.department || '';
+      const department = data.department || user.department || '';
+      const college = data.college || user.college || findCollegeByDepartment(department);
+      fields.college.value = college;
+      populateDepartmentOptions(college);
+      fields.department.value = department;
       form.dataset.userId = userId;
     }
 
@@ -138,10 +286,18 @@
       const payload = {
         name: fields.name.value.trim(),
         nickname: fields.nickname.value.trim(),
+        college: fields.college.value,
         department: fields.department.value.trim(),
         currentPassword: fields.currentPassword.value,
         newPassword: fields.newPassword.value
       };
+
+      if (!payload.college || !payload.department) {
+        alert('단과대학과 학과를 선택해주세요.');
+        saveButton.disabled = false;
+        saveButton.textContent = '저장하기';
+        return;
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(form.dataset.userId)}`, {
         method: 'PUT',
@@ -166,6 +322,7 @@
         id: Number(form.dataset.userId),
         name: payload.name,
         nickname: payload.nickname,
+        college: payload.college,
         department: payload.department,
         email: fields.email.value
       }));
@@ -175,6 +332,7 @@
       window.location.href = 'mypage.html';
     });
 
+    populateCollegeOptions();
     loadAccount().catch(error => {
       console.error('계정 정보 로딩 실패:', error);
       alert('계정 정보를 불러오지 못했습니다.');
