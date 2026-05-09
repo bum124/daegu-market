@@ -209,6 +209,17 @@ let hasLoadError = false;
 const API_BASE_URL = "https://daegu-market-api.onrender.com";
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/800x800?text=Product";
 const API_TIMEOUT_MS = 12000;
+const PRODUCT_CATEGORIES = [
+  "전체",
+  "전자기기",
+  "도서/문구",
+  "의류/잡화",
+  "생활용품",
+  "가구/인테리어",
+  "스포츠/레저",
+  "뷰티/미용",
+  "기타"
+];
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -415,6 +426,21 @@ function isSold(product) {
   return normalizeStatus(product.status || product.condition) === "판매완료";
 }
 
+function normalizeCategory(value) {
+  const category = String(value || "기타").trim();
+  const aliases = {
+    "디지털": "전자기기",
+    "도서": "도서/문구",
+    "문구": "도서/문구",
+    "패션": "의류/잡화",
+    "생활": "생활용품",
+    "스포츠": "스포츠/레저",
+    "뷰티": "뷰티/미용"
+  };
+
+  return aliases[category] || category;
+}
+
 function getExposureScore(product) {
   const ageHours = Math.max(0, (Date.now() - new Date(product.createdAt).getTime()) / 36e5);
   const recencyScore = Math.max(0, 48 - ageHours);
@@ -432,7 +458,7 @@ function normalizeProduct(product) {
   return {
     id: product.id,
     title: product.title || "제목 없음",
-    category: product.category || "기타",
+    category: normalizeCategory(product.category),
     college: product.target_college || product.college || product.seller_college || product.seller_department || "관련 단과대 미지정",
     targetDepartment: product.target_department || "",
     price: Number(product.price || 0),
@@ -449,9 +475,7 @@ function normalizeProduct(product) {
 }
 
 function createCategoryButtons() {
-  const categories = ["전체", ...new Set(products.map(product => product.category).filter(Boolean))];
-
-  categoryContainer.innerHTML = categories.map(category => {
+  categoryContainer.innerHTML = PRODUCT_CATEGORIES.map(category => {
     const isActive = category === state.activeCategory;
     const buttonClass = isActive
       ? "bg-primary text-white"

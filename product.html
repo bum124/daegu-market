@@ -589,6 +589,26 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+function saveRecentProduct(productId) {
+  if (!productId) {
+    return;
+  }
+
+  const key = 'recentViewedProducts';
+
+  try {
+    const recentIds = JSON.parse(localStorage.getItem(key) || '[]');
+    const nextIds = [
+      String(productId),
+      ...recentIds.map(String).filter(id => id && id !== String(productId))
+    ].slice(0, 20);
+
+    localStorage.setItem(key, JSON.stringify(nextIds));
+  } catch (error) {
+    localStorage.setItem(key, JSON.stringify([String(productId)]));
+  }
+}
+
 function getRelatedSection() {
   return document.querySelector('main section.mt-8');
 }
@@ -1031,6 +1051,7 @@ if (!id) {
     window.images = images.length ? images : [fallbackImage];
     window.currentIndex = 0;
     window.currentProductTitle = item.title || '대구대 마켓 상품';
+    saveRecentProduct(item.id || id);
 
     document.title = `${window.currentProductTitle} - 대구대 마켓`;
 

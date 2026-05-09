@@ -7,13 +7,15 @@
 const tabLabels = {
   selling: '판매중 상품',
   sold: '판매완료 상품',
-  liked: '관심목록'
+  liked: '관심목록',
+  recent: '최근 본 상품'
 };
 
 const emptyMessages = {
   selling: '현재 판매중인 상품이 없습니다.',
   sold: '아직 판매완료된 상품이 없습니다.',
-  liked: '아직 관심목록에 담은 상품이 없습니다.'
+  liked: '아직 관심목록에 담은 상품이 없습니다.',
+  recent: '최근 본 상품이 없습니다.'
 };
 
 const userName = document.getElementById('user-name');
@@ -24,6 +26,7 @@ const profileBadge = document.getElementById('profile-badge');
 const sellingCount = document.getElementById('selling-count');
 const soldCount = document.getElementById('sold-count');
 const likedCount = document.getElementById('liked-count');
+const recentCount = document.getElementById('recent-count');
 const itemList = document.getElementById('item-list');
 const emptyState = document.getElementById('empty-state');
 const tabTitle = document.getElementById('tab-title');
@@ -31,6 +34,7 @@ const tabButtons = document.querySelectorAll('.tab-trigger');
 
 const API_BASE_URL = 'https://daegu-market-api.onrender.com';
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x800?text=Product';
+const RECENT_PRODUCTS_KEY = 'recentViewedProducts';
 
 function navigateToProduct(productId) {
   window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
@@ -98,6 +102,21 @@ function getTimeAgo(dateString) {
   return `${Math.floor(diffHours / 24)}일 전`;
 }
 
+function normalizeCategory(value) {
+  const category = String(value || '기타').trim();
+  const aliases = {
+    '디지털': '전자기기',
+    '도서': '도서/문구',
+    '문구': '도서/문구',
+    '패션': '의류/잡화',
+    '생활': '생활용품',
+    '스포츠': '스포츠/레저',
+    '뷰티': '뷰티/미용'
+  };
+
+  return aliases[category] || category;
+}
+
 function normalizeProduct(item) {
   const images = parseImages(item.images);
   const createdAt = item.createdAt || item.created_at || new Date().toISOString();
@@ -106,7 +125,7 @@ function normalizeProduct(item) {
   return {
     id: item.id,
     title: item.title || '제목 없음',
-    category: item.category || '기타',
+    category: normalizeCategory(item.category),
     college: item.target_college || item.college || item.seller_college || item.seller_department || '관련 단과대 미지정',
     targetDepartment: item.target_department || '',
     price: Number(item.price || 0),
@@ -160,8 +179,43 @@ function normalizeMyPageData(data, loggedInUser) {
     },
     selling: Array.isArray(data.selling) ? data.selling.map(normalizeProduct) : [],
     sold: Array.isArray(data.sold) ? data.sold.map(normalizeProduct) : [],
-    liked: Array.isArray(data.liked) ? data.liked.map(normalizeProduct) : []
+    liked: Array.isArray(data.liked) ? data.liked.map(normalizeProduct) : [],
+    recent: []
   };
+}
+
+function getRecentProductIds() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(RECENT_PRODUCTS_KEY) || '[]');
+    return Array.isArray(ids) ? ids.map(String).filter(Boolean) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function loadRecentProducts() {
+  const recentIds = getRecentProductIds();
+
+  if (!recentIds.length) {
+    return [];
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/products`);
+
+  if (!response.ok) {
+    throw new Error('Failed to load recent products');
+  }
+
+  const productMap = new Map(
+    (await response.json())
+      .map(normalizeProduct)
+      .map(product => [String(product.id), product])
+  );
+
+  return recentIds
+    .map(id => productMap.get(id))
+    .filter(Boolean)
+    .slice(0, 10);
 }
 
 async function loadProductFallback(loggedInUser) {
@@ -194,7 +248,8 @@ async function loadProductFallback(loggedInUser) {
     },
     selling,
     sold,
-    liked: []
+    liked: [],
+    recent: []
   };
 }
 
@@ -232,6 +287,7 @@ function renderProfile(data) {
   sellingCount.textContent = data.stats.sellingCount;
   soldCount.textContent = data.stats.soldCount;
   likedCount.textContent = data.stats.likedCount;
+  recentCount.textContent = (data.recent || []).length;
 }
 
 function renderItems() {
@@ -281,7 +337,7 @@ function renderItems() {
           <span>관심 ${item.likes}</span>
           <span>조회 ${item.views}</span>
         </div>
-        ${state.activeTab !== 'liked' ? `
+        ${state.activeTab !== 'liked' && state.activeTab !== 'recent' ? `
           <div class="mt-3 flex flex-wrap gap-2">
             ${state.activeTab === 'selling' && item.status !== '판매완료' ? `
               <button
@@ -355,6 +411,13 @@ async function loadMyPage() {
   } catch (error) {
     console.warn('마이페이지 API가 없어 상품 API 기반 임시 데이터로 표시합니다.', error);
     state.data = await loadProductFallback(user);
+  }
+
+  try {
+    state.data.recent = await loadRecentProducts();
+  } catch (error) {
+    console.warn('최근 본 상품을 불러오지 못했습니다.', error);
+    state.data.recent = [];
   }
 
   renderProfile(state.data);
