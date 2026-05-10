@@ -121,11 +121,9 @@
             <h2 class="text-lg font-semibold">동아리 프로필</h2>
             <p class="mt-1 text-sm text-muted-foreground">현재 노출 중인 정보</p>
           </div>
-          <div class="flex flex-wrap items-center justify-end gap-2">
+          <div class="flex items-center gap-3">
             <button type="button" onclick="handlePresidentAction(event, 'club-profile-edit.html')" class="text-xs font-semibold text-primary hover:underline">수정</button>
-            <div class="h-3 w-[1px] bg-border mx-1"></div>
-            <button type="button" onclick="handleTransferPresident(event)" class="text-xs font-semibold text-muted-foreground hover:text-foreground">상속하기</button>
-            <div class="h-3 w-[1px] bg-border mx-1"></div>
+            <div class="h-3 w-[1px] bg-border"></div>
             <button type="button" onclick="closeClub()" class="text-xs font-semibold text-rose-500 hover:text-rose-700">폐부하기</button>
           </div>
         </div>
@@ -176,8 +174,14 @@
             <h2 class="text-lg font-semibold">기존 부원 관리</h2>
             <p class="mt-1 text-sm text-muted-foreground">인증 뱃지 보유 부원 명단</p>
           </div>
+         <div class="flex items-center gap-3">
           <span id="memberCountBadge" class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">총 0명</span>
+          <button type="button" onclick="alert('더보기(모달) 준비 중')" class="text-xs font-semibold text-muted-foreground hover:text-foreground">더보기</button>
+          <button type="button" id="transferModeBtn" onclick="toggleTransferMode()" class="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-white hover:bg-black transition-colors shadow-sm">
+            상속하기
+          </button>
         </div>
+      </div>
         <div id="approvedMemberGrid" class="h-48 grid grid-cols-1 gap-3 overflow-y-auto pr-2 scrollbar-hide">
           <p class="text-sm text-muted-foreground p-4 text-center">부원 목록을 불러오는 중입니다...</p>
         </div>
@@ -207,25 +211,14 @@
     </div>
   </nav>
 
-  <script>
+ <script>
     const API_BASE_URL = "https://daegu-market-api.onrender.com";
-    
-    // 주소창에서 동아리 번호 뽑기 (?id=1)
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
+    let loggedUserId = null;
+    let isTransferMode = false; // 상속 모드 스위치 👑
 
-    function handlePresidentAction(event, targetUrl) {
-      event.preventDefault();
-      window.location.href = targetUrl;
-    }
-
-    function handleTransferPresident(event) {
-      event.preventDefault();
-      if(confirm('정말로 회장 권한을 넘기시겠습니까?')) {
-        window.location.href = 'club-transfer.html';
-      }
-    }
-
+    // 🌟 1. 페이지가 켜질 때 모든 데이터 불러오기
     window.addEventListener('DOMContentLoaded', async () => {
       let user = null;
       try { user = JSON.parse(localStorage.getItem('loggedInUser') || 'null'); } catch (e) {}
@@ -241,32 +234,58 @@
         return;
       }
 
-      // 서버에서 진짜 가입 대기자 목록 불러오기
+      loggedUserId = user.user_id || user.id || user.student_id;
+
+      // 👇 4대장 함수 모두 실행!
+      loadClubInfo();
       loadPendingMembers();
+      loadApprovedMembers();
+      loadAdminInternalPosts();
     });
 
+    // 🌟 2. 이동 버튼 함수들
+    function handlePresidentAction(event, targetUrl) {
+      event.preventDefault();
+      window.location.href = `${targetUrl}?id=${clubId}`;
+    }
+
+    function goDetailInternal() {
+      window.location.href = `club-detail.html?id=${clubId}`;
+    }
+
+    // 🌟 3. 데이터 로딩 함수 4대장
+    
+    // ① 동아리 프로필(이름) 불러오기
+    async function loadClubInfo() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`);
+        const club = await response.json();
+        const nameEl = document.getElementById('adminClubName');
+        if(nameEl) nameEl.textContent = club.name;
+      } catch (e) {
+        console.error('클럽 정보 로드 실패');
+      }
+    }
+
+    // ② 가입 대기자 목록 불러오기
     async function loadPendingMembers() {
-      const pendingListContainer = document.getElementById('pending-list');
-      
+      const container = document.getElementById('pending-list');
+      if(!container) return;
       try {
         const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/pending-members`);
         if (!response.ok) throw new Error('목록 불러오기 실패');
-        
         const applicants = await response.json();
 
         if (applicants.length === 0) {
-          pendingListContainer.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">현재 대기 중인 가입 신청이 없습니다.</p>';
+          container.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">현재 대기 중인 가입 신청이 없습니다.</p>';
           return;
         }
 
-        // 받아온 데이터로 HTML 카드 찍어내기
-        pendingListContainer.innerHTML = applicants.map(applicant => `
+        container.innerHTML = applicants.map(applicant => `
           <div class="rounded-2xl border border-border bg-background p-4 shadow-sm">
             <div class="flex items-center justify-between gap-3">
               <div class="flex min-w-0 items-center gap-3">
-                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white flex items-center justify-center text-xl">
-                  👤
-                </div>
+                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white flex items-center justify-center text-xl">👤</div>
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="truncate text-sm font-semibold text-foreground">${applicant.name}</p>
@@ -276,68 +295,162 @@
                 </div>
               </div>
               <div class="flex flex-shrink-0 items-center gap-2">
-                <button type="button" onclick="approveMember(${applicant.user_id})" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600 transition-colors">
-                  승인
-                </button>
-                <button type="button" onclick="alert('거절 기능은 준비 중입니다.')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">
-                  거절
-                </button>
+                <button type="button" onclick="approveMember(${applicant.user_id})" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600 transition-colors">승인</button>
+                <button type="button" onclick="alert('거절 기능은 준비 중입니다.')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">거절</button>
               </div>
             </div>
           </div>
         `).join('');
-
       } catch (error) {
-        console.error(error);
-        pendingListContainer.innerHTML = '<p class="text-sm text-rose-500 p-4 text-center border rounded-2xl bg-background">명단을 불러오지 못했습니다.</p>';
+        container.innerHTML = '<p class="text-sm text-rose-500 p-4 text-center border rounded-2xl bg-background">명단을 불러오지 못했습니다.</p>';
       }
     }
 
-    // 🌟 대망의 승인 버튼 기능!
+    // ③ 기존 부원 목록 불러오기 (👑 상속 모드 토글 포함!)
+    async function loadApprovedMembers() {
+      const container = document.getElementById('approvedMemberGrid');
+      if(!container) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/approved-members`);
+        const members = await response.json();
+        
+        const badge = document.getElementById('memberCountBadge');
+        if(badge) badge.textContent = `총 ${members.length}명`;
+
+        if (members.length === 0) {
+          container.innerHTML = '<p class="col-span-full text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">아직 승인된 부원이 없습니다.</p>';
+          return;
+        }
+
+        container.innerHTML = members.map(member => {
+          // 상속 모드 스위치가 켜졌냐 꺼졌냐에 따라 버튼이 바뀝니다!
+          const actionButton = isTransferMode 
+            ? `<button type="button" onclick="transferPresident(${member.user_id}, '${member.name}')" class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-colors whitespace-nowrap">👑 상속</button>`
+            : `<button type="button" onclick="revokeMember(${member.user_id}, '${member.name}')" class="text-xs font-medium text-muted-foreground hover:text-rose-500 underline whitespace-nowrap">뱃지 회수</button>`;
+
+          return `
+          <div class="flex items-center justify-between rounded-xl border ${isTransferMode ? 'border-amber-400 bg-amber-50/30' : 'border-border bg-background'} p-3 shadow-sm transition-colors">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold truncate">${member.name}</p>
+              <p class="text-xs text-muted-foreground">${member.student_id}</p>
+            </div>
+            <div class="ml-2 flex-shrink-0">
+              ${actionButton}
+            </div>
+          </div>
+        `}).join('');
+      } catch (e) {
+        container.innerHTML = '<p class="col-span-full text-sm text-red-500 text-center border rounded-2xl bg-background p-4">부원 목록을 불러오지 못했습니다.</p>';
+      }
+    }
+
+    // ④ 내부 공지 불러오기 (가로 스크롤 위젯)
+    async function loadAdminInternalPosts() {
+      const container = document.getElementById('adminInternalPosts');
+      if(!container) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/internal-posts?userId=${loggedUserId}`);
+        if (!response.ok) throw new Error('로드 실패');
+        const posts = await response.json();
+
+        if (posts.length === 0) {
+          container.innerHTML = `<div class="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">작성된 내부 공지가 없습니다.</div>`;
+          return;
+        }
+
+        container.innerHTML = posts.map(post => `
+          <a href="club-post-detail.html?id=${post.post_id}" class="flex h-full w-48 flex-shrink-0 flex-col justify-between rounded-xl border border-border bg-background p-4 hover:bg-slate-50 transition-colors shadow-sm">
+            <div>
+              <span class="mb-2 inline-block rounded border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500">내부공지</span>
+              <p class="line-clamp-2 text-sm font-bold text-foreground leading-snug">${post.title}</p>
+            </div>
+            <p class="mt-3 text-[11px] text-muted-foreground truncate">작성: ${post.author_name}</p>
+          </a>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = `<div class="p-4 text-sm text-red-500">공지를 불러오지 못했습니다.</div>`;
+      }
+    }
+
+    // 🌟 4. 데이터 조작 (액션) 함수들
+
+    // [승인하기]
     async function approveMember(applicantId) {
       if (!confirm('이 학생의 가입을 승인하시겠습니까?')) return;
-
       try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${applicantId}/approve`, {
-          method: 'PUT'
-        });
-        
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${applicantId}/approve`, { method: 'PUT' });
         const result = await response.json();
-        
         if (response.ok) {
           alert(result.message);
-          loadPendingMembers(); // 승인 성공하면 명단 새로고침! (목록에서 사라짐)
+          loadPendingMembers(); 
+          loadApprovedMembers(); // 승인 시 기존 부원 목록도 새로고침!
         } else {
           alert('승인 실패: ' + result.message);
         }
-      } catch (error) {
-        console.error(error);
-        alert('서버 오류가 발생했습니다.');
-      }
+      } catch (error) { alert('서버 오류가 발생했습니다.'); }
     }
-    // 🌟 진짜 폐부(삭제) 기능!
+
+    // [추방하기 (뱃지 회수)]
+    async function revokeMember(userId, name) {
+      if (!confirm(`${name} 부원의 인증 뱃지를 회수(내보내기) 하시겠습니까?`)) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${userId}`, { method: 'DELETE' });
+        const data = await res.json();
+        alert(data.message);
+        loadApprovedMembers();
+      } catch (e) { alert('오류 발생'); }
+    }
+
+    // [상속 모드 껐다 켜기]
+    function toggleTransferMode() {
+      isTransferMode = !isTransferMode;
+      const btn = document.getElementById('transferModeBtn');
+      if (isTransferMode) {
+        btn.textContent = '상속 취소';
+        btn.classList.replace('bg-foreground', 'bg-rose-500');
+        btn.classList.replace('hover:bg-black', 'hover:bg-rose-600');
+      } else {
+        btn.textContent = '상속하기';
+        btn.classList.replace('bg-rose-500', 'bg-foreground');
+        btn.classList.replace('hover:bg-rose-600', 'hover:bg-black');
+      }
+      loadApprovedMembers(); // 모드 바뀐 후 목록 다시 그리기!
+    }
+
+    // [상속 권한 넘기기]
+    async function transferPresident(newLeaderId, name) {
+      if (!confirm(`정말로 '${name}' 부원에게 회장 권한을 넘기시겠습니까?\n이 작업은 되돌릴 수 없으며, 본인은 관리자 페이지 접근 권한을 잃게 됩니다!`)) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/transfer`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newLeaderId: newLeaderId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          window.location.href = 'club-main.html';
+        } else {
+          alert(data.message);
+        }
+      } catch (e) { alert('상속 중 오류가 발생했습니다.'); }
+    }
+
+    // [폐부하기]
     async function closeClub() {
       const confirmCode = prompt('동아리를 정말 삭제하시겠습니까?\n삭제를 원하시면 "동아리삭제"라고 입력해주세요.');
       if (confirmCode !== '동아리삭제') return;
-
       try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`, {
-          method: 'DELETE'
-        });
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`, { method: 'DELETE' });
         const result = await response.json();
-        
         if (response.ok) {
           alert(result.message);
-          window.location.href = 'club-main.html'; // 삭제 후 메인으로 탈출!
+          window.location.href = 'club-main.html';
         } else {
           alert(result.message);
         }
-      } catch (e) {
-        alert('서버 오류로 폐부 처리에 실패했습니다.');
-      }
+      } catch (e) { alert('서버 오류로 폐부 처리에 실패했습니다.'); }
     }
   </script>
-
 </body>
 </html>
 

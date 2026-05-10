@@ -1644,6 +1644,41 @@ app.delete('/api/clubs/:clubId', (req, res) => {
   });
 });
 
+// 15. 회장 권한 상속(leader_id 변경) API
+app.put('/api/clubs/:clubId/transfer', (req, res) => {
+  const { clubId } = req.params;
+  const { newLeaderId } = req.body;
+
+  if (!newLeaderId) return res.status(400).json({ message: '새로운 회장을 선택해주세요.' });
+
+  const sql = 'UPDATE Clubs SET leader_id = ? WHERE club_id = ?';
+
+  queryWithTimeout(sql, [newLeaderId, clubId], (err) => {
+    if (err) return res.status(500).json({ message: '권한 승계 중 오류가 발생했습니다.' });
+    res.json({ message: '회장 권한이 성공적으로 상속되었습니다. 새로운 시작을 응원합니다!' });
+  });
+});
+
+// 16. 동아리 프로필 정보 수정 API
+app.put('/api/clubs/:clubId', (req, res) => {
+  const clubId = req.params.clubId;
+  const { tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility } = req.body;
+
+  const sql = `
+    UPDATE Clubs 
+    SET tagline = ?, intro = ?, meet_time = ?, location = ?, meeting_info = ?, fee_amount = ?, fee_info = ?, eligibility = ?
+    WHERE club_id = ?
+  `;
+
+  queryWithTimeout(sql, [tagline, intro, meet_time, location, meeting_info, fee_amount || 0, fee_info, eligibility, clubId], (err) => {
+    if (err) {
+      console.error('프로필 수정 에러:', err);
+      return res.status(500).json({ message: '프로필 수정 중 오류가 발생했습니다.' });
+    }
+    res.json({ message: '동아리 프로필이 성공적으로 업데이트되었습니다! ✨' });
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동아리 프로필 수정 - 대구마켓</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22c55e',
+            'primary-foreground': '#ffffff',
+            background: '#fafafa',
+            foreground: '#171717',
+            muted: '#f5f5f5',
+            'muted-foreground': '#737373',
+            border: '#e5e5e5',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-foreground font-sans">
+  <div class="flex min-h-screen flex-col">
+    <header class="flex h-14 items-center border-b border-border px-4">
+      <button onclick="goBack()" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+        </svg>
+        <span class="sr-only">뒤로가기</span>
+      </button>
+      <h1 class="ml-2 text-lg font-semibold">동아리 프로필 수정 ✏️</h1>
+    </header>
+
+    <main class="flex flex-1 flex-col items-center px-4 py-8">
+      <div class="w-full max-w-sm space-y-6">
+        <div class="rounded-lg bg-primary/10 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="mt-0.5 h-5 w-5 text-primary flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M21 7.5V16.5L12 21l-9-4.5V7.5"/>
+            </svg>
+            <div class="text-sm">
+              <p class="font-medium text-foreground">기존 동아리 정보를 수정합니다.</p>
+              <p class="mt-1 text-muted-foreground">
+                동아리 이름과 카테고리는 변경할 수 없습니다. 변경이 필요하다면 관리자에게 문의하세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div id="errorAlert" class="hidden rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div class="flex items-center gap-2 text-destructive">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <span id="errorMessage" class="text-sm"></span>
+          </div>
+        </div>
+
+        <form id="editProfileForm" class="space-y-4">
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold">기본 정보 <span class="text-xs text-rose-500 font-normal ml-2">수정 불가</span></p>
+            <div class="mt-4 space-y-4">
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-muted-foreground">동아리 이름</label>
+                <input id="clubName" type="text" readonly class="w-full h-10 rounded-lg border border-border bg-gray-100 text-gray-500 px-4 text-sm cursor-not-allowed"/>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-muted-foreground">카테고리</label>
+                <input id="clubCategory" type="text" readonly class="w-full h-10 rounded-lg border border-border bg-gray-100 text-gray-500 px-4 text-sm cursor-not-allowed"/>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="clubTagline" class="text-sm font-medium">한 줄 홍보</label>
+            <input id="clubTagline" type="text" required class="w-full h-10 rounded-lg border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+          </div>
+
+          <div class="space-y-2">
+            <label for="intro" class="text-sm font-medium">상세 소개</label>
+            <textarea id="intro" rows="6" required class="w-full min-h-[140px] rounded-lg border border-border bg-white px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          </div>
+
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold mb-4">정기 모임 정보</p>
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">모임 요일/시간</label>
+                <input id="clubMeet" type="text" required class="w-full h-10 rounded-lg border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">모임 장소</label>
+                <input id="clubLocation" type="text" required class="w-full h-10 rounded-lg border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">정기 모임 상세</label>
+                <textarea id="meetingInfo" rows="3" class="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-border bg-white p-4">
+            <p class="text-sm font-semibold mb-4">회비 설정</p>
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">월 회비 금액 (원)</label>
+                <input id="feeAmount" type="number" min="0" step="100" required class="w-full h-10 rounded-lg border border-border bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">회비 사용/지원 안내</label>
+                <textarea id="feeInfo" rows="3" class="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">지원 자격 & 추천</label>
+            <textarea id="eligibilityAndTips" rows="4" required class="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button type="button" onclick="goBack()" class="h-10 rounded-lg border border-border bg-white text-sm font-medium hover:bg-muted">취소</button>
+            <button type="submit" id="submitBtn" class="h-10 rounded-lg bg-primary text-white text-sm font-bold hover:bg-green-600">수정 완료</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE_URL = "https://daegu-market-api.onrender.com";
+    const urlParams = new URLSearchParams(window.location.search);
+    const clubId = urlParams.get('id');
+
+    function goBack() {
+      window.location.href = `club-admin.html?id=${clubId}`;
+    }
+
+    function showError(message) {
+      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('errorAlert').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 🌟 페이지 로딩 시 기존 정보 불러와서 폼에 꽂아넣기
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (!clubId) {
+        alert('잘못된 접근입니다.');
+        window.location.href = 'club-main.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`);
+        if (!response.ok) throw new Error('데이터 불러오기 실패');
+        
+        const club = await response.json();
+
+        // 🔒 잠긴 필드 (이름, 카테고리)
+        document.getElementById('clubName').value = club.name;
+        document.getElementById('clubCategory').value = club.category;
+
+        // ✏️ 수정 가능 필드
+        document.getElementById('clubTagline').value = club.tagline || '';
+        document.getElementById('intro').value = club.intro || '';
+        document.getElementById('clubMeet').value = club.meet_time || '';
+        document.getElementById('clubLocation').value = club.location || '';
+        document.getElementById('meetingInfo').value = club.meeting_info || '';
+        document.getElementById('feeAmount').value = club.fee_amount || 0;
+        document.getElementById('feeInfo').value = club.fee_info || '';
+        document.getElementById('eligibilityAndTips').value = club.eligibility || '';
+
+      } catch (error) {
+        alert('동아리 정보를 불러오지 못했습니다.');
+        goBack();
+      }
+    });
+
+    // 🌟 수정 완료 버튼 눌렀을 때 (PUT 요청)
+    document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('errorAlert').classList.add('hidden');
+      
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.textContent = '수정 중...';
+      submitBtn.disabled = true;
+
+      // 💡 서버(server.js)가 받을 수 있게 키 값을 DB 컬럼명에 딱 맞춰서 묶어줍니다.
+      const payload = {
+        tagline: document.getElementById('clubTagline').value.trim(),
+        intro: document.getElementById('intro').value.trim(),
+        meet_time: document.getElementById('clubMeet').value.trim(),
+        location: document.getElementById('clubLocation').value.trim(),
+        meeting_info: document.getElementById('meetingInfo').value.trim(),
+        fee_amount: Number(document.getElementById('feeAmount').value),
+        fee_info: document.getElementById('feeInfo').value.trim(),
+        eligibility: document.getElementById('eligibilityAndTips').value.trim()
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(result.message);
+          goBack(); // 성공하면 관리자 페이지로 귀환!
+        } else {
+          showError(result.message || '수정에 실패했습니다.');
+        }
+      } catch (error) {
+        showError('서버 오류가 발생했습니다. 잠시 후 시도해주세요.');
+      } finally {
+        submitBtn.textContent = '수정 완료';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
