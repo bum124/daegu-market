@@ -1282,7 +1282,7 @@ app.post('/api/products/:id/like', (req, res) => {
   });
 });
 
-// 1. 동아리 개설 API (클라이언트에서 데이터 받아 DB에 저장)
+// 1. 동아리 개설 API (클라이언트에서 데이터 받아 DB에 저장 + 회장 자동 가입)
 app.post('/api/clubs', (req, res) => {
   const { 
     clubName, clubCategory, clubTagline, intro, 
@@ -1312,8 +1312,27 @@ app.post('/api/clubs', (req, res) => {
       return res.status(500).json({ message: '동아리 개설 중 DB 오류가 발생했습니다.' });
     }
     
-    // 개설 성공 시, 새로 만들어진 동아리의 ID를 프론트로 돌려줌
-    res.json({ message: '동아리가 성공적으로 개설되었습니다!', club_id: result.insertId });
+    // ✨ 1단계 성공: 새로 생성된 동아리의 고유 ID를 가져옵니다.
+    const newClubId = result.insertId;
+
+    // 👑 2단계: 개설한 회장을 부원 명단(Club_Members)에 'APPROVED'로 자동 등록!
+    const memberSql = `
+      INSERT INTO Club_Members (club_id, user_id, status)
+      VALUES (?, ?, 'APPROVED')
+    `;
+
+    db.query(memberSql, [newClubId, leader_id], (memberErr) => {
+      if (memberErr) {
+        console.error('회장 자동 가입 에러:', memberErr);
+        // 동아리는 만들어졌으니 에러 로그만 남기고 넘어갑니다.
+      }
+      
+      // 개설 성공 시, 새로 만들어진 동아리의 ID를 프론트로 돌려줌
+      res.json({ 
+        message: '동아리가 성공적으로 개설되었으며, 회장으로 자동 등록되었습니다! 👑', 
+        club_id: newClubId 
+      });
+    });
   });
 });
 

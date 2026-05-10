@@ -6,7 +6,6 @@
   <title>동아리 상세 - 대구마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // index.html 톤에 맞춘 시그니처 컬러
     tailwind.config = {
       theme: {
         extend: {
@@ -26,57 +25,27 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
     body { font-family: 'Noto Sans KR', sans-serif; }
-    .line-clamp-1 {
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .line-clamp-3 {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   </style>
 </head>
 <body class="bg-background text-foreground antialiased">
 
-  <!-- Mobile Header (product.html 구조 유지) -->
   <header class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-white/95 px-4 backdrop-blur md:hidden">
     <a href="club-board.html" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted" aria-label="뒤로가기">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m12 19-7-7 7-7"/>
-        <path d="M19 12H5"/>
+        <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
       </svg>
     </a>
     <div class="flex gap-1">
-      <button onclick="handleShare()" class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted" aria-label="공유">
+      <button class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"/>
-          <circle cx="6" cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/>
-          <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>
-        </svg>
-      </button>
-      <button class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-muted" aria-label="더보기">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="1"/>
-          <circle cx="19" cy="12" r="1"/>
-          <circle cx="5" cy="12" r="1"/>
+          <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
         </svg>
       </button>
     </div>
   </header>
 
-  <!-- Desktop Header (product.html 구조 유지) -->
   <header class="hidden md:block sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
       <a href="club-main.html" class="flex items-center gap-2">
@@ -86,12 +55,8 @@
         <span class="text-xl font-bold">대구마켓</span>
       </a>
       <nav class="flex items-center gap-2">
-        <a href="club-board.html" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-muted">
-          캠퍼스 소식통
-        </a>
-        <a href="index.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
-          중고장터
-        </a>
+        <a href="club-board.html" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-muted">캠퍼스 소식통</a>
+        <a href="index.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600">중고장터</a>
       </nav>
     </div>
   </header>
@@ -100,210 +65,74 @@
     <div class="mx-auto max-w-6xl md:px-4 md:py-6">
       <div class="md:grid md:grid-cols-2 md:gap-8">
 
-        <!-- 1) 상단 이미지 갤러리: 활동 사진/포스터 슬라이더 -->
         <div class="relative aspect-square bg-muted md:rounded-2xl md:overflow-hidden">
-          <img
-            id="mainImage"
-            src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80"
-            alt="동아리 활동 사진"
-            class="h-full w-full object-cover"
-          >
-
-          <button
-            onclick="prevImage()"
-            class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-2 hover:bg-white transition-colors"
-            aria-label="이전 이미지"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </button>
-          <button
-            onclick="nextImage()"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-2 hover:bg-white transition-colors"
-            aria-label="다음 이미지"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </button>
-
-          <div class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5" id="imageDots"></div>
+          <img id="mainImage" src="" alt="동아리 배너" class="h-full w-full object-cover">
         </div>
 
-        <!-- Club Info (product.html의 Product Info 구조 활용) -->
         <div class="px-4 pt-4 md:px-0 md:pt-0">
-
-          <!-- 2) 정보 헤더 섹션: 판매자 -> 동아리 기본 정보 -->
           <div class="flex items-center justify-between border-b border-border pb-4">
             <div class="flex items-center gap-3">
               <div class="h-12 w-12 overflow-hidden rounded-full border border-border bg-white">
-                <img id="clubLogo" src="https://api.dicebear.com/8.x/thumbs/svg?seed=RunningClub" alt="동아리 로고" class="h-full w-full object-cover">
+                <img id="clubLogo" src="https://api.dicebear.com/8.x/thumbs/svg?seed=DM" alt="동아리 로고" class="h-full w-full object-cover">
               </div>
               <div class="min-w-0">
                 <p id="clubCollege" class="text-sm font-medium text-foreground">대구대학교</p>
-                <p id="clubTagline" class="mt-0.5 line-clamp-1 text-sm text-muted-foreground">초보 환영 · 함께 꾸준히</p>
+                <p id="clubTagline" class="mt-0.5 line-clamp-1 text-sm text-muted-foreground">태그라인</p>
               </div>
             </div>
-            <a href="club-board.html" class="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-muted">
-              소식 더보기
-            </a>
+            <a href="club-board.html" class="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-muted">소식 더보기</a>
           </div>
 
-          <!-- 2) 동아리 이름/인증/모집상태/카테고리 -->
           <div class="border-b border-border py-4">
             <div class="flex flex-wrap items-center gap-2">
-              <span id="recruitStatus" class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
-                모집 중
-              </span>
-              <span id="clubCategory" class="inline-flex items-center rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                운동
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700" title="학교 인증">
-                <span aria-hidden="true">🏫</span>
-                학교 인증
-              </span>
+              <span id="recruitStatus" class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">모집 중</span>
+              <span id="clubCategory" class="inline-flex items-center rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground">카테고리</span>
             </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <h1 id="clubName" class="text-xl font-bold text-foreground md:text-2xl">대구대 러닝크루</h1>
-            </div>
+            <div class="mt-3"><h1 id="clubName" class="text-xl font-bold text-foreground md:text-2xl">동아리 이름</h1></div>
 
-            <!-- Meta Info (product.html의 메타 라인 활용) -->
             <div class="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <span id="clubLocation">캠퍼스 잔디광장</span>
-              </div>
-
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <span id="clubMeet">매주 화/목 19:30</span>
-              </div>
-
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                조회 <span id="views">182</span>
-              </div>
-
-              <div class="flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-                </svg>
-                관심 <span id="likes">32</span>
-              </div>
+              <div class="flex items-center gap-1">📍 <span id="clubLocation">장소</span></div>
+              <div class="flex items-center gap-1">🕒 <span id="clubMeet">시간</span></div>
             </div>
           </div>
 
-          <!-- 3) 상세 설명 섹션: 3분할 -->
           <div class="border-b border-border py-4">
             <h2 class="mb-3 font-semibold text-foreground">동아리 상세</h2>
-
             <div class="space-y-4">
               <div class="rounded-xl border border-border bg-white p-4">
                 <p class="text-sm font-semibold">동아리 소개</p>
-                <p id="intro" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-매주 함께 뛰며 체력도 멘탈도 같이 키워요.
-처음 달리는 사람도 환영! 페이스는 팀이 맞춰줍니다.
-                </p>
+                <p id="intro" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">소개글</p>
               </div>
-
               <div class="rounded-xl border border-border bg-white p-4">
                 <p class="text-sm font-semibold">정기 모임 정보</p>
-                <p id="meetingInfo" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-- 요일/시간: 화·목 19:30
-- 장소: 캠퍼스 잔디광장(우천 시 실내 스트레칭룸)
-- 준비물: 운동화, 물, 가벼운 겉옷
-                </p>
+                <p id="meetingInfo" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">모임 상세</p>
               </div>
-
               <div class="rounded-xl border border-border bg-white p-4">
                 <p class="text-sm font-semibold">회비 및 지원 자격</p>
-                <p id="feeInfo" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-- 회비: 월 5,000원(물품/간식/대회 참가 지원)
-- 지원 자격: 대구대 재학생/휴학생(초보 가능)
-- 이런 분 추천: 꾸준히 운동 습관 만들고 싶은 분
-                </p>
+                <p id="feeInfo" class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">회비 상세</p>
               </div>
             </div>
           </div>
 
-          <!-- 5) 게시판 연동 섹션(추가) -->
           <section class="py-4">
             <div class="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 class="text-lg font-semibold text-foreground">최근 우리 동아리 소식</h2>
-                <p class="mt-1 text-sm text-muted-foreground">`club-board.html` 최신글 미리보기</p>
               </div>
               <a href="club-board.html" class="text-sm font-semibold text-primary hover:underline">전체 보기</a>
             </div>
-
-            <div class="space-y-3">
-              <a href="club-board.html" class="group block rounded-xl border border-border bg-white p-4 hover:bg-muted">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="line-clamp-1 text-sm font-semibold">오늘 밤 9시, 잔디광장 3km 번개</p>
-                    <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">가볍게 뛰고 스트레칭까지! 러닝 처음이어도 같이 걸어도 괜찮아요.</p>
-                  </div>
-                  <span class="flex-shrink-0 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">번개모임</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>3일 전</span>
-                  <span class="font-semibold text-primary group-hover:underline">피드에서 보기</span>
-                </div>
-              </a>
-
-              <a href="club-board.html" class="group block rounded-xl border border-border bg-white p-4 hover:bg-muted">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="line-clamp-1 text-sm font-semibold">러닝 폼 체크: 무릎 통증 줄이는 팁</p>
-                    <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">무릎/발목 부담을 줄이는 착지 포인트와 간단 스트레칭 루틴을 공유합니다.</p>
-                  </div>
-                  <span class="flex-shrink-0 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">정보</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>1주 전</span>
-                  <span class="font-semibold text-primary group-hover:underline">피드에서 보기</span>
-                </div>
-              </a>
+            
+            <div id="recentClubPosts" class="space-y-3">
+              <p class="text-sm text-muted-foreground p-4 text-center">소식을 불러오는 중입니다...</p>
             </div>
           </section>
 
-          <!-- Desktop Actions (요구사항에 맞게 3버튼 구성) -->
           <div class="hidden gap-3 py-4 md:flex">
-            <button
-              id="desktopLikeBtn"
-              onclick="toggleLike()"
-              class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-6 py-3 text-sm font-semibold hover:bg-muted transition-colors"
-            >
-              <svg id="desktopHeartIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-              </svg>
-              <span id="desktopLikeText">관심 등록</span>
-            </button>
-
-            <button
-              type="button"
-              onclick="contactPresident()"
-              class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-6 py-3 text-sm font-semibold hover:bg-muted transition-colors"
-            >
+            <button type="button" onclick="contactPresident()" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-6 py-3 text-sm font-semibold hover:bg-muted transition-colors">
               회장에게 문의하기
             </button>
-
-            <button
-              type="button"
-              onclick="applyToClub()"
-              class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-8 py-4 text-base font-bold text-white shadow-sm hover:bg-green-600 transition-colors"
-            >
+            <button type="button" onclick="applyToClub()" class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-8 py-4 text-base font-bold text-white shadow-sm hover:bg-green-600 transition-colors">
               가입 신청하기
             </button>
           </div>
@@ -312,33 +141,12 @@
     </div>
   </main>
 
-  <!-- 4) 하단 고정 액션 바 (모바일) -->
   <div class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white p-4 md:hidden">
     <div class="flex gap-3">
-      <button
-        id="mobileLikeBtn"
-        onclick="toggleLike()"
-        class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-4 py-3 hover:bg-muted transition-colors"
-        aria-label="관심 등록"
-      >
-        <svg id="mobileHeartIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-        </svg>
+      <button type="button" onclick="contactPresident()" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors">
+        회장에게 문의
       </button>
-
-      <button
-        type="button"
-        onclick="contactPresident()"
-        class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-5 py-3 text-sm font-semibold hover:bg-muted transition-colors"
-      >
-        회장에게 문의하기
-      </button>
-
-      <button
-        type="button"
-        onclick="applyToClub()"
-        class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-green-600 transition-colors"
-      >
+      <button type="button" onclick="applyToClub()" class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-green-600 transition-colors">
         가입 신청하기
       </button>
     </div>
@@ -347,8 +155,21 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
-
     const API_BASE_URL = "https://daegu-market-api.onrender.com";
+
+    // 시간 계산 마법사
+    function getTimeAgo(dateString) {
+      const now = new Date();
+      const past = new Date(dateString);
+      const diffMs = now - past;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 60) return `${diffMins || 1}분 전`;
+      if (diffHours < 24) return `${diffHours}시간 전`;
+      return `${diffDays}일 전`;
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       if (!clubId) {
@@ -359,29 +180,30 @@
 
       try {
         const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`);
-        if (!response.ok) {
-            throw new Error('동아리 정보를 불러오는데 실패했습니다.');
-        }
+        if (!response.ok) throw new Error('동아리 정보를 불러오는데 실패했습니다.');
 
         const club = await response.json();
 
-        // 범석님의 HTML id에 완벽하게 맞춰서 데이터 꽂아넣기!
+        // 1. 기본 정보 꽂아넣기
         document.getElementById('clubCategory').textContent = club.category;
         document.getElementById('clubName').textContent = club.name;
         document.getElementById('clubTagline').textContent = club.tagline;
-        
         document.getElementById('clubMeet').textContent = club.meet_time;
         document.getElementById('clubLocation').textContent = club.location;
-        
         document.getElementById('intro').innerHTML = club.intro.replace(/\n/g, '<br>');
         document.getElementById('meetingInfo').innerHTML = club.meeting_info ? club.meeting_info.replace(/\n/g, '<br>') : '상세 정보 없음';
         
-        // 회비 정보와 지원 자격을 하나의 feeInfo 박스에 예쁘게 합쳐서 보여주기
         const feeAmountText = club.fee_amount ? `- 회비: 월 ${club.fee_amount.toLocaleString()}원\n` : '- 회비: 없음\n';
         const feeDetailText = club.fee_info ? `${club.fee_info}\n` : '';
         const eligibilityText = club.eligibility ? `\n[지원 자격 & 추천]\n${club.eligibility}` : '';
-        
         document.getElementById('feeInfo').innerHTML = (feeAmountText + feeDetailText + eligibilityText).replace(/\n/g, '<br>');
+
+        // 2. ✨ 동아리 고유의 예쁜 배너 & 로고 패턴 적용 (더미 이미지 탈출!)
+        document.getElementById('mainImage').src = `https://api.dicebear.com/8.x/shapes/svg?seed=clubBanner${club.club_id}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+        document.getElementById('clubLogo').src = `https://api.dicebear.com/8.x/initials/svg?seed=${club.name}&backgroundColor=22c55e`;
+
+        // 3. ✨ 진짜 소식글 불러오기 실행!
+        loadRecentPosts();
 
       } catch (error) {
         console.error(error);
@@ -390,54 +212,89 @@
       }
     });
 
-    // 버튼 클릭 이벤트 (임시)
-    function toggleLike() {
-      alert('관심 동아리로 등록되었습니다!');
+    // 🌟 [핵심 기능] 이 동아리의 최근 소식을 서버에서 가져와 그리기!
+    async function loadRecentPosts() {
+      const container = document.getElementById('recentClubPosts');
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/club-posts`);
+        const allPosts = await res.json();
+        
+        // 전체 소식 중 이 동아리(clubId)가 쓴 글만 최신순으로 3개 가져옵니다.
+        const clubPosts = allPosts.filter(p => p.club_id == clubId).slice(0, 3);
+
+        if(clubPosts.length === 0) {
+          container.innerHTML = '<div class="rounded-xl border border-dashed border-border bg-background p-4 text-center text-sm text-muted-foreground">아직 등록된 소식이 없습니다.</div>';
+          return;
+        }
+
+        container.innerHTML = clubPosts.map(post => {
+          // 글에 이미지가 첨부되어 있으면 예쁜 썸네일(작은 사진)로 띄워줍니다!
+          let imgHtml = '';
+          if(post.images && post.images.length > 0) {
+            imgHtml = `<img src="${post.images[0]}" class="h-16 w-16 object-cover rounded-lg border border-border flex-shrink-0 shadow-sm">`;
+          }
+
+          return `
+          <a href="club-post-detail.html?id=${post.post_id}" class="group block rounded-xl border border-border bg-white p-4 hover:bg-muted transition-colors shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="line-clamp-1 text-sm font-semibold">${post.title}</p>
+                <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">${post.content}</p>
+              </div>
+              ${imgHtml} 
+            </div>
+            <div class="mt-3 flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-3">
+              <span class="rounded-full bg-green-50 px-2.5 py-0.5 font-semibold text-green-700">${post.category}</span>
+              <div class="flex gap-3">
+                <span>조회 ${post.views || 0}</span>
+                <span>${getTimeAgo(post.created_at)}</span>
+              </div>
+            </div>
+          </a>
+          `;
+        }).join('');
+      } catch(e) {
+        container.innerHTML = '<div class="p-4 text-center text-sm text-red-500">소식을 불러오지 못했습니다.</div>';
+      }
     }
+
     function contactPresident() {
       alert('회장에게 채팅을 보냅니다.');
     }
-    // ✅ 진짜 가입 신청 함수!
-async function applyToClub() {
-  // 1. 내 신분증(주머니) 확인하기
-  let user = null;
-  try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch(e){}
-  
-  if (!user) {
-    alert('로그인 후 가입 신청이 가능합니다!');
-    window.location.href = 'login.html';
-    return;
-  }
 
-  const userId = user.user_id || user.id || user.student_id;
-  
-  // 2. 진짜 신청할 건지 한 번 물어보기
-  if (!confirm('이 동아리에 가입 신청을 하시겠습니까?')) {
-    return; 
-  }
+    // 진짜 가입 신청 함수
+    async function applyToClub() {
+      let user = null;
+      try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch(e){}
+      
+      if (!user) {
+        alert('로그인 후 가입 신청이 가능합니다!');
+        window.location.href = 'login.html';
+        return;
+      }
 
-  try {
-    // 3. 서버에 "저 신청할래요!" 하고 보내기
-    const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: userId }) // 내 신분증 번호 동봉
-    });
-    
-    const result = await response.json();
-    
-    // 4. 결과 알려주기
-    if (response.ok) {
-      alert(result.message); // 성공 메시지 띄우기
-    } else {
-      alert(result.message || '가입 신청에 실패했습니다.'); // 에러 메시지 띄우기
+      const userId = user.user_id || user.id || user.student_id;
+      
+      if (!confirm('이 동아리에 가입 신청을 하시겠습니까?')) return; 
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(result.message);
+        } else {
+          alert(result.message || '가입 신청에 실패했습니다.');
+        }
+      } catch (error) {
+        alert('서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
-  } catch (error) {
-    console.error(error);
-    alert('서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
-  }
-}
   </script>
 </body>
 </html>
-
