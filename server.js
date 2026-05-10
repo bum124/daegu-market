@@ -1679,6 +1679,16 @@ app.put('/api/clubs/:clubId', (req, res) => {
   });
 });
 
+// 17. 가입 거절 API (server.js 하단 추가)
+app.delete('/api/clubs/:clubId/members/:userId/reject', (req, res) => {
+  const { clubId, userId } = req.params;
+  const sql = `DELETE FROM Club_Members WHERE club_id = ? AND user_id = ? AND status = 'PENDING'`;
+  queryWithTimeout(sql, [clubId, userId], (err) => {
+    if (err) return res.status(500).json({ message: '거절 처리 중 오류가 발생했습니다.' });
+    res.json({ message: '가입 신청이 거절되었습니다.' });
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

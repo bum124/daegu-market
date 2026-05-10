@@ -176,7 +176,7 @@
           </div>
          <div class="flex items-center gap-3">
           <span id="memberCountBadge" class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">총 0명</span>
-          <button type="button" onclick="alert('더보기(모달) 준비 중')" class="text-xs font-semibold text-muted-foreground hover:text-foreground">더보기</button>
+          <button type="button" id="expandMembersBtn" onclick="toggleExpandMembers()" class="text-xs font-semibold text-muted-foreground hover:text-foreground">더보기 ▾</button>
           <button type="button" id="transferModeBtn" onclick="toggleTransferMode()" class="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-white hover:bg-black transition-colors shadow-sm">
             상속하기
           </button>
@@ -217,6 +217,7 @@
     const clubId = urlParams.get('id');
     let loggedUserId = null;
     let isTransferMode = false; // 상속 모드 스위치 👑
+    let isExpanded = false;     // 더보기(펼치기) 스위치 ▾
 
     // 🌟 1. 페이지가 켜질 때 모든 데이터 불러오기
     window.addEventListener('DOMContentLoaded', async () => {
@@ -267,7 +268,7 @@
       }
     }
 
-    // ② 가입 대기자 목록 불러오기
+    // ② 가입 대기자 목록 불러오기 (✨ 거절 버튼 연결됨!)
     async function loadPendingMembers() {
       const container = document.getElementById('pending-list');
       if(!container) return;
@@ -296,7 +297,7 @@
               </div>
               <div class="flex flex-shrink-0 items-center gap-2">
                 <button type="button" onclick="approveMember(${applicant.user_id})" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600 transition-colors">승인</button>
-                <button type="button" onclick="alert('거절 기능은 준비 중입니다.')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">거절</button>
+                <button type="button" onclick="rejectMember(${applicant.user_id}, '${applicant.name}')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">거절</button>
               </div>
             </div>
           </div>
@@ -306,13 +307,21 @@
       }
     }
 
-    // ③ 기존 부원 목록 불러오기 (👑 상속 모드 토글 포함!)
+    // ③ 기존 부원 목록 불러오기 (✨ 회장 맨 위 고정 & 👑 뱃지 추가!)
     async function loadApprovedMembers() {
       const container = document.getElementById('approvedMemberGrid');
       if(!container) return;
+
       try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/approved-members`);
-        const members = await response.json();
+        // 동아리 정보(회장 ID)와 부원 명단을 동시에 가져옵니다.
+        const [clubRes, memberRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/clubs/${clubId}`),
+          fetch(`${API_BASE_URL}/api/clubs/${clubId}/approved-members`)
+        ]);
+
+        const club = await clubRes.json();
+        const members = await memberRes.json();
+        const leaderId = club.leader_id;
         
         const badge = document.getElementById('memberCountBadge');
         if(badge) badge.textContent = `총 ${members.length}명`;
@@ -322,16 +331,26 @@
           return;
         }
 
-        container.innerHTML = members.map(member => {
-          // 상속 모드 스위치가 켜졌냐 꺼졌냐에 따라 버튼이 바뀝니다!
+        // 회장님을 배열의 맨 앞으로 정렬!
+        const sortedMembers = [...members].sort((a, b) => (a.user_id === leaderId ? -1 : 1));
+
+        container.innerHTML = sortedMembers.map(member => {
+          const isLeader = (member.user_id === leaderId);
+          const leaderClass = isLeader ? 'border-amber-400 bg-amber-50 shadow-md' : 'border-border bg-background';
+          const leaderBadge = isLeader ? '<span class="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">👑 회장</span>' : '';
+          
+          // 상속 모드일 때 렌더링 변경
           const actionButton = isTransferMode 
-            ? `<button type="button" onclick="transferPresident(${member.user_id}, '${member.name}')" class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-colors whitespace-nowrap">👑 상속</button>`
-            : `<button type="button" onclick="revokeMember(${member.user_id}, '${member.name}')" class="text-xs font-medium text-muted-foreground hover:text-rose-500 underline whitespace-nowrap">뱃지 회수</button>`;
+            ? (isLeader ? '<span class="text-xs text-amber-600 font-bold">본인</span>' : `<button type="button" onclick="transferPresident(${member.user_id}, '${member.name}')" class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-colors whitespace-nowrap">👑 상속</button>`)
+            : (isLeader ? '' : `<button type="button" onclick="revokeMember(${member.user_id}, '${member.name}')" class="text-xs font-medium text-muted-foreground hover:text-rose-500 underline whitespace-nowrap">뱃지 회수</button>`);
 
           return `
-          <div class="flex items-center justify-between rounded-xl border ${isTransferMode ? 'border-amber-400 bg-amber-50/30' : 'border-border bg-background'} p-3 shadow-sm transition-colors">
+          <div class="flex items-center justify-between rounded-xl border ${leaderClass} p-3 transition-all">
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold truncate">${member.name}</p>
+              <div class="flex items-center">
+                <p class="text-sm font-bold truncate">${member.name}</p>
+                ${leaderBadge}
+              </div>
               <p class="text-xs text-muted-foreground">${member.student_id}</p>
             </div>
             <div class="ml-2 flex-shrink-0">
@@ -344,7 +363,7 @@
       }
     }
 
-    // ④ 내부 공지 불러오기 (가로 스크롤 위젯)
+    // ④ 내부 공지 불러오기
     async function loadAdminInternalPosts() {
       const container = document.getElementById('adminInternalPosts');
       if(!container) return;
@@ -386,6 +405,21 @@
           loadApprovedMembers(); // 승인 시 기존 부원 목록도 새로고침!
         } else {
           alert('승인 실패: ' + result.message);
+        }
+      } catch (error) { alert('서버 오류가 발생했습니다.'); }
+    }
+
+    // ✨ [거절하기 기능 추가됨!]
+    async function rejectMember(applicantId, name) {
+      if (!confirm(`'${name}' 학생의 가입 신청을 거절하시겠습니까?`)) return;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${applicantId}/reject`, { method: 'DELETE' });
+        const result = await response.json();
+        if (response.ok) {
+          alert(result.message);
+          loadPendingMembers(); // 거절 성공하면 대기자 명단 새로고침
+        } else {
+          alert('거절 실패: ' + result.message);
         }
       } catch (error) { alert('서버 오류가 발생했습니다.'); }
     }
@@ -449,6 +483,25 @@
           alert(result.message);
         }
       } catch (e) { alert('서버 오류로 폐부 처리에 실패했습니다.'); }
+    }
+
+    // ✨ [더보기 버튼: 아코디언 방식으로 펼치기]
+    function toggleExpandMembers() {
+      isExpanded = !isExpanded;
+      const grid = document.getElementById('approvedMemberGrid');
+      const btn = document.getElementById('expandMembersBtn');
+
+      if (isExpanded) {
+        // 쫙 펼치기
+        grid.classList.remove('h-48', 'overflow-y-auto');
+        grid.classList.add('h-auto');
+        btn.innerHTML = '접기 ▴';
+      } else {
+        // 다시 접기
+        grid.classList.remove('h-auto');
+        grid.classList.add('h-48', 'overflow-y-auto');
+        btn.innerHTML = '더보기 ▾';
+      }
     }
   </script>
 </body>
