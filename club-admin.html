@@ -56,7 +56,6 @@
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
-      line-clamp: 2;
       overflow: hidden;
     }
   </style>
@@ -99,11 +98,11 @@
     <section class="mb-6 rounded-3xl bg-gradient-to-br from-green-100 via-lime-50 to-white p-6 md:p-10">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="max-w-2xl">
-        <p class="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-green-700 shadow-sm">동아리 인증 뱃지 관리</p>
-        <h1 class="text-2xl font-bold leading-tight md:text-4xl">동아리 관리자 페이지</h1>
-        <p class="mt-3 text-sm text-muted-foreground md:text-base">
-          동아리 프로필을 홍보용으로 관리하고, 뱃지 신청 학생을 승인/거절하세요.
-        </p>
+          <p class="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-green-700 shadow-sm">동아리 인증 뱃지 관리</p>
+          <h1 class="text-2xl font-bold leading-tight md:text-4xl">동아리 관리자 페이지</h1>
+          <p class="mt-3 text-sm text-muted-foreground md:text-base">
+            동아리 프로필을 홍보용으로 관리하고, 뱃지 신청 학생을 승인/거절하세요.
+          </p>
         </div>
 
         <div id="header-admin-actions" class="flex flex-wrap gap-2">
@@ -138,7 +137,7 @@
         </div>
       </section>
 
-      <section class="president-only rounded-2xl border border-border bg-white p-5 md:p-6">
+      <section class="rounded-2xl border border-border bg-white p-5 md:p-6">
         <div class="mb-4">
           <h2 class="text-lg font-semibold">부원 뱃지 승인 관리</h2>
           <p class="mt-1 text-sm text-muted-foreground">“우리 동아리 뱃지를 달고 싶어요!” 요청 목록</p>
@@ -156,25 +155,27 @@
         </div>
       </section>
     </div>
+
     <section class="mt-6 flex flex-col rounded-2xl border border-border bg-white p-5 md:p-6 overflow-hidden">
       <div class="mb-4 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-semibold flex items-center gap-2">🔒 관리자 공지함</h2>
           <p class="mt-1 text-sm text-muted-foreground">부원 전용 공지 현황</p>
         </div>
-        <a href="#" onclick="goDetailInternal()" class="text-xs font-semibold text-primary hover:underline">전체보기</a>
+        <a href="#" onclick="goDetailInternal()" class="text-xs font-semibold text-primary hover:underline">상세페이지에서 보기</a>
       </div>
       <div id="adminInternalPosts" class="h-48 flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
         <p class="text-sm text-muted-foreground p-4">공지를 불러오는 중입니다...</p>
       </div>
     </section>
-    <section class="flex flex-col rounded-2xl border border-border bg-white p-5 md:p-6">
-        <div class="mb-4 flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold">기존 부원 관리</h2>
-            <p class="mt-1 text-sm text-muted-foreground">인증 뱃지 보유 부원 명단</p>
-          </div>
-         <div class="flex items-center gap-3">
+
+    <section class="mt-6 flex flex-col rounded-2xl border border-border bg-white p-5 md:p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">기존 부원 관리</h2>
+          <p class="mt-1 text-sm text-muted-foreground">인증 뱃지 보유 부원 명단</p>
+        </div>
+        <div class="flex items-center gap-3">
           <span id="memberCountBadge" class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">총 0명</span>
           <button type="button" id="expandMembersBtn" onclick="toggleExpandMembers()" class="text-xs font-semibold text-muted-foreground hover:text-foreground whitespace-nowrap">더보기 ▾</button>
           
@@ -187,10 +188,10 @@
           </button>
         </div>
       </div>
-        <div id="approvedMemberGrid" class="h-48 grid grid-cols-1 gap-3 overflow-y-auto pr-2 scrollbar-hide">
-          <p class="text-sm text-muted-foreground p-4 text-center">부원 목록을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div id="approvedMemberGrid" class="h-48 grid grid-cols-1 gap-3 overflow-y-auto pr-2 scrollbar-hide">
+        <p class="text-sm text-muted-foreground p-4 text-center">부원 목록을 불러오는 중입니다...</p>
+      </div>
+    </section>
   </main>
 
   <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white md:hidden">
@@ -202,9 +203,7 @@
         <span class="text-xs">검색</span>
       </a>
       <a href="sell.html" class="flex flex-col items-center gap-1">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-          +
-        </div>
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">+</div>
         <span class="text-xs font-medium text-primary">판매</span>
       </a>
       <a href="club-admin.html" class="flex flex-col items-center gap-1 px-3 py-2 text-primary">
@@ -216,7 +215,7 @@
     </div>
   </nav>
 
- <script>
+  <script>
     const API_BASE_URL = "https://daegu-market-api.onrender.com";
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
@@ -226,6 +225,7 @@
     let currentMode = 'NORMAL'; 
     let isExpanded = false;     
 
+    // 🌟 1. 문지기 로직: 권한 검사 & UI 마법 처리
     window.addEventListener('DOMContentLoaded', async () => {
       let user = null;
       try { user = JSON.parse(localStorage.getItem('loggedInUser') || 'null'); } catch (e) {}
@@ -252,23 +252,29 @@
         const club = await clubRes.json();
         const members = await membersRes.json();
 
-        isLeader = (club.leader_id === loggedUserId); // 회장 여부 판단
-        const isMember = members.some(m => m.user_id === loggedUserId);
+        isLeader = (club.leader_id === loggedUserId); // 내가 회장인가?
+        const isMember = members.some(m => m.user_id === loggedUserId); // 내가 부원인가?
 
+        // 남이면 쫓아내기
         if (!isLeader && !isMember) {
-          alert('🚫 동아리 소속 인원만 접근할 수 있는 페이지입니다.');
+          alert('🚫 동아리 소속 인원만 접근할 수 있는 라운지입니다.');
           window.location.href = `club-detail.html?id=${clubId}`;
           return;
         }
 
-        // ✨ 핵심 마법: 회장이 아닐 경우(일반 부원) 관리 버튼들만 싹 숨김
+        // ✨ 일반 부원일 경우 권한 버튼 핀셋 제거!
         if (!isLeader) {
+          // 공지, 수정, 폐부, 추방, 상속 숨김
           document.getElementById('header-admin-actions')?.classList.add('hidden');
           document.getElementById('profile-admin-actions')?.classList.add('hidden');
-          document.getElementById('member-admin-actions')?.classList.add('hidden');
+          document.getElementById('revokeModeBtn')?.classList.add('hidden');
+          document.getElementById('transferModeBtn')?.classList.add('hidden');
           
-          // 제목 커스텀 (옵션)
+          // 부드러운 라운지 UI로 문구 변경
           document.querySelector('h1').textContent = '우리 동아리 라운지 ☕';
+          const descEl = document.querySelector('p.text-muted-foreground.md\\:text-base');
+          if(descEl) descEl.textContent = '우리 동아리의 가입 현황과 명단을 투명하게 확인하세요.';
+          
           const badgeEl = document.querySelector('.bg-green-700.shadow-sm');
           if(badgeEl) badgeEl.textContent = '부원 인증 완료';
         }
@@ -276,7 +282,7 @@
         const nameEl = document.getElementById('adminClubName');
         if(nameEl) nameEl.textContent = club.name;
 
-        // 권한에 상관없이 데이터는 모두 불러옴 (범석님 기획 반영)
+        // 권한 무관 공통 데이터 로딩
         loadPendingMembers();
         loadApprovedMembers();
         loadAdminInternalPosts();
@@ -287,7 +293,7 @@
       }
     });
 
-    // 가입 대기자 목록 (회장에게만 승인/거절 버튼 노출)
+    // 가입 대기자 목록
     async function loadPendingMembers() {
       const container = document.getElementById('pending-list');
       if(!container) return;
@@ -314,14 +320,14 @@
               <div class="flex items-center gap-2">
                 <button onclick="approveMember(${app.user_id})" class="bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-bold">승인</button>
                 <button onclick="rejectMember(${app.user_id}, '${app.name}')" class="border border-border text-rose-500 px-3 py-1.5 rounded-lg text-xs font-bold">거절</button>
-              </div>` : '<span class="text-xs text-muted-foreground">승인 대기 중</span>'}
+              </div>` : '<span class="text-xs text-muted-foreground font-semibold">승인 대기 중</span>'}
             </div>
           </div>
         `).join('');
       } catch (e) { container.innerHTML = '<p class="...">로드 실패</p>'; }
     }
 
-    // 기존 부원 목록 (회장에게만 추방/상속 UI 연동)
+    // 기존 부원 목록
     async function loadApprovedMembers() {
       const container = document.getElementById('approvedMemberGrid');
       if(!container) return;
@@ -344,18 +350,24 @@
           const isMe = (member.user_id === leaderId);
           const leaderBadge = isMe ? '<span class="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">👑 회장</span>' : '';
           
+          let itemClass = isMe ? 'border-amber-400 bg-amber-50 shadow-md' : 'border-border bg-background';
           let actionButton = '';
-          // 👑 오직 회장(isLeader)이면서 모드(상속/추방)가 켜졌을 때만 버튼 생성
+          
           if (isLeader && !isMe) {
             if (currentMode === 'TRANSFER') {
+              itemClass = 'border-amber-400 bg-amber-50/30';
               actionButton = `<button onclick="transferPresident(${member.user_id}, '${member.name}')" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold">👑 상속</button>`;
             } else if (currentMode === 'REVOKE') {
+              itemClass = 'border-rose-400 bg-rose-50/30';
               actionButton = `<button onclick="revokeMember(${member.user_id}, '${member.name}')" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">🚫 추방</button>`;
             }
+          } else if (isLeader && isMe) {
+             if (currentMode === 'TRANSFER') actionButton = '<span class="text-xs text-amber-600 font-bold">본인</span>';
+             if (currentMode === 'REVOKE') actionButton = '<span class="text-xs text-rose-400 font-bold">본인</span>';
           }
 
           return `
-          <div class="flex items-center justify-between rounded-xl border ${isMe ? 'border-amber-400 bg-amber-50' : 'border-border bg-background'} p-3">
+          <div class="flex items-center justify-between rounded-xl border ${itemClass} p-3 transition-all">
             <div class="min-w-0 flex-1">
               <div class="flex items-center"><p class="text-sm font-bold truncate">${member.name}</p>${leaderBadge}</div>
               <p class="text-xs text-muted-foreground">${member.student_id}</p>
@@ -366,118 +378,7 @@
       } catch (e) { console.error(e); }
     }
 
-    function handlePresidentAction(event, targetUrl) {
-      event.preventDefault();
-      window.location.href = `${targetUrl}?id=${clubId}`;
-    }
-
-    function goDetailInternal() {
-      window.location.href = `club-detail.html?id=${clubId}`;
-    }
-
-    async function loadPendingMembers() {
-      const container = document.getElementById('pending-list');
-      if(!container) return;
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/pending-members`);
-        if (!response.ok) throw new Error('목록 불러오기 실패');
-        const applicants = await response.json();
-
-        if (applicants.length === 0) {
-          container.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">현재 대기 중인 가입 신청이 없습니다.</p>';
-          return;
-        }
-
-        container.innerHTML = applicants.map(applicant => `
-          <div class="rounded-2xl border border-border bg-background p-4 shadow-sm">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full border border-border bg-white flex items-center justify-center text-xl">👤</div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <p class="truncate text-sm font-semibold text-foreground">${applicant.name}</p>
-                    <span class="text-xs text-muted-foreground">${applicant.student_id}</span>
-                  </div>
-                  <p class="mt-0.5 text-xs font-semibold text-primary">가입 대기 중 (PENDING)</p>
-                </div>
-              </div>
-              <div class="flex flex-shrink-0 items-center gap-2">
-                <button type="button" onclick="approveMember(${applicant.user_id})" class="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-green-600 transition-colors">승인</button>
-                <button type="button" onclick="rejectMember(${applicant.user_id}, '${applicant.name}')" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors">거절</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      } catch (error) {
-        container.innerHTML = '<p class="text-sm text-rose-500 p-4 text-center border rounded-2xl bg-background">명단을 불러오지 못했습니다.</p>';
-      }
-    }
-
-    // 🌟 3. 업그레이드된 부원 명단 렌더링 (모드별 UI 변신!)
-    async function loadApprovedMembers() {
-      const container = document.getElementById('approvedMemberGrid');
-      if(!container) return;
-
-      try {
-        const [clubRes, memberRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/clubs/${clubId}`),
-          fetch(`${API_BASE_URL}/api/clubs/${clubId}/approved-members`)
-        ]);
-
-        const club = await clubRes.json();
-        const members = await memberRes.json();
-        const leaderId = club.leader_id;
-        
-        const badge = document.getElementById('memberCountBadge');
-        if(badge) badge.textContent = `총 ${members.length}명`;
-
-        if (members.length === 0) {
-          container.innerHTML = '<p class="col-span-full text-sm text-muted-foreground p-4 text-center border rounded-2xl bg-background">아직 승인된 부원이 없습니다.</p>';
-          return;
-        }
-
-        const sortedMembers = [...members].sort((a, b) => (a.user_id === leaderId ? -1 : 1));
-
-        container.innerHTML = sortedMembers.map(member => {
-          const isLeader = (member.user_id === leaderId);
-          let itemClass = 'border-border bg-background';
-          let actionButton = '';
-          const leaderBadge = isLeader ? '<span class="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">👑 회장</span>' : '';
-
-          // 모드에 따라 테두리 색상과 버튼을 다르게 칠합니다!
-          if (isLeader) {
-            itemClass = 'border-amber-400 bg-amber-50 shadow-md';
-            if (currentMode === 'TRANSFER') actionButton = '<span class="text-xs text-amber-600 font-bold">본인</span>';
-            if (currentMode === 'REVOKE') actionButton = '<span class="text-xs text-rose-400 font-bold">본인</span>';
-          } else {
-            if (currentMode === 'TRANSFER') {
-              itemClass = 'border-amber-400 bg-amber-50/30';
-              actionButton = `<button type="button" onclick="transferPresident(${member.user_id}, '${member.name}')" class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-colors whitespace-nowrap">👑 상속</button>`;
-            } else if (currentMode === 'REVOKE') {
-              itemClass = 'border-rose-400 bg-rose-50/30';
-              actionButton = `<button type="button" onclick="revokeMember(${member.user_id}, '${member.name}')" class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 shadow-sm transition-colors whitespace-nowrap">🚫 추방</button>`;
-            }
-          }
-
-          return `
-          <div class="flex items-center justify-between rounded-xl border ${itemClass} p-3 transition-all">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center">
-                <p class="text-sm font-bold truncate">${member.name}</p>
-                ${leaderBadge}
-              </div>
-              <p class="text-xs text-muted-foreground">${member.student_id}</p>
-            </div>
-            <div class="ml-2 flex-shrink-0">
-              ${actionButton}
-            </div>
-          </div>
-        `}).join('');
-      } catch (e) {
-        container.innerHTML = '<p class="col-span-full text-sm text-red-500 text-center border rounded-2xl bg-background p-4">부원 목록을 불러오지 못했습니다.</p>';
-      }
-    }
-
+    // 내부 공지함 로딩
     async function loadAdminInternalPosts() {
       const container = document.getElementById('adminInternalPosts');
       if(!container) return;
@@ -505,6 +406,17 @@
       }
     }
 
+    // 네비게이션 함수들
+    function handlePresidentAction(event, targetUrl) {
+      event.preventDefault();
+      window.location.href = `${targetUrl}?id=${clubId}`;
+    }
+
+    function goDetailInternal() {
+      window.location.href = `club-detail.html?id=${clubId}`;
+    }
+
+    // 데이터 액션(승인/거절/추방/상속/폐부) 함수들
     async function approveMember(applicantId) {
       if (!confirm('이 학생의 가입을 승인하시겠습니까?')) return;
       try {
@@ -514,9 +426,7 @@
           alert(result.message);
           loadPendingMembers(); 
           loadApprovedMembers(); 
-        } else {
-          alert('승인 실패: ' + result.message);
-        }
+        } else { alert('승인 실패: ' + result.message); }
       } catch (error) { alert('서버 오류가 발생했습니다.'); }
     }
 
@@ -528,9 +438,7 @@
         if (response.ok) {
           alert(result.message);
           loadPendingMembers();
-        } else {
-          alert('거절 실패: ' + result.message);
-        }
+        } else { alert('거절 실패: ' + result.message); }
       } catch (error) { alert('서버 오류가 발생했습니다.'); }
     }
 
@@ -545,7 +453,7 @@
     }
 
     async function transferPresident(newLeaderId, name) {
-      if (!confirm(`정말로 '${name}' 부원에게 회장 권한을 넘기시겠습니까?\n이 작업은 되돌릴 수 없으며, 본인은 관리자 페이지 접근 권한을 잃게 됩니다!`)) return;
+      if (!confirm(`정말로 '${name}' 부원에게 회장 권한을 넘기시겠습니까?\n이 작업은 되돌릴 수 없으며, 본인은 관리자 권한을 잃게 됩니다!`)) return;
       try {
         const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/transfer`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -555,9 +463,7 @@
         if (res.ok) {
           alert(data.message);
           window.location.href = 'club-main.html';
-        } else {
-          alert(data.message);
-        }
+        } else { alert(data.message); }
       } catch (e) { alert('상속 중 오류가 발생했습니다.'); }
     }
 
@@ -570,12 +476,11 @@
         if (response.ok) {
           alert(result.message);
           window.location.href = 'club-main.html';
-        } else {
-          alert(result.message);
-        }
+        } else { alert(result.message); }
       } catch (e) { alert('서버 오류로 폐부 처리에 실패했습니다.'); }
     }
 
+    // 아코디언 및 버튼 UI 제어
     function toggleExpandMembers() {
       isExpanded = !isExpanded;
       const grid = document.getElementById('approvedMemberGrid');
@@ -592,7 +497,6 @@
       }
     }
 
-    // 🌟 모드 버튼 UI 업데이트 로직 (상속/추방 눌렀을 때 버튼 색상 변경 및 서로 숨기기)
     function updateModeButtons() {
       const tBtn = document.getElementById('transferModeBtn');
       const rBtn = document.getElementById('revokeModeBtn');
@@ -600,13 +504,12 @@
       if (currentMode === 'TRANSFER') {
         tBtn.textContent = '상속 취소';
         tBtn.className = 'rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm whitespace-nowrap';
-        rBtn.classList.add('hidden'); // 상속 중일 땐 추방 숨김
+        rBtn.classList.add('hidden'); 
       } else if (currentMode === 'REVOKE') {
         rBtn.textContent = '추방 취소';
         rBtn.className = 'rounded-lg bg-rose-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-800 transition-colors shadow-sm whitespace-nowrap';
-        tBtn.classList.add('hidden'); // 추방 중일 땐 상속 숨김
+        tBtn.classList.add('hidden'); 
       } else {
-        // 일반 모드
         tBtn.textContent = '상속하기';
         tBtn.className = 'rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-white hover:bg-black transition-colors shadow-sm whitespace-nowrap';
         tBtn.classList.remove('hidden');
@@ -615,8 +518,7 @@
         rBtn.className = 'rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-600 transition-colors shadow-sm whitespace-nowrap';
         rBtn.classList.remove('hidden');
       }
-      
-      loadApprovedMembers(); // 모드 변경 후 리스트 새로고침
+      loadApprovedMembers(); 
     }
 
     function toggleTransferMode() {
@@ -631,4 +533,3 @@
   </script>
 </body>
 </html>
-
