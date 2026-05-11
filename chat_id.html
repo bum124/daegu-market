@@ -90,7 +90,7 @@ socket.on("loadMessages", (messages) => {
   chatBody.innerHTML = "";
 
   messages.forEach(msg => {
-    render(Number(msg.sender), msg.text);
+  render(Number(msg.sender), msg.text, msg.created_at);
   });
 });
 
@@ -98,8 +98,8 @@ socket.on("loadMessages", (messages) => {
    3. 메시지 받기
 ------------------------- */
 socket.on("receive_message", (data) => {
-   console.log("받은 메시지:", data);
-  render(data.sender, data.text);
+  console.log("받은 메시지:", data);
+  render(data.sender, data.text, new Date());
 });
 
 
@@ -171,19 +171,34 @@ document.getElementById("leaveBtn").addEventListener("click", async () => {
 /* -------------------------
    5. 렌더
 ------------------------- */
-function render(sender, text) {
-  const user = JSON.parse(localStorage.getItem("loggedInUser"));
+function render(sender, text, createdAt) {
+  const user =
+    JSON.parse(localStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("loggedInUser"));
 
   const isMe = user && String(sender) === String(user.user_id || user.id);
 
+  const time = createdAt
+    ? new Date(createdAt).toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    : "";
+
   const div = document.createElement("div");
-  div.className = `flex ${isMe ? "justify-end" : "justify-start"} mb-2`;
+  div.className = `flex flex-col ${
+    isMe ? "items-end" : "items-start"
+  } mb-3`;
 
   div.innerHTML = `
-    <div class="px-3 py-2 rounded-lg ${
+    <div class="px-3 py-2 rounded-lg max-w-[70%] break-words ${
       isMe ? "bg-green-500 text-white" : "bg-gray-200"
     }">
       ${text}
+    </div>
+
+    <div class="text-[11px] text-gray-400 mt-1 px-1">
+      ${time}
     </div>
   `;
 
