@@ -171,7 +171,41 @@ document.getElementById("leaveBtn").addEventListener("click", async () => {
 /* -------------------------
    5. 렌더
 ------------------------- */
+let lastRenderedDate = "";
+
+function renderDateDivider(createdAt) {
+  if (!createdAt) return;
+
+  const date = new Date(createdAt);
+  const dateKey = date.toISOString().slice(0, 10);
+
+  if (dateKey === lastRenderedDate) return;
+
+  lastRenderedDate = dateKey;
+
+  const divider = document.createElement("div");
+  divider.className = "flex items-center gap-3 my-4 text-xs text-gray-400";
+
+  divider.innerHTML = `
+    <div class="flex-1 h-px bg-gray-200"></div>
+
+    <div>
+      ${date.toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      })}
+    </div>
+
+    <div class="flex-1 h-px bg-gray-200"></div>
+  `;
+
+  chatBody.appendChild(divider);
+}
+
 function render(sender, text, createdAt) {
+  renderDateDivider(createdAt);
+
   const user =
     JSON.parse(localStorage.getItem("user")) ||
     JSON.parse(localStorage.getItem("loggedInUser"));
@@ -192,6 +226,7 @@ function render(sender, text, createdAt) {
     <div class="flex items-end gap-1 max-w-[80%] ${
       isMe ? "flex-row-reverse" : ""
     }">
+
       <div class="px-3 py-2 rounded-2xl break-words ${
         isMe
           ? "bg-green-500 text-white rounded-br-md"
@@ -203,6 +238,7 @@ function render(sender, text, createdAt) {
       <div class="text-[10px] text-gray-400 whitespace-nowrap mb-1">
         ${time}
       </div>
+
     </div>
   `;
 
