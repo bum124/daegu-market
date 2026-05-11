@@ -2115,7 +2115,14 @@ app.get('/api/chat-list', (req, res) => {
         LIMIT 1
       ) AS last_message,
 
-      0 AS unread,
+      (
+        SELECT COUNT(*)
+        FROM messages m2
+        WHERE m2.room_id = r.id
+          AND m2.is_read = 0
+          AND m2.sender != ?
+      ) AS unread,
+
       'market' AS type
 
     FROM rooms r
@@ -2139,7 +2146,7 @@ app.get('/api/chat-list', (req, res) => {
     ORDER BY r.id DESC
   `;
 
-  db.query(sql, [userId], (err, results) => {
+  db.query(sql, [userId, userId], (err, results) => {
     if (err) return res.status(500).send(err);
 
     res.json(results);
@@ -2175,20 +2182,36 @@ io.on('connection', (socket) => {
   console.log('유저 접속:', socket.id);
 
   // 방 입장
-  socket.on('join_room', (roomId) => {
-    console.log('방 입장 요청:', roomId);
-    socket.join(roomId);
+  socket.on('join_room', (data) => {
+  const roomId = data.roomId;
+  const userId = data.userId;
 
-    db.query(
-      'SELECT * FROM messages WHERE room_id = ? ORDER BY id ASC',
-      [roomId],
-      (err, results) => {
-        if (!err) {
-          socket.emit('loadMessages', results);
-        }
+  console.log('방 입장 요청:', roomId, userId);
+
+  socket.join(roomId);
+
+  // 상대 메시지 읽음 처리
+  db.query(
+    `
+    UPDATE messages
+    SET is_read = 1
+    WHERE room_id = ?
+      AND sender != ?
+    `,
+    [roomId, userId]
+  );
+
+  // 메시지 불러오기
+  db.query(
+    'SELECT * FROM messages WHERE room_id = ? ORDER BY id ASC',
+    [roomId],
+    (err, results) => {
+      if (!err) {
+        socket.emit('loadMessages', results);
       }
-    );
-  });
+    }
+  );
+});
 
   // 메시지 보내기
   socket.on('send_message', (data) => {
@@ -2199,7 +2222,7 @@ io.on('connection', (socket) => {
 
     // DB 저장
     db.query(
-      'INSERT INTO messages (room_id, sender, text) VALUES (?, ?, ?)',
+      'INSERT INTO messages (room_id, sender, text, is_read) VALUES (?, ?, ?, 0)',
       [data.roomId, data.sender, data.text],
       (err) => {
         if (err) {
