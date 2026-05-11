@@ -186,19 +186,23 @@ function render(sender, text, createdAt) {
     : "";
 
   const div = document.createElement("div");
-  div.className = `flex flex-col ${
-    isMe ? "items-end" : "items-start"
-  } mb-3`;
+  div.className = `flex ${isMe ? "justify-end" : "justify-start"} mb-2`;
 
   div.innerHTML = `
-    <div class="px-3 py-2 rounded-lg max-w-[70%] break-words ${
-      isMe ? "bg-green-500 text-white" : "bg-gray-200"
+    <div class="flex items-end gap-1 max-w-[80%] ${
+      isMe ? "flex-row-reverse" : ""
     }">
-      ${text}
-    </div>
+      <div class="px-3 py-2 rounded-2xl break-words ${
+        isMe
+          ? "bg-green-500 text-white rounded-br-md"
+          : "bg-gray-200 text-gray-900 rounded-bl-md"
+      }">
+        ${text}
+      </div>
 
-    <div class="text-[11px] text-gray-400 mt-1 px-1">
-      ${time}
+      <div class="text-[10px] text-gray-400 whitespace-nowrap mb-1">
+        ${time}
+      </div>
     </div>
   `;
 
