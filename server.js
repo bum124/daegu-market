@@ -2099,52 +2099,60 @@ app.get('/api/chat-list', (req, res) => {
   }
 
   const sql = `
-    SELECT 
-      r.id AS room_id,
-      r.product_id,
-      p.title AS name,
+  SELECT 
+    r.id AS room_id,
+    r.product_id,
+    p.title AS name,
 
-      opponent.nickname AS opponent_nickname,
-      opponent.name AS opponent_name,
+    opponent.nickname AS opponent_nickname,
+    opponent.name AS opponent_name,
 
-      (
-        SELECT m.text
-        FROM messages m
-        WHERE m.room_id = r.id
-        ORDER BY m.id DESC
-        LIMIT 1
-      ) AS last_message,
+    (
+      SELECT m.text
+      FROM messages m
+      WHERE m.room_id = r.id
+      ORDER BY m.id DESC
+      LIMIT 1
+    ) AS last_message,
 
-      (
-        SELECT COUNT(*)
-        FROM messages m2
-        WHERE m2.room_id = r.id
-          AND m2.is_read = 0
-          AND m2.sender != ?
-      ) AS unread,
+    (
+      SELECT m.created_at
+      FROM messages m
+      WHERE m.room_id = r.id
+      ORDER BY m.id DESC
+      LIMIT 1
+    ) AS last_message_time,
 
-      'market' AS type
+    (
+      SELECT COUNT(*)
+      FROM messages m2
+      WHERE m2.room_id = r.id
+        AND m2.is_read = 0
+        AND m2.sender != ?
+    ) AS unread,
 
-    FROM rooms r
+    'market' AS type
 
-    JOIN room_users my_ru
-      ON r.id = my_ru.room_id
+  FROM rooms r
 
-    LEFT JOIN room_users other_ru
-      ON r.id = other_ru.room_id
-      AND other_ru.user_id <> my_ru.user_id
+  JOIN room_users my_ru
+    ON r.id = my_ru.room_id
 
-    LEFT JOIN Users opponent
-      ON opponent.user_id = other_ru.user_id
+  LEFT JOIN room_users other_ru
+    ON r.id = other_ru.room_id
+    AND other_ru.user_id <> my_ru.user_id
 
-    JOIN products p
-      ON r.product_id = p.id
+  LEFT JOIN Users opponent
+    ON opponent.user_id = other_ru.user_id
 
-    WHERE my_ru.user_id = ?
-      AND my_ru.is_active = 1
+  JOIN products p
+    ON r.product_id = p.id
 
-    ORDER BY r.id DESC
-  `;
+  WHERE my_ru.user_id = ?
+    AND my_ru.is_active = 1
+
+  ORDER BY r.id DESC
+`;
 
   db.query(sql, [userId, userId], (err, results) => {
     if (err) return res.status(500).send(err);
