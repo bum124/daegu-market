@@ -228,7 +228,7 @@ function render(sender, text, createdAt, isRead) {
   div.className = `flex ${isMe ? "justify-end" : "justify-start"} mb-2`;
 
   div.innerHTML = `
-    <div class="flex items-end gap-1 max-w-[80%] ${
+    <div class="flex items-end max-w-[80%] ${
       isMe ? "flex-row-reverse" : ""
     }">
 
@@ -240,11 +240,13 @@ function render(sender, text, createdAt, isRead) {
         ${text}
       </div>
 
-      <div class="flex flex-col items-center justify-end text-[10px] text-gray-400 whitespace-nowrap mb-[2px] -mr-[6px]">
+      <div class="flex items-end text-[10px] text-gray-400 whitespace-nowrap mb-[2px] ${
+        isMe ? "mr-1" : "ml-1"
+      }">
 
         ${
           isMe && !isRead
-            ? `<div class="text-[10px] text-gray-400 leading-none mb-[1px]">1</div>`
+            ? `<div class="mr-[2px] leading-none">1</div>`
             : ""
         }
 
