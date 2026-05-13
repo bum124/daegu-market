@@ -2211,7 +2211,7 @@ io.on('connection', (socket) => {
 
   // 메시지 불러오기
   db.query(
-    'SELECT * FROM messages WHERE room_id = ? ORDER BY id ASC',
+    'SELECT id, room_id, sender, text, created_at, is_read FROM messages WHERE room_id = ? ORDER BY id ASC',
     [roomId],
     (err, results) => {
       if (!err) {

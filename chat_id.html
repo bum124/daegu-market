@@ -90,8 +90,13 @@ socket.on("loadMessages", (messages) => {
   chatBody.innerHTML = "";
 
   messages.forEach(msg => {
-  render(Number(msg.sender), msg.text, msg.created_at);
-  });
+  render(
+    Number(msg.sender),
+    msg.text,
+    msg.created_at,
+    msg.is_read
+  );
+ });
 });
 
 /* -------------------------
@@ -99,7 +104,7 @@ socket.on("loadMessages", (messages) => {
 ------------------------- */
 socket.on("receive_message", (data) => {
   console.log("받은 메시지:", data);
-  render(data.sender, data.text, new Date());
+  render(data.sender, data.text, new Date(), 0);
 });
 
 
@@ -203,7 +208,7 @@ function renderDateDivider(createdAt) {
   chatBody.appendChild(divider);
 }
 
-function render(sender, text, createdAt) {
+function render(sender, text, createdAt, isRead) {
   renderDateDivider(createdAt);
 
   const user =
@@ -235,8 +240,14 @@ function render(sender, text, createdAt) {
         ${text}
       </div>
 
-      <div class="text-[10px] text-gray-400 whitespace-nowrap mb-1">
-        ${time}
+      <div class="flex flex-col items-center text-[10px] text-gray-400 whitespace-nowrap mb-1">
+        <div>${time}</div>
+
+        ${
+          isMe && isRead
+            ? `<div class="text-[9px] text-green-500 mt-[1px]">읽음</div>`
+            : ""
+        }
       </div>
 
     </div>
