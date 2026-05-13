@@ -246,16 +246,21 @@ function render(sender, text, createdAt, isRead) {
       <div class="flex items-end text-[10px] text-gray-400 leading-none mb-[2px] ${
         isMe ? "mr-[3px]" : "ml-[3px]"
       }">
+
         <span>${timeFront}</span>
 
         <span class="flex flex-col items-center leading-none">
+
           ${
             isMe && !isRead
-              ? `<span class="text-[10px] leading-none mb-[1px]">1</span>`
+              ? `<span class="text-[10px] leading-none mb-[3px]">1</span>`
               : ""
           }
+
           <span>${timeMinute}</span>
+
         </span>
+
       </div>
 
     </div>
