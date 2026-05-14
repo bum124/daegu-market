@@ -2151,7 +2151,7 @@ app.get('/api/chat-list', (req, res) => {
   WHERE my_ru.user_id = ?
     AND my_ru.is_active = 1
 
-  ORDER BY r.id DESC
+  ORDER BY last_message_time DESC
 `;
 
   db.query(sql, [userId, userId], (err, results) => {
