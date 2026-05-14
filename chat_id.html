@@ -92,6 +92,10 @@ socket.on("loadMessages", (messages) => {
       msg.is_read
     );
   });
+
+  setTimeout(() => {
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }, 0);
 });
 
 socket.on("receive_message", (data) => {
