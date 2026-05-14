@@ -99,15 +99,11 @@ socket.on("receive_message", (data) => {
   render(data.sender, data.text, new Date(), 0);
 });
 
-socket.on("read_update", () => {
+ socket.on("read_update", () => {
   console.log("읽음 상태 갱신됨");
 
-  chatBody.innerHTML = "";
-  lastRenderedDate = "";
-
-  socket.emit("join_room", {
-    roomId: roomId,
-    userId: getCurrentUserId()
+  document.querySelectorAll(".unread-one").forEach(el => {
+    el.remove();
   });
 });
 
@@ -234,7 +230,7 @@ function render(sender, text, createdAt, isRead) {
         <span class="flex flex-col items-center leading-none">
           ${
             isMe && !isRead
-              ? `<span class="text-[10px] leading-none mb-[3px]">1</span>`
+              ? `<span class="unread-one text-[10px] leading-none mb-[3px]">1</span>`
               : ""
           }
 
