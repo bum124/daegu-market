@@ -96,7 +96,16 @@ socket.on("loadMessages", (messages) => {
 
 socket.on("receive_message", (data) => {
   console.log("받은 메시지:", data);
+
   render(data.sender, data.text, new Date(), 0);
+
+  // 상대 메시지면 즉시 읽음 처리
+  if (Number(data.sender) !== Number(getCurrentUserId())) {
+    socket.emit("mark_read", {
+      roomId: roomId,
+      userId: getCurrentUserId()
+    });
+  }
 });
 
  socket.on("read_update", () => {

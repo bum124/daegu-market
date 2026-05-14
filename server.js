@@ -2191,41 +2191,41 @@ io.on('connection', (socket) => {
 
   // 방 입장
   socket.on('join_room', (data) => {
-  const roomId = data.roomId;
-  const userId = data.userId;
+    const roomId = data.roomId;
+    const userId = data.userId;
 
-  console.log('방 입장 요청:', roomId, userId);
+    console.log('방 입장 요청:', roomId, userId);
 
-  socket.join(roomId);
+    socket.join(roomId);
 
-  // 상대 메시지 읽음 처리
-  db.query(
-  `
-  UPDATE messages
-  SET is_read = 1
-  WHERE room_id = ?
-    AND sender != ?
-    AND is_read = 0
-  `,
-  [roomId, userId],
-  (err, result) => {
-    if (!err && result.affectedRows > 0) {
-      io.to(roomId).emit('read_update');
-    }
-  }
- );
-
-  // 메시지 불러오기
-  db.query(
-    'SELECT id, room_id, sender, text, created_at, is_read FROM messages WHERE room_id = ? ORDER BY id ASC',
-    [roomId],
-    (err, results) => {
-      if (!err) {
-        socket.emit('loadMessages', results);
+    // 상대 메시지 읽음 처리
+    db.query(
+      `
+      UPDATE messages
+      SET is_read = 1
+      WHERE room_id = ?
+        AND sender != ?
+        AND is_read = 0
+      `,
+      [roomId, userId],
+      (err, result) => {
+        if (!err && result.affectedRows > 0) {
+          io.to(roomId).emit('read_update');
+        }
       }
-    }
-  );
-});
+    );
+
+    // 메시지 불러오기
+    db.query(
+      'SELECT id, room_id, sender, text, created_at, is_read FROM messages WHERE room_id = ? ORDER BY id ASC',
+      [roomId],
+      (err, results) => {
+        if (!err) {
+          socket.emit('loadMessages', results);
+        }
+      }
+    );
+  });
 
   // 메시지 보내기
   socket.on('send_message', (data) => {
@@ -2249,6 +2249,28 @@ io.on('connection', (socket) => {
             'UPDATE room_users SET is_active = 1 WHERE room_id = ?',
             [data.roomId]
           );
+        }
+      }
+    );
+  });
+
+  // 접속 중인 채팅방에서 메시지를 받았을 때 즉시 읽음 처리
+  socket.on('mark_read', (data) => {
+    const roomId = data.roomId;
+    const userId = data.userId;
+
+    db.query(
+      `
+      UPDATE messages
+      SET is_read = 1
+      WHERE room_id = ?
+        AND sender != ?
+        AND is_read = 0
+      `,
+      [roomId, userId],
+      (err, result) => {
+        if (!err && result.affectedRows > 0) {
+          io.to(roomId).emit('read_update');
         }
       }
     );
