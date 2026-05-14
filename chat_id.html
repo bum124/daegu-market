@@ -7,9 +7,8 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- 소켓 -->
   <script src="https://daegu-market-api.onrender.com/socket.io/socket.io.js"></script>
+
   <style>
     body { font-family: sans-serif; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
@@ -20,19 +19,14 @@
 
 <div class="max-w-2xl mx-auto h-screen flex flex-col bg-white">
 
-  <!-- HEADER -->
   <header class="p-4 border-b flex justify-between items-center">
-   <a href="chat.html">←</a>
-   <div>채팅</div>
-   <button id="leaveBtn" class="text-red-500 text-sm">
-    나가기
-   </button>
+    <a href="chat.html">←</a>
+    <div>채팅</div>
+    <button id="leaveBtn" class="text-red-500 text-sm">나가기</button>
   </header>
 
-  <!-- CHAT -->
   <div id="chatBody" class="flex-1 overflow-y-auto p-4 no-scrollbar"></div>
 
-  <!-- INPUT -->
   <form class="p-3 border-t flex gap-2">
     <input id="msgInput" class="flex-1 border p-2 rounded" />
     <button class="bg-green-500 text-white px-4 rounded">전송</button>
@@ -43,21 +37,40 @@
 <script>
 const socket = io("https://daegu-market-api.onrender.com");
 
+const params = new URLSearchParams(location.search);
+const roomId = params.get("room_id");
+
+const chatBody = document.getElementById("chatBody");
+const form = document.querySelector("form");
+const input = document.getElementById("msgInput");
+
+let lastRenderedDate = "";
+
+function getCurrentUser() {
+  return (
+    JSON.parse(localStorage.getItem("user")) ||
+    JSON.parse(localStorage.getItem("loggedInUser"))
+  );
+}
+
+function getCurrentUserId() {
+  const user = getCurrentUser();
+  return user ? (user.user_id || user.id) : null;
+}
+
 socket.on("connect", () => {
   console.log("소켓 연결됨:", socket.id);
 
-  const user =
-    JSON.parse(localStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("loggedInUser"));
+  const userId = getCurrentUserId();
 
-  if (!user) {
+  if (!userId) {
     alert("로그인이 필요합니다.");
     return;
   }
 
   socket.emit("join_room", {
     roomId: roomId,
-    userId: user.user_id || user.id
+    userId: userId
   });
 });
 
@@ -65,48 +78,38 @@ socket.on("connect_error", (err) => {
   console.log("소켓 연결 실패:", err.message);
 });
 
-/* -------------------------
-   URL
-------------------------- */
-const params = new URLSearchParams(location.search);
-const roomId = params.get("room_id");
-console.log("roomId:", roomId);
-console.log("roomId type:", typeof roomId, roomId);
-
-/* -------------------------
-   DOM
-------------------------- */
-const chatBody = document.getElementById("chatBody");
-const form = document.querySelector("form");
-const input = document.getElementById("msgInput");
-
-/* -------------------------
-   2. 방 입장
-------------------------- */
 socket.on("loadMessages", (messages) => {
-
   console.log("loadMessages 실행됨");
 
   chatBody.innerHTML = "";
+  lastRenderedDate = "";
 
   messages.forEach(msg => {
-  render(
-    Number(msg.sender),
-    msg.text,
-    msg.created_at,
-    msg.is_read
-  );
- });
+    render(
+      Number(msg.sender),
+      msg.text,
+      msg.created_at,
+      msg.is_read
+    );
+  });
 });
 
-/* -------------------------
-   3. 메시지 받기
-------------------------- */
 socket.on("receive_message", (data) => {
   console.log("받은 메시지:", data);
   render(data.sender, data.text, new Date(), 0);
 });
 
+socket.on("read_update", () => {
+  console.log("읽음 상태 갱신됨");
+
+  chatBody.innerHTML = "";
+  lastRenderedDate = "";
+
+  socket.emit("join_room", {
+    roomId: roomId,
+    userId: getCurrentUserId()
+  });
+});
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -114,24 +117,16 @@ form.addEventListener("submit", (e) => {
   const text = input.value.trim();
   if (!text) return;
 
-  const user =
-    JSON.parse(localStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("loggedInUser"));
+  const user = getCurrentUser();
 
   if (!user) {
     alert("로그인이 필요합니다");
     return;
   }
 
- console.log("보내는 데이터:", {
-  roomId: roomId,
-  sender: user.user_id,
-  text: text
-  });
-
   socket.emit("send_message", {
     roomId: roomId,
-    sender: user.user_id,
+    sender: user.user_id || user.id,
     text: text
   });
 
@@ -139,9 +134,7 @@ form.addEventListener("submit", (e) => {
 });
 
 document.getElementById("leaveBtn").addEventListener("click", async () => {
-  const user =
-    JSON.parse(localStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("loggedInUser"));
+  const user = getCurrentUser();
 
   if (!user) {
     alert("로그인이 필요합니다.");
@@ -173,11 +166,6 @@ document.getElementById("leaveBtn").addEventListener("click", async () => {
   window.location.href = "chat.html";
 });
 
-/* -------------------------
-   5. 렌더
-------------------------- */
-let lastRenderedDate = "";
-
 function renderDateDivider(createdAt) {
   if (!createdAt) return;
 
@@ -193,7 +181,6 @@ function renderDateDivider(createdAt) {
 
   divider.innerHTML = `
     <div class="flex-1 h-px bg-gray-200"></div>
-
     <div>
       ${date.toLocaleDateString("ko-KR", {
         year: "numeric",
@@ -201,7 +188,6 @@ function renderDateDivider(createdAt) {
         day: "numeric"
       })}
     </div>
-
     <div class="flex-1 h-px bg-gray-200"></div>
   `;
 
@@ -211,10 +197,7 @@ function renderDateDivider(createdAt) {
 function render(sender, text, createdAt, isRead) {
   renderDateDivider(createdAt);
 
-  const user =
-    JSON.parse(localStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("loggedInUser"));
-
+  const user = getCurrentUser();
   const isMe = user && String(sender) === String(user.user_id || user.id);
 
   const time = createdAt
@@ -246,11 +229,9 @@ function render(sender, text, createdAt, isRead) {
       <div class="flex items-end shrink-0 whitespace-nowrap text-[10px] text-gray-400 leading-none mb-[2px] ${
         isMe ? "mr-[3px]" : "ml-[3px]"
       }">
-
         <span>${timeFront}</span>
 
         <span class="flex flex-col items-center leading-none">
-
           ${
             isMe && !isRead
               ? `<span class="text-[10px] leading-none mb-[3px]">1</span>`
@@ -258,9 +239,7 @@ function render(sender, text, createdAt, isRead) {
           }
 
           <span>${timeMinute}</span>
-
         </span>
-
       </div>
 
     </div>

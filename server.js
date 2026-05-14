@@ -2200,14 +2200,19 @@ io.on('connection', (socket) => {
 
   // 상대 메시지 읽음 처리
   db.query(
-    `
-    UPDATE messages
-    SET is_read = 1
-    WHERE room_id = ?
-      AND sender != ?
-    `,
-    [roomId, userId]
-  );
+  `
+  UPDATE messages
+  SET is_read = 1
+  WHERE room_id = ?
+    AND sender != ?
+  `,
+  [roomId, userId],
+  (err) => {
+    if (!err) {
+      io.to(roomId).emit('read_update');
+    }
+  }
+);
 
   // 메시지 불러오기
   db.query(
