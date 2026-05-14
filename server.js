@@ -2205,14 +2205,15 @@ io.on('connection', (socket) => {
   SET is_read = 1
   WHERE room_id = ?
     AND sender != ?
+    AND is_read = 0
   `,
   [roomId, userId],
-  (err) => {
-    if (!err) {
+  (err, result) => {
+    if (!err && result.affectedRows > 0) {
       io.to(roomId).emit('read_update');
     }
   }
-);
+ );
 
   // 메시지 불러오기
   db.query(
