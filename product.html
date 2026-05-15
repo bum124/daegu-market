@@ -805,6 +805,11 @@ async function loadLikeState() {
 }
 
 function openSellerProfile() {
+  if (!getLoggedInUser()) {
+    redirectToLogin(`product.html?id=${encodeURIComponent(id || '')}`);
+    return;
+  }
+
   const seller = window.currentSeller;
 
   if (!seller || !seller.id) {
