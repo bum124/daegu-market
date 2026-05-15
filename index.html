@@ -31,6 +31,7 @@
         const signupBtn = document.getElementById('nav-signup-btn');
         const userMenu = document.getElementById('nav-user-menu');
         const userNameDisplay = document.getElementById('user-name-display');
+        const mobileChatBadge = document.getElementById('mobile-chat-badge');
 
         if (userStr) {
             const user = JSON.parse(userStr);
@@ -38,12 +39,45 @@
             if(signupBtn) signupBtn.classList.add('hidden');
             if(userMenu) userMenu.classList.remove('hidden');
             if(userNameDisplay) userNameDisplay.textContent = `${user.name}님 환영합니다!`;
+            updateChatUnreadBadge(user);
+            setInterval(() => updateChatUnreadBadge(user), 30000);
         } else {
             if(userMenu) userMenu.classList.add('hidden');
             if(loginBtn) loginBtn.classList.remove('hidden');
             if(signupBtn) signupBtn.classList.remove('hidden');
+            if(mobileChatBadge) mobileChatBadge.classList.add('hidden');
         }
     });
+
+    async function updateChatUnreadBadge(user) {
+        const userId = user && (user.user_id || user.id);
+        const badges = [
+            document.getElementById('desktop-chat-badge'),
+            document.getElementById('mobile-chat-badge')
+        ].filter(Boolean);
+
+        if (!userId || badges.length === 0) {
+            badges.forEach(badge => badge.classList.add('hidden'));
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://daegu-market-api.onrender.com/api/chat-list?user_id=${encodeURIComponent(userId)}`);
+            if (!response.ok) throw new Error('chat-list failed');
+
+            const chats = await response.json();
+            const unreadCount = Array.isArray(chats)
+                ? chats.reduce((sum, chat) => sum + Number(chat.unread || 0), 0)
+                : 0;
+
+            badges.forEach(badge => {
+                badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+                badge.classList.toggle('hidden', unreadCount <= 0);
+            });
+        } catch (error) {
+            badges.forEach(badge => badge.classList.add('hidden'));
+        }
+    }
 
     function logout() {
         localStorage.removeItem('loggedInUser');
@@ -95,6 +129,10 @@
         <div id="nav-user-menu" class="hidden flex items-center gap-3 ml-2">
           <span id="user-name-display" class="text-sm font-medium text-foreground"></span>
           <div class="h-3 w-[1px] bg-border"></div> 
+          <a href="chat.html" data-auth-required="true" class="relative text-sm text-muted-foreground hover:text-foreground">
+            채팅
+            <span id="desktop-chat-badge" class="hidden absolute -right-3 -top-2 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white"></span>
+          </a>
           <a href="mypage.html" class="text-sm text-muted-foreground hover:text-foreground">마이페이지</a>
           <button onclick="logout()" class="text-xs text-muted-foreground hover:text-red-500 underline">로그아웃</button>
         </div>
@@ -202,7 +240,8 @@
         </div>
         <span class="text-xs font-medium text-primary">판매</span>
       </a>
-      <a href="chat.html" data-auth-required="true" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+      <a href="chat.html" data-auth-required="true" class="relative flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
+        <span id="mobile-chat-badge" class="hidden absolute right-1 top-1 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white"></span>
         <span class="text-xs">채팅</span>
       </a>
       <a href="mypage.html" data-auth-required="true" class="flex flex-col items-center gap-1 px-3 py-2 text-muted-foreground hover:text-foreground">
