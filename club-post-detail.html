@@ -175,12 +175,19 @@
         }
 
         // 4. 이미지 슬라이더 연동 (사진이 없으면 대구대 느낌의 기본 사진으로!)
-        window.images = post.images && post.images.length > 0 
-          ? post.images 
+        let imageArray = [];
+        try {
+          // DB에서 온 문자열을 자바스크립트 배열로 변환합니다.
+          imageArray = typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []);
+        } catch (e) {}
+
+        // 변환된 사진이 있으면 슬라이더에 넣고, 없으면 기본 대구대 느낌 사진을 씁니다.
+        window.images = imageArray.length > 0 
+          ? imageArray 
           : ["https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80"];
         
         window.currentIndex = 0;
-        initGallery(); 
+        initGallery(); // 슬라이더 시작!
 
       } catch (error) {
         console.error(error);

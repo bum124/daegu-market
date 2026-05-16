@@ -1287,7 +1287,7 @@ app.post('/api/clubs', (req, res) => {
   const { 
     clubName, clubCategory, clubTagline, intro, 
     clubMeet, clubLocation, meetingInfo, feeAmount, 
-    feeInfo, eligibilityAndTips, leader_id 
+    feeInfo, eligibilityAndTips, leader_id, images
   } = req.body;
 
   // 로그인된 유저(leader_id)가 제대로 넘어왔는지 확인
@@ -1295,15 +1295,15 @@ app.post('/api/clubs', (req, res) => {
     return res.status(400).json({ message: '회장(로그인 사용자) 정보가 없습니다.' });
   }
 
-  const sql = `
+ const sql = `
     INSERT INTO Clubs 
-    (leader_id, name, category, tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (leader_id, name, category, tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility, images) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   
   const values = [
     leader_id, clubName, clubCategory, clubTagline, intro, 
-    clubMeet, clubLocation, meetingInfo, feeAmount, feeInfo, eligibilityAndTips
+    clubMeet, clubLocation, meetingInfo, feeAmount, feeInfo, eligibilityAndTips, JSON.stringify(images || [])
   ];
 
   db.query(sql, values, (err, result) => {
@@ -1382,25 +1382,23 @@ app.get('/api/clubs/:id', (req, res) => {
   });
 });
 
-// 4. 내가 만든(회장인) 동아리 목록 불러오기 API
+// 4. 내가 가입한(회장이거나 승인된 부원인) 동아리 목록 불러오기 API
 app.get('/api/users/:userId/my-clubs', (req, res) => {
-  const userId = req.params.userId; // 요청한 사람의 ID
+  const userId = req.params.userId;
   
-  // Clubs 테이블에서 leader_id가 내 ID와 똑같은 것만 찾아오기
+  // c(Clubs)와 cm(Club_Members)을 사용해 기존 코드와 완벽하게 통일!
   const sql = `
-    SELECT * 
-    FROM Clubs 
-    WHERE leader_id = ? 
-    ORDER BY created_at DESC
+    SELECT DISTINCT c.* FROM Clubs c
+    LEFT JOIN Club_Members cm ON c.club_id = cm.club_id
+    WHERE c.leader_id = ? OR (cm.user_id = ? AND cm.status = 'APPROVED')
+    ORDER BY c.created_at DESC
   `;
   
-  queryWithTimeout(sql, [userId], (err, results) => {
+  queryWithTimeout(sql, [userId, userId], (err, results) => {
     if (err) {
       console.error('내 동아리 조회 DB 에러:', err);
       return res.status(500).json({ message: '내 동아리를 불러오는 중 오류가 발생했습니다.' });
     }
-    
-    // 찾은 동아리 목록(배열)을 프론트로 전달
     res.json(results);
   });
 });
@@ -1495,7 +1493,7 @@ app.put('/api/clubs/:clubId/members/:userId/approve', (req, res) => {
 
 // 8. 동아리 소식(게시글) 작성 API
 app.post('/api/club-posts', (req, res) => {
-  const { author_id, post_type, category, title, content } = req.body;
+  const { author_id, post_type, category, title, content, images } = req.body; // ✨ images 추가
 
   if (!author_id) {
     return res.status(400).json({ message: '로그인이 필요합니다.' });
@@ -1518,11 +1516,11 @@ app.post('/api/club-posts', (req, res) => {
 
     // 2단계: 찾아낸 club_id와 함께 Club_Posts 테이블에 글을 등록합니다!
     const insertSql = `
-      INSERT INTO Club_Posts (club_id, author_id, post_type, category, title, content)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO Club_Posts (club_id, author_id, post_type, category, title, content, images)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    queryWithTimeout(insertSql, [clubId, author_id, post_type, category, title, content], (insertErr) => {
+    queryWithTimeout(insertSql, [clubId, author_id, post_type, category, title, content, JSON.stringify(images || [])], (insertErr) => {
       if (insertErr) {
         console.error('게시글 등록 DB 에러:', insertErr);
         return res.status(500).json({ message: '글 등록 중 오류가 발생했습니다.' });
@@ -1624,18 +1622,24 @@ app.get('/api/clubs/:clubId/internal-posts', (req, res) => {
   });
 });
 
-// 12. 동아리 승인된 부원(기존 부원) 목록 불러오기 API
+// 12. 동아리 승인된 부원(기존 부원) 목록 불러오기 API (회장님 강제 포함)
 app.get('/api/clubs/:clubId/approved-members', (req, res) => {
   const clubId = req.params.clubId;
+  
+  // c(Clubs), cm(Club_Members), u(Users) 기존 별칭 스타일 그대로 유지!
   const sql = `
+    SELECT u.user_id, 'APPROVED' AS status, u.name, u.student_id 
+    FROM Clubs c
+    JOIN Users u ON c.leader_id = u.user_id
+    WHERE c.club_id = ?
+    UNION
     SELECT cm.user_id, cm.status, u.name, u.student_id 
     FROM Club_Members cm
     JOIN Users u ON cm.user_id = u.user_id
     WHERE cm.club_id = ? AND cm.status = 'APPROVED'
-    ORDER BY cm.created_at ASC
   `;
   
-  queryWithTimeout(sql, [clubId], (err, results) => {
+  queryWithTimeout(sql, [clubId, clubId], (err, results) => {
     if (err) return res.status(500).json({ message: '부원 목록 DB 에러' });
     res.json(results);
   });
@@ -1681,15 +1685,18 @@ app.put('/api/clubs/:clubId/transfer', (req, res) => {
 // 16. 동아리 프로필 정보 수정 API
 app.put('/api/clubs/:clubId', (req, res) => {
   const clubId = req.params.clubId;
-  const { tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility } = req.body;
+  // ✨ req.body에 images 추가
+  const { tagline, intro, meet_time, location, meeting_info, fee_amount, fee_info, eligibility, images } = req.body;
 
+  // ✨ SET 쿼리에 images = ? 추가
   const sql = `
     UPDATE Clubs 
-    SET tagline = ?, intro = ?, meet_time = ?, location = ?, meeting_info = ?, fee_amount = ?, fee_info = ?, eligibility = ?
+    SET tagline = ?, intro = ?, meet_time = ?, location = ?, meeting_info = ?, fee_amount = ?, fee_info = ?, eligibility = ?, images = ?
     WHERE club_id = ?
   `;
 
-  queryWithTimeout(sql, [tagline, intro, meet_time, location, meeting_info, fee_amount || 0, fee_info, eligibility, clubId], (err) => {
+  // ✨ values 배열에 JSON.stringify(images || []) 추가
+  queryWithTimeout(sql, [tagline, intro, meet_time, location, meeting_info, fee_amount || 0, fee_info, eligibility, JSON.stringify(images || []), clubId], (err) => {
     if (err) {
       console.error('프로필 수정 에러:', err);
       return res.status(500).json({ message: '프로필 수정 중 오류가 발생했습니다.' });

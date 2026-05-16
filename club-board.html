@@ -142,7 +142,7 @@
     }
 
     // 🌟 화면에 카드를 찍어내는 핵심 함수 (정렬 기능 포함!)
-    function renderPosts() {
+   function renderPosts() {
       if (allPosts.length === 0) {
         feedContainer.innerHTML = '<div class="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">아직 등록된 캠퍼스 소식이 없습니다.<br>가장 먼저 소식을 알려보세요!</div>';
         return;
@@ -157,12 +157,18 @@
       });
 
       feedContainer.innerHTML = sortedPosts.map(post => {
-        // 🌟 핵심 로직: 사진이 없으면 HTML 덩어리 자체를 아예 빈칸으로 만듭니다!
+        // ✨ 1. DB에서 온 문자열 사진 데이터를 배열로 안전하게 변환!
+        let imageArray = [];
+        try {
+          imageArray = typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []);
+        } catch (e) {}
+
+        // ✨ 2. 사진이 있으면 첫 번째 사진(imageArray[0])을 띄우기
         let imageHtml = '';
-        if (post.images && post.images.length > 0) {
+        if (imageArray.length > 0) {
           imageHtml = `
-            <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="${post.images[0]}" aria-label="사진 크게 보기">
-              <img src="${post.images[0]}" alt="게시글 사진" class="h-72 w-full object-cover sm:h-96">
+            <button type="button" class="feed-image relative block w-full bg-black/5" data-open-image="${imageArray[0]}" aria-label="사진 크게 보기">
+              <img src="${imageArray[0]}" alt="게시글 사진" class="h-72 w-full object-cover sm:h-96">
               <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
               <div class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-foreground opacity-0 shadow-sm transition group-hover:opacity-100">
                 <span aria-hidden="true">🔍</span> 크게 보기
@@ -186,7 +192,8 @@
             <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">${post.category}</span>
           </div>
 
-          ${imageHtml} <div class="p-4">
+          ${imageHtml} 
+          <div class="p-4">
             <p class="text-base font-bold leading-snug">${post.title}</p>
             <p class="mt-2 line-clamp-3 text-sm text-muted-foreground">${post.content}</p>
           </div>

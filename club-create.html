@@ -391,43 +391,39 @@
       if (!eligibilityAndTips) return showError('지원 자격 & 추천을 입력해주세요.');
 
       let user = null;
-      try {
-        user = JSON.parse(localStorage.getItem('loggedInUser'));
-      } catch (err) {}
+  try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch (err) {}
+  const presidentId = user ? (user.user_id || user.id || user.student_id) : null;
+  if (!user || !presidentId) return showError('로그인 정보가 없습니다.');
 
-      // ✨ 여기가 핵심입니다! 셋 중 하나라도 있으면 presidentId에 담습니다.
-      const presidentId = user ? (user.user_id || user.id || user.student_id) : null;
+  // ✨ 이미지 파일을 Base64로 변환하는 마법의 코드
+  const imageInput = document.getElementById('clubImages');
+  const base64Images = [];
+  if (imageInput.files.length > 0) {
+    for (let i = 0; i < imageInput.files.length; i++) {
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(imageInput.files[i]);
+      });
+      base64Images.push(base64);
+    }
+  }
 
-      if (!user || !presidentId) {
-        return showError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      }
+  const clubData = {
+    clubName, clubCategory, clubTagline, intro, clubMeet, clubLocation, meetingInfo,
+    feeAmount: Number(feeAmountRaw), feeInfo, eligibilityAndTips,
+    leader_id: presidentId,
+    images: base64Images // ✨ 변환된 이미지 배열 추가!
+  };
 
-      // 2. 서버로 보낼 데이터 묶기
-      const clubData = {
-        clubName,
-        clubCategory,
-        clubTagline,
-        intro,
-        clubMeet,
-        clubLocation,
-        meetingInfo,
-        feeAmount: Number(feeAmountRaw),
-        feeInfo,
-        eligibilityAndTips,
-        leader_id: presidentId  // ✨ 옛날 user_id 대신 방금 찾은 만능 ID를 여기에 넣습니다!
-      };
-      // 3. 서버(API)로 데이터 전송 (백엔드 서버 주소)
-      // 로컬 테스트 시 http://localhost:3000, 배포 시 https://daegu-market-api.onrender.com
-      const API_BASE_URL = "https://daegu-market-api.onrender.com"; 
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(clubData)
-        });
+  const API_BASE_URL = "https://daegu-market-api.onrender.com";
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/clubs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(clubData)
+    });
 
         const result = await response.json();
 

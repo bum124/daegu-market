@@ -251,9 +251,24 @@
       if (!title || title.length < 4) return showError('제목은 4자 이상으로 입력해주세요.');
       if (!content) return showError('본문을 입력해주세요.');
 
+
+      const imageInput = document.getElementById('images');
+      const base64Images = [];
+      if (imageInput.files.length > 0) {
+        for (let i = 0; i < imageInput.files.length; i++) {
+        const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(imageInput.files[i]);
+      });
+      base64Images.push(base64);
+    }
+  }
+
       submitBtn.textContent = '등록 중...';
       submitBtn.disabled = true;
 
+        
       try {
         const response = await fetch('https://daegu-market-api.onrender.com/api/club-posts', {
           method: 'POST',
@@ -263,7 +278,8 @@
             post_type: postType,
             category: category,
             title: title,
-            content: content
+            content: content,
+            images: base64Images
           })
         });
 

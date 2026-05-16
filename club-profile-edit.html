@@ -82,6 +82,18 @@
           </div>
 
           <div class="space-y-2">
+            <label class="text-sm font-medium">활동 이미지 교체 (선택)</label>
+            <div class="rounded-lg border border-dashed border-border bg-white p-4">
+              <div id="currentImagePreview" class="mb-3 hidden">
+                <p class="text-xs text-muted-foreground mb-1">현재 등록된 이미지:</p>
+                <img id="previewImg" src="" class="h-32 w-full object-cover rounded-lg border border-border">
+              </div>
+              <input id="editClubImages" type="file" accept="image/*" class="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-muted/70">
+              <p class="mt-2 text-xs text-muted-foreground">새로운 사진을 선택하면 기존 사진이 덮어씌워집니다. 선택하지 않으면 기존 사진이 유지됩니다.</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
             <label for="intro" class="text-sm font-medium">상세 소개</label>
             <textarea id="intro" rows="6" required class="w-full min-h-[140px] rounded-lg border border-border bg-white px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
           </div>
@@ -133,9 +145,11 @@
   </div>
 
   <script>
-    const API_BASE_URL = "https://daegu-market-api.onrender.com";
+   const API_BASE_URL = "https://daegu-market-api.onrender.com";
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
+
+    let existingImages = []; // ✨ 기존 이미지를 담아둘 전역 변수
 
     function goBack() {
       window.location.href = `club-admin.html?id=${clubId}`;
@@ -175,6 +189,16 @@
         document.getElementById('feeInfo').value = club.fee_info || '';
         document.getElementById('eligibilityAndTips').value = club.eligibility || '';
 
+        // ✨ 📸 사진 띄우기 및 기존 이미지 보존
+        if (club.images) {
+          const parsed = typeof club.images === 'string' ? JSON.parse(club.images) : club.images;
+          if (parsed && parsed.length > 0) {
+            existingImages = parsed; // 기존 이미지 배열 보존
+            document.getElementById('currentImagePreview').classList.remove('hidden');
+            document.getElementById('previewImg').src = parsed[0]; // 미리보기 띄우기
+          }
+        }
+
       } catch (error) {
         alert('동아리 정보를 불러오지 못했습니다.');
         goBack();
@@ -190,7 +214,22 @@
       submitBtn.textContent = '수정 중...';
       submitBtn.disabled = true;
 
-      // 💡 서버(server.js)가 받을 수 있게 키 값을 DB 컬럼명에 딱 맞춰서 묶어줍니다.
+      // ✨ 📸 새 이미지가 있는지 확인하고 Base64로 변환!
+      const imageInput = document.getElementById('editClubImages');
+      let finalImages = existingImages; // 기본값은 기존 이미지!
+
+      if (imageInput.files.length > 0) {
+        finalImages = []; // 새 파일이 선택되었으니 기존 것은 날림
+        for (let i = 0; i < imageInput.files.length; i++) {
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.readAsDataURL(imageInput.files[i]);
+          });
+          finalImages.push(base64);
+        }
+      }
+
       const payload = {
         tagline: document.getElementById('clubTagline').value.trim(),
         intro: document.getElementById('intro').value.trim(),
@@ -199,7 +238,8 @@
         meeting_info: document.getElementById('meetingInfo').value.trim(),
         fee_amount: Number(document.getElementById('feeAmount').value),
         fee_info: document.getElementById('feeInfo').value.trim(),
-        eligibility: document.getElementById('eligibilityAndTips').value.trim()
+        eligibility: document.getElementById('eligibilityAndTips').value.trim(),
+        images: finalImages // ✨ 최종 이미지 배열 전송
       };
 
       try {
