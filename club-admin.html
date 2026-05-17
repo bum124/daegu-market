@@ -128,10 +128,12 @@
         </div>
         <div class="h-48 flex flex-col justify-center rounded-2xl border border-border bg-background p-4">
           <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white text-xl shadow-sm">✨</div>
+            <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+              <img id="adminClubLogo" src="" alt="동아리 로고" class="h-full w-full object-cover">
+            </div>
             <div class="min-w-0 flex-1">
               <h3 id="adminClubName" class="text-base font-bold">불러오는 중...</h3>
-              <p class="mt-1 text-xs text-muted-foreground line-clamp-2">우리 동아리의 정보를 관리하세요.</p>
+              <p id="adminClubTagline" class="mt-1 text-xs text-muted-foreground line-clamp-2">우리 동아리의 정보를 관리하세요.</p>
             </div>
           </div>
         </div>
@@ -280,8 +282,28 @@
           if(badgeEl) badgeEl.textContent = '부원 인증 완료';
         }
 
-        const nameEl = document.getElementById('adminClubName');
+       const nameEl = document.getElementById('adminClubName');
         if(nameEl) nameEl.textContent = club.name;
+
+        // ✨ 📸 메인화면처럼 동아리 진짜 이미지를 프로필 아이콘으로 연동하기
+        let imageArray = [];
+        try {
+          imageArray = typeof club.images === 'string' ? JSON.parse(club.images) : (club.images || []);
+        } catch (e) {}
+
+        // 이미지가 있으면 첫 번째 장을 쓰고, 없으면 예쁜 이니셜 기본 로고 생성
+        const imgSrc = imageArray.length > 0 
+          ? imageArray[0] 
+          : `https://api.dicebear.com/8.x/initials/svg?seed=${club.name}&backgroundColor=22c55e`;
+
+        const logoEl = document.getElementById('adminClubLogo');
+        if (logoEl) logoEl.src = imgSrc;
+
+        // 💡 덤으로 고정 안내문구 대신 동아리의 진짜 [한 줄 홍보]글을 띄워줘서 휑함을 없앱니다!
+        const taglineEl = document.getElementById('adminClubTagline');
+        if (taglineEl && club.tagline) {
+          taglineEl.textContent = club.tagline;
+        }
 
         // 권한 무관 공통 데이터 로딩
         loadPendingMembers();

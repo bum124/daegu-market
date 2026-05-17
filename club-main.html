@@ -164,7 +164,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', async () => {
       const clubContainer = document.getElementById('club-list-container');
-      const myClubContainer = document.getElementById('my-club-list'); // ✨ 추가된 부분
+      const myClubContainer = document.getElementById('my-club-list'); 
       
       const API_BASE_URL = "https://daegu-market-api.onrender.com";
 
@@ -192,15 +192,26 @@
             if (myClubs.length === 0) {
               myClubContainer.innerHTML = '<p class="text-sm text-muted-foreground py-2 px-1">아직 가입(개설)한 동아리가 없습니다.</p>';
             } else {
-              // ✨ 내 동아리 카드 그리기 (회장이면 왕관, 부원이면 숨김 처리)
+              // ✨ 내 동아리 카드 그리기 (아이콘 이미지 연동!)
               myClubContainer.innerHTML = myClubs.map(club => {
-                const isLeader = (club.leader_id === userId); // 내가 이 동아리의 회장인지 확인!
+                const isLeader = (club.leader_id === userId);
                 const crownBadge = isLeader ? `<span class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-white shadow-sm" title="회장">👑</span>` : '';
+
+                // 📸 1. DB에서 문자열로 온 사진 배열로 변환
+                let imageArray = [];
+                try {
+                  imageArray = typeof club.images === 'string' ? JSON.parse(club.images) : (club.images || []);
+                } catch(e) {}
+
+                // 📸 2. 사진이 있으면 첫번째 사진, 없으면 동아리 이름 기반 예쁜 기본 로고!
+                const imgSrc = imageArray.length > 0 
+                  ? imageArray[0] 
+                  : `https://api.dicebear.com/8.x/initials/svg?seed=${club.name}&backgroundColor=22c55e`;
 
                 return `
                 <a href="club-admin.html?id=${club.club_id}" class="group flex w-40 flex-shrink-0 items-center gap-3 rounded-2xl border border-border bg-white p-3 hover:bg-muted transition-colors shadow-sm">
-                  <div class="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
-                    <span class="text-xl" aria-hidden="true">🎯</span>
+                  <div class="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
+                    <img src="${imgSrc}" class="h-full w-full object-cover">
                     ${crownBadge}
                   </div>
                   <div class="min-w-0 flex-1">
@@ -218,11 +229,11 @@
         }
       }
 
+      // ==========================================
       // 🌟 [기능 2] 전체 동아리 목록 불러오기 & 필터링 🌟
       // ==========================================
       function renderClubs() {
         let filteredClubs = allClubs;
-        // '전체'가 아니면 해당 카테고리만 걸러냅니다!
         if (currentCategory !== '전체') {
           filteredClubs = allClubs.filter(club => club.category === currentCategory);
         }
@@ -232,19 +243,33 @@
           return;
         }
 
-        clubContainer.innerHTML = filteredClubs.map(club => `
+        // ✨ 전체 동아리 카드 그리기 (아이콘 이미지 연동!)
+        clubContainer.innerHTML = filteredClubs.map(club => {
+          
+          // 📸 1. 문자열 사진 변환
+          let imageArray = [];
+          try {
+            imageArray = typeof club.images === 'string' ? JSON.parse(club.images) : (club.images || []);
+          } catch(e) {}
+
+          // 📸 2. 사진 분기 처리
+          const imgSrc = imageArray.length > 0 
+            ? imageArray[0] 
+            : `https://api.dicebear.com/8.x/initials/svg?seed=${club.name}&backgroundColor=22c55e`;
+
+          return `
           <a href="club-detail.html?id=${club.club_id}" class="group rounded-2xl border border-border bg-white p-5 hover:bg-muted shadow-sm transition-colors">
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background">
-                  <span class="text-xl" aria-hidden="true">✨</span>
+                <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
+                  <img src="${imgSrc}" class="h-full w-full object-cover">
                 </div>
                 <div class="min-w-0">
                   <p class="truncate text-base font-bold text-foreground">${club.name}</p>
                   <p class="mt-0.5 text-xs font-medium text-muted-foreground">${club.category}</p>
                 </div>
               </div>
-              <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+              <span class="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 flex-shrink-0">
                 ${club.recruit_status || '모집 중'}
               </span>
             </div>
@@ -254,19 +279,18 @@
               ${club.intro}
             </p>
             
-            <div class="mt-4 flex items-center justify-between">
+            <div class="mt-4 flex items-center justify-between border-t border-border pt-3">
               <span class="text-xs font-medium text-muted-foreground">📍 ${club.location || '장소 미정'}</span>
               <span class="text-sm font-bold text-primary group-hover:underline">상세 보기</span>
             </div>
           </a>
-        `).join(''); 
+        `}).join(''); 
       }
 
       // 🌟 카테고리 버튼 클릭 이벤트
       const catBtns = document.querySelectorAll('.main-category-btn');
       catBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-          // 모양 변경 (선택된 애만 초록색으로)
           catBtns.forEach(c => {
             c.classList.remove('bg-primary', 'text-white');
             c.classList.add('bg-white', 'text-foreground', 'border-border');
@@ -275,7 +299,7 @@
           btn.classList.add('bg-primary', 'text-white');
           
           currentCategory = btn.getAttribute('data-category');
-          renderClubs(); // 화면 다시 그리기!
+          renderClubs(); 
         });
       });
 
@@ -284,14 +308,14 @@
         const response = await fetch(`${API_BASE_URL}/api/clubs`);
         if (!response.ok) throw new Error('서버 응답 오류');
         
-        allClubs = await response.json(); // 전체 바구니에 담기
+        allClubs = await response.json(); 
         
         if (allClubs.length === 0) {
           clubContainer.innerHTML = '<p class="col-span-full text-center text-muted-foreground text-sm py-10">아직 개설된 동아리가 없습니다. 우측 하단 버튼을 눌러 첫 동아리를 만들어보세요!</p>';
           return;
         }
 
-        renderClubs(); // 맨 처음에는 '전체'로 렌더링
+        renderClubs(); 
 
       } catch (error) {
         console.error('동아리 목록 불러오기 실패:', error);
