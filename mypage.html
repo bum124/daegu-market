@@ -20,20 +20,26 @@
 <body class="bg-slate-50 text-slate-900">
   <main class="mx-auto max-w-4xl px-4 py-6 pb-24">
     <section class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div id="profile-badge" class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-xl font-bold text-green-700">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+        
+        <div id="profile-badge" class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-xl font-bold text-green-700 shadow-sm">
           DU
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <h1 id="user-name" class="text-2xl font-bold">불러오는 중...</h1>
-            <span id="verify-badge" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">확인중</span>
-            
+        
+        <div class="flex flex-1 flex-col justify-center gap-2">
+          
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 id="user-name" class="text-2xl font-bold text-slate-900">불러오는 중...</h1>
+            <span id="verify-badge" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm">확인중</span>
             <span id="userClubBadge" class="hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700 shadow-sm"></span>
-
-            <a href="account.html" class="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">계정 설정</a>
+            <a href="account.html" class="ml-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">계정 설정</a>
           </div>
-          <p id="user-department" class="mt-1 text-sm text-slate-500"></p>
-          <p id="user-email" class="text-sm text-slate-500"></p>
+          
+          <div class="flex flex-col text-sm text-slate-500 sm:flex-row sm:items-center sm:gap-3">
+            <p id="user-department" class="font-medium"></p>
+            <span class="hidden h-3 w-[1px] bg-slate-300 sm:block"></span> <p id="user-email"></p>
+          </div>
+          
         </div>
       </div>
 
