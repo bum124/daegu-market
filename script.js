@@ -468,6 +468,7 @@ function normalizeProduct(product) {
     views: Number(product.views || 0),
     sellerRiskScore: Number(product.seller_risk_score || 0),
     seller: product.seller || product.seller_nickname || product.seller_name || (product.seller_id ? `판매자 ${product.seller_id}` : "판매자"),
+    sellerId: product.seller_id, // ✨ [추가된 부분] 판매자 ID를 챙겨줍니다!
     image: product.image || product.image_url || images[0] || PLACEHOLDER_IMAGE,
     status: normalizeStatus(product.status || product.condition),
     createdAt
@@ -614,7 +615,10 @@ function renderProducts() {
       </div>
       <div class="p-4 ${sold ? 'text-slate-500' : ''}">
         <div class="mb-2 flex items-center justify-between gap-2">
-          <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">${product.category}</span>
+          <div class="flex items-center gap-1">
+            <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">${product.category}</span>
+            <span class="main-club-badge-wrap hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700" data-seller-badge-id="${product.id}" data-seller-uid="${product.sellerId}"></span>
+          </div>
           <span class="text-xs text-muted-foreground">${product.posted}</span>
         </div>
         <h3 class="line-clamp-2 text-sm font-semibold">${product.title}</h3>
@@ -632,6 +636,8 @@ function renderProducts() {
 
   updateUrl();
   updateCollegeScrollButtons();
+  // ✨ 화면에 카드를 다 그린 후, 동아리 뱃지들을 일제히 불러옵니다!
+  loadMainGridClubBadges();
 }
 
 function syncSortButtons() {
@@ -745,3 +751,36 @@ loadProducts().then(() => {
   syncSortButtons();
   renderProducts();
 });
+
+// ✨ 메인 장터 화면에 노출된 모든 상품 카드를 순회하며 판매자의 동아리 뱃지를 달아주는 함수
+async function loadMainGridClubBadges() {
+  const targets = document.querySelectorAll('.main-club-badge-wrap[data-seller-badge-id]');
+
+  const emojiMap = {
+    '운동': '⚽', '음악': '🎸', '게임': '🎮', 'IT': '💻', '학술': '📚', '기타': '✨'
+  };
+
+  for (const el of targets) {
+    const sellerId = el.getAttribute('data-seller-uid');
+
+    if (!sellerId || sellerId === 'null' || sellerId === 'undefined') continue;
+
+    try {
+      const response = await fetch(`https://daegu-market-api.onrender.com/api/users/${sellerId}/my-clubs`);
+      if (!response.ok) continue;
+      
+      const clubs = await response.json();
+      
+      if (clubs && clubs.length > 0) {
+        const repClub = clubs[0];
+        const emoji = emojiMap[repClub.category] || '✨';
+        
+        el.innerHTML = `<span>${emoji}</span><span>${repClub.name}</span>`;
+        el.classList.remove('hidden');
+        el.classList.add('inline-flex');
+      }
+    } catch (error) {
+      console.warn('메인 화면 동아리 뱃지 로딩 실패:', error);
+    }
+  }
+}
