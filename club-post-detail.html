@@ -119,22 +119,39 @@
           </div>
         </div>
 
-        <div id="commentSection" class="hidden mt-4 rounded-xl border border-border bg-background p-4">
-          <p class="text-sm font-semibold">댓글(데모)</p>
-          <p class="mt-1 text-sm text-muted-foreground">
-            실제 댓글 기능은 추후 연결할 수 있어요. 지금은 레이아웃만 구성했습니다.
-          </p>
+        <div id="commentSection" class="hidden mt-6 border-t border-border pt-6 space-y-5">
+          <h3 class="text-base font-bold flex items-center gap-2">
+            💬 댓글 <span id="commentCount" class="text-sm font-normal text-muted-foreground">0개</span>
+          </h3>
+          
+          <div class="flex items-start gap-3">
+            <div id="myAvatar" class="h-9 w-9 flex-shrink-0 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+              내
+            </div>
+            <div class="flex-1 space-y-2">
+              <textarea id="commentInput" rows="1" placeholder="댓글 추가..." class="w-full text-sm bg-transparent border-b border-border py-1 focus:outline-none focus:border-primary resize-none transition-colors" oninput="toggleCommentButtons()"></textarea>
+              
+              <div id="commentBtnGroup" class="hidden flex justify-end gap-2">
+                <button type="button" onclick="cancelComment()" class="px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted rounded-lg transition-colors">취소</button>
+                <button type="button" onclick="submitComment()" class="px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm">댓글</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="commentList" class="space-y-4 pt-2">
+            <p class="text-sm text-muted-foreground text-center py-4">댓글을 불러오는 중입니다...</p>
+          </div>
         </div>
       </div>
     </article>
   </main>
 
-  <script>
+ <script>
     const urlParams = new URLSearchParams(window.location.search);
     const postId = urlParams.get('id');
     const API_BASE_URL = "https://daegu-market-api.onrender.com";
 
-    // 🌟 시간 계산 도우미 (3일 전, 2시간 전 등)
+    // 🌟 시간 계산 도우미
     function getTimeAgo(dateString) {
       const now = new Date();
       const past = new Date(dateString);
@@ -161,18 +178,17 @@
         
         const post = await response.json();
 
-        // 1. 진짜 데이터 꽂아넣기!
+        // 1. 진짜 데이터 꽂아넣기
         document.getElementById('postTitle').textContent = post.title;
         document.getElementById('postBody').textContent = post.content;
         document.getElementById('clubName').textContent = post.club_name;
         document.getElementById('createdAt').textContent = getTimeAgo(post.created_at);
-
+        
         // 💡 로그인한 사람이 이 글의 작성자인지 확인해서 [삭제하기] 버튼 띄우기
         let user = null;
         try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch (e) {}
         if (user) {
           const loggedUserId = user.user_id || user.id || user.student_id;
-          // 글쓴이(author_id)와 내 ID가 같으면 삭제 버튼 숨김 해제!
           if (post.author_id === loggedUserId) {
             document.getElementById('authorActions').classList.remove('hidden');
           }
@@ -182,26 +198,24 @@
         const categoryBadge = document.querySelector('.bg-green-50.text-green-700');
         if (categoryBadge) categoryBadge.textContent = post.category;
 
-        // 3. ✨ [핵심 디테일] 이 동아리 정보 보기 버튼을 누르면 해당 동아리 상세페이지로 이동!
-        const clubLinkBtn = document.querySelector('a[href="club-detail.html"]');
+        // 3. 이 동아리 정보 보기 버튼 링크 연결
+        const clubLinkBtn = document.getElementById('clubDetailLink');
         if (clubLinkBtn) {
           clubLinkBtn.href = `club-detail.html?id=${post.club_id}`;
         }
 
-        // 4. 이미지 슬라이더 연동 (사진이 없으면 대구대 느낌의 기본 사진으로!)
+        // 4. 이미지 슬라이더 연동
         let imageArray = [];
         try {
-          // DB에서 온 문자열을 자바스크립트 배열로 변환합니다.
           imageArray = typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []);
         } catch (e) {}
 
-        // 변환된 사진이 있으면 슬라이더에 넣고, 없으면 기본 대구대 느낌 사진을 씁니다.
         window.images = imageArray.length > 0 
           ? imageArray 
           : ["https://images.unsplash.com/photo-1520975922284-4b1804f65a18?auto=format&fit=crop&w=1200&q=80"];
         
         window.currentIndex = 0;
-        initGallery(); // 슬라이더 시작!
+        initGallery(); 
 
       } catch (error) {
         console.error(error);
@@ -210,7 +224,7 @@
       }
     });
 
-    // ===== 이하 기존 이미지 슬라이더 로직 =====
+    // ===== 이미지 슬라이더 로직 =====
     window.currentIndex = 0;
 
     function updateImage() {
@@ -256,15 +270,9 @@
       updateImage();
     }
 
-    // ✨ 댓글 보이기/숨기기 토글 함수
-    function toggleComments() {
-      const commentSec = document.getElementById('commentSection');
-      commentSec.classList.toggle('hidden');
-    }
-
-    // ✨ 내가 쓴 게시글 삭제 함수
+    // ===== 🗑️ 게시글 삭제 로직 =====
     async function deleteThisPost() {
-      if (!confirm('이 소식을 정말 삭제하시겠습니까?\n(삭제 후에는 복구할 수 없습니다)')) return;
+      if (!confirm('이 소식을 정말 삭제하시겠습니까?\\n(삭제 후에는 복구할 수 없습니다)')) return;
 
       try {
         const response = await fetch(`${API_BASE_URL}/api/club-posts/${postId}`, { method: 'DELETE' });
@@ -272,7 +280,7 @@
         
         if (response.ok) {
           alert(result.message);
-          window.location.href = 'club-board.html'; // 삭제 성공하면 소식통 피드로 귀환!
+          window.location.href = 'club-board.html'; 
         } else {
           alert(result.message || '삭제에 실패했습니다.');
         }
@@ -281,6 +289,114 @@
       }
     }
 
+    // ===== 💬 댓글 시스템 로직 =====
+    const commentInput = document.getElementById('commentInput');
+    const commentBtnGroup = document.getElementById('commentBtnGroup');
+
+    if (commentInput) {
+      commentInput.addEventListener('focus', () => {
+        commentBtnGroup.classList.remove('hidden');
+      });
+    }
+
+    function toggleCommentButtons() {}
+
+    function cancelComment() {
+      commentInput.value = '';
+      commentBtnGroup.classList.add('hidden');
+      commentInput.blur();
+    }
+
+    function toggleComments() {
+      const commentSec = document.getElementById('commentSection');
+      commentSec.classList.toggle('hidden');
+      
+      if (!commentSec.classList.contains('hidden')) {
+        loadComments();
+        
+        try {
+          const user = JSON.parse(localStorage.getItem('loggedInUser'));
+          if (user) {
+            document.getElementById('myAvatar').textContent = (user.nickname || user.name || '내').substring(0, 1);
+          }
+        } catch(e) {}
+      }
+    }
+
+    async function loadComments() {
+      const listContainer = document.getElementById('commentList');
+      const countEl = document.getElementById('commentCount');
+      if (!listContainer) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/club-posts/${postId}/comments`);
+        if (!res.ok) throw new Error('댓글 통신 실패');
+        const comments = await res.json();
+
+        countEl.textContent = `${comments.length}개`;
+
+        if (comments.length === 0) {
+          listContainer.innerHTML = '<p class="text-sm text-muted-foreground text-center py-6">아직 작성된 댓글이 없습니다. 첫 댓글의 주인공이 되어보세요! ✨</p>';
+          return;
+        }
+
+        listContainer.innerHTML = comments.map(c => {
+          const firstChar = (c.nickname || c.name || '유').substring(0, 1);
+          return `
+            <div class="flex items-start gap-3 text-sm animate-fade-in">
+              <div class="h-9 w-9 flex-shrink-0 rounded-full bg-slate-200 border border-border flex items-center justify-center font-bold text-slate-600 shadow-sm">
+                ${firstChar}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-foreground text-xs sm:text-sm">${c.nickname || c.name}</span>
+                  <span class="text-[11px] text-muted-foreground">${getTimeAgo(c.created_at)}</span>
+                </div>
+                <p class="mt-1 text-foreground leading-relaxed text-sm whitespace-pre-wrap">${c.content}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        listContainer.innerHTML = '<p class="text-sm text-rose-500 text-center py-4">서버 에러로 댓글을 불러오지 못했습니다.</p>';
+      }
+    }
+
+    async function submitComment() {
+      const content = commentInput.value.trim();
+      if (!content) return;
+
+      let user = null;
+      try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch (e) {}
+      
+      if (!user) {
+        alert('로그인한 학생만 댓글 작성이 가능합니다! 🔐');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const userId = user.user_id || user.id || user.student_id;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/club-posts/${postId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, content })
+        });
+
+        if (response.ok) {
+          commentInput.value = ''; 
+          commentBtnGroup.classList.add('hidden'); 
+          loadComments(); 
+        } else {
+          const resData = await response.json();
+          alert(resData.message || '댓글 등록에 실패했습니다.');
+        }
+      } catch (error) {
+        alert('네트워크 연결이 불안정하여 댓글을 등록하지 못했습니다.');
+      }
+    }
   </script>
 </body>
 </html>

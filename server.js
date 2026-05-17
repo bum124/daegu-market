@@ -2353,3 +2353,48 @@ setInterval(cleanupOldPosts, 24 * 60 * 60 * 1000);
 
 // 서버가 처음 켜질 때도 한 번 실행해서 밀린 숙제를 하게 합니다.
 cleanupOldPosts();
+
+// ==========================================
+// 💬 [동아리 서비스] 댓글 시스템 API
+// ==========================================
+
+// 1. 댓글 등록 API (POST)
+app.post('/api/club-posts/:postId/comments', (req, res) => {
+  const postId = req.params.postId;
+  const { userId, content } = req.body;
+
+  if (!userId || !content) {
+    return res.status(400).json({ message: '댓글 내용 또는 사용자 정보가 부족합니다.' });
+  }
+
+  const sql = 'INSERT INTO Club_Comments (post_id, user_id, content) VALUES (?, ?, ?)';
+  db.query(sql, [postId, userId, content], (err, result) => {
+    if (err) {
+      console.error('댓글 DB 등록 에러:', err);
+      return res.status(500).json({ message: '댓글을 등록하는 동안 오류가 발생했습니다.' });
+    }
+    res.json({ message: '댓글이 성공적으로 등록되었습니다! 💬' });
+  });
+});
+
+// 2. 댓글 목록 가져오기 API (GET)
+app.get('/api/club-posts/:postId/comments', (req, res) => {
+  const postId = req.params.postId;
+
+  // Users 테이블과 조인하여 작성자의 실제 닉네임과 이름을 가져옵니다.
+  const sql = `
+    SELECT cc.*, u.nickname, u.name 
+    FROM Club_Comments cc
+    JOIN Users u ON cc.user_id = u.user_id
+    WHERE cc.post_id = ?
+    ORDER BY cc.created_at DESC
+  `;
+  
+  db.query(sql, [postId], (err, results) => {
+    if (err) {
+      console.error('댓글 목록 조회 에러:', err);
+      return res.status(500).json({ message: '댓글을 불러오는 중 오류가 발생했습니다.' });
+    }
+    res.json(results);
+  });
+});
