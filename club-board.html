@@ -44,20 +44,38 @@
 <body class="bg-background text-foreground antialiased">
 
   <!-- 1) 상단 헤더 -->
-  <header class="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
-    <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
-      <a href="club-main.html" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="뒤로가기">
-        ‹
+  <header class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-white/95 px-4 backdrop-blur md:hidden">
+    <a href="club-main.html" class="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground hover:bg-muted transition-colors" aria-label="뒤로가기">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+      </svg>
+    </a>
+    <h1 class="truncate text-base font-bold">캠퍼스 소식통 📣</h1>
+    <button type="button" onclick="handleWriteAccess()" class="flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-bold text-white hover:bg-green-600 transition-colors shadow-sm">
+      글쓰기
+    </button>
+  </header>
+
+  <header class="hidden md:block sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <a href="club-main.html" class="flex items-center gap-2">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <span class="text-lg font-bold text-white">DM</span>
+        </div>
+        <span class="text-xl font-bold">대구마켓</span>
       </a>
-
-      <div class="min-w-0 flex-1 px-3 text-center">
-        <h1 class="truncate text-base font-bold sm:text-lg">캠퍼스 소식통 📣</h1>
-        <p class="hidden text-xs text-muted-foreground sm:block">대구대 전체 동아리 활동 피드</p>
+      
+      <div class="flex items-center gap-2">
+        <a href="club-main.html" class="inline-flex items-center justify-center rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 transition-colors">동아리 홈</a>
+        <a href="club-board.html" class="inline-flex items-center justify-center rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium hover:bg-muted">캠퍼스 소식통</a>
+        <a href="index.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-green-600 transition-colors">중고장터</a>
+        
+        <div class="mx-2 h-4 w-[1px] bg-border"></div>
+        
+        <button type="button" onclick="handleWriteAccess()" class="inline-flex items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-white hover:bg-black transition-colors shadow-sm">
+          소식 글쓰기 ✍️
+        </button>
       </div>
-
-      <button type="button" onclick="handleWriteAccess()" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-green-600">
-        글쓰기
-      </button>
     </div>
   </header>
 
@@ -75,6 +93,7 @@
       <select id="sortSelect" class="cursor-pointer rounded-lg border border-border bg-white px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm">
         <option value="desc">최신순 보기</option>
         <option value="asc">오래된 순 보기</option>
+        <option value="my_posts">내가 쓴 소식통 ✍️</option>
       </select>
     </div>
 
@@ -141,29 +160,55 @@
       }
     }
 
-    // 🌟 화면에 카드를 찍어내는 핵심 함수 (정렬 기능 포함!)
-   function renderPosts() {
+  // 🌟 화면에 카드를 찍어내는 핵심 함수 (정렬 & 내가 쓴 글 필터 포함!)
+    function renderPosts() {
       if (allPosts.length === 0) {
         feedContainer.innerHTML = '<div class="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">아직 등록된 캠퍼스 소식이 없습니다.<br>가장 먼저 소식을 알려보세요!</div>';
         return;
       }
 
-      // 정렬 방식(최신순/오래된순)에 따라 배열 순서 뒤집기
       const sortOrder = sortSelect.value;
-      const sortedPosts = [...allPosts].sort((a, b) => {
+      let targetPosts = [...allPosts];
+
+      // ✨ [추가된 기능] 내가 쓴 소식통 필터링
+      if (sortOrder === 'my_posts') {
+        let loggedUserId = null;
+        try { 
+          const user = JSON.parse(localStorage.getItem('loggedInUser')); 
+          if (user) loggedUserId = user.user_id || user.id || user.student_id;
+        } catch(e) {}
+
+        if (!loggedUserId) {
+          alert('로그인 후 이용할 수 있습니다.');
+          sortSelect.value = 'desc'; // 다시 최신순으로 원복
+          return renderPosts();
+        }
+        
+        // 내 아이디가 쓴 글만 쏙 골라내기
+        targetPosts = targetPosts.filter(post => post.author_id === loggedUserId);
+
+        if (targetPosts.length === 0) {
+          feedContainer.innerHTML = '<div class="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">아직 내가 작성한 소식이 없습니다.</div>';
+          return;
+        }
+      }
+
+      // 정렬 방식에 따라 배열 순서 뒤집기 (내가 쓴 글은 기본적으로 최신순 정렬)
+      const sortedPosts = targetPosts.sort((a, b) => {
         const dateA = new Date(a.created_at);
         const dateB = new Date(b.created_at);
-        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
       });
 
+      // 화면에 카드 그리기
       feedContainer.innerHTML = sortedPosts.map(post => {
-        // ✨ 1. DB에서 온 문자열 사진 데이터를 배열로 안전하게 변환!
+        // 1. DB에서 온 문자열 사진 데이터를 배열로 안전하게 변환
         let imageArray = [];
         try {
           imageArray = typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []);
         } catch (e) {}
 
-        // ✨ 2. 사진이 있으면 첫 번째 사진(imageArray[0])을 띄우기
+        // 2. 사진이 있으면 첫 번째 사진(imageArray[0]) 띄우기
         let imageHtml = '';
         if (imageArray.length > 0) {
           imageHtml = `
