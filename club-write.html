@@ -287,7 +287,12 @@
 
         if (response.ok) {
           alert(result.message);
-          window.location.href = 'club-board.html'; // 성공하면 소식통(게시판)으로 바로 이동!
+         if (postType === 'INTERNAL') {
+            window.location.href = 'club-admin.html'; // 내부 공지는 관리자 라운지로
+          } else {
+            window.location.href = 'club-board.html'; // 전체 홍보는 소식통으로
+          }
+          
         } else {
           showError(result.message || '등록에 실패했습니다.');
         }

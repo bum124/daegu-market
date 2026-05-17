@@ -1715,6 +1715,21 @@ app.delete('/api/clubs/:clubId/members/:userId/reject', (req, res) => {
   });
 });
 
+// 18. 특정 동아리 소식(게시글) 삭제 API
+app.delete('/api/club-posts/:postId', (req, res) => {
+  const postId = req.params.postId;
+  
+  const sql = 'DELETE FROM Club_Posts WHERE post_id = ?';
+  
+  db.query(sql, [postId], (err, result) => {
+    if (err) {
+      console.error('게시글 삭제 DB 에러:', err);
+      return res.status(500).json({ message: '게시글 삭제 중 오류가 발생했습니다.' });
+    }
+    res.json({ message: '해당 공지가 성공적으로 삭제되었습니다. 🗑️' });
+  });
+});
+
 app.delete('/api/products/:id/like', (req, res) => {
   const productId = req.params.id;
 

@@ -97,25 +97,29 @@
       </div>
 
       <!-- 3) 하단 인터랙션(소통) -->
-      <div class="border-t border-border p-4 sm:p-6">
+     <div class="border-t border-border p-4 sm:p-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" id="likeBtn" class="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold hover:bg-muted" aria-pressed="false">
-              <span id="likeIcon" class="text-base" aria-hidden="true">♡</span>
-              <span id="likeText">관심 54</span>
-            </button>
-            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold hover:bg-muted">
+            <button type="button" onclick="toggleComments()" class="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors">
               <span aria-hidden="true">💬</span>
-              <span>댓글 18</span>
+              <span>댓글 보기</span>
             </button>
           </div>
 
-          <a href="club-detail.html" class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-green-600 sm:w-auto">
-            이 동아리 정보 보기
-          </a>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <div id="authorActions" class="hidden w-full sm:w-auto">
+              <button type="button" onclick="deleteThisPost()" class="inline-flex w-full items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-500 hover:bg-rose-100 transition-colors sm:w-auto">
+                삭제하기
+              </button>
+            </div>
+            
+            <a href="club-detail.html" id="clubDetailLink" class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-green-600 transition-colors sm:w-auto">
+              이 동아리 정보 보기
+            </a>
+          </div>
         </div>
 
-        <div class="mt-4 rounded-xl border border-border bg-background p-4">
+        <div id="commentSection" class="hidden mt-4 rounded-xl border border-border bg-background p-4">
           <p class="text-sm font-semibold">댓글(데모)</p>
           <p class="mt-1 text-sm text-muted-foreground">
             실제 댓글 기능은 추후 연결할 수 있어요. 지금은 레이아웃만 구성했습니다.
@@ -162,7 +166,17 @@
         document.getElementById('postBody').textContent = post.content;
         document.getElementById('clubName').textContent = post.club_name;
         document.getElementById('createdAt').textContent = getTimeAgo(post.created_at);
-        document.getElementById('likeText').textContent = `관심 ${post.likes || 0}`;
+
+        // 💡 로그인한 사람이 이 글의 작성자인지 확인해서 [삭제하기] 버튼 띄우기
+        let user = null;
+        try { user = JSON.parse(localStorage.getItem('loggedInUser')); } catch (e) {}
+        if (user) {
+          const loggedUserId = user.user_id || user.id || user.student_id;
+          // 글쓴이(author_id)와 내 ID가 같으면 삭제 버튼 숨김 해제!
+          if (post.author_id === loggedUserId) {
+            document.getElementById('authorActions').classList.remove('hidden');
+          }
+        }
         
         // 2. 카테고리 뱃지 글자 바꾸기
         const categoryBadge = document.querySelector('.bg-green-50.text-green-700');
@@ -242,19 +256,31 @@
       updateImage();
     }
 
-    // ===== 관심(좋아요) 토글 (데모) =====
-    let liked = false;
-    const likeBtn = document.getElementById("likeBtn");
-    if(likeBtn) {
-      likeBtn.addEventListener("click", () => {
-        liked = !liked;
-        likeBtn.setAttribute("aria-pressed", String(liked));
-        document.getElementById("likeIcon").textContent = liked ? "♥" : "♡";
-        likeBtn.classList.toggle("text-primary", liked);
-        likeBtn.classList.toggle("border-green-200", liked);
-        likeBtn.classList.toggle("bg-green-50", liked);
-      });
+    // ✨ 댓글 보이기/숨기기 토글 함수
+    function toggleComments() {
+      const commentSec = document.getElementById('commentSection');
+      commentSec.classList.toggle('hidden');
     }
+
+    // ✨ 내가 쓴 게시글 삭제 함수
+    async function deleteThisPost() {
+      if (!confirm('이 소식을 정말 삭제하시겠습니까?\n(삭제 후에는 복구할 수 없습니다)')) return;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/club-posts/${postId}`, { method: 'DELETE' });
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(result.message);
+          window.location.href = 'club-board.html'; // 삭제 성공하면 소식통 피드로 귀환!
+        } else {
+          alert(result.message || '삭제에 실패했습니다.');
+        }
+      } catch (error) {
+        alert('서버 오류로 게시글을 삭제하지 못했습니다.');
+      }
+    }
+
   </script>
 </body>
 </html>
