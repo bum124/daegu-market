@@ -25,6 +25,26 @@
     <button id="leaveBtn" class="text-red-500 text-sm">나가기</button>
   </header>
 
+  <!-- 상품 정보 -->
+<a id="productInfo"
+   class="hidden border-b p-3 flex items-center gap-3 bg-white"
+>
+  <img
+    id="productImage"
+    class="w-14 h-14 rounded-lg object-cover bg-gray-100"
+  />
+
+  <div class="flex-1 min-w-0">
+    <div id="productTitle" class="font-semibold truncate"></div>
+
+    <div class="text-sm text-gray-500 mt-1">
+      <span id="productPrice"></span>
+      ·
+      <span id="productStatus"></span>
+    </div>
+  </div>
+</a>
+
   <div id="chatBody" class="flex-1 overflow-y-auto p-4 no-scrollbar"></div>
 
   <form class="p-3 border-t flex gap-2">
@@ -43,6 +63,47 @@ const roomId = params.get("room_id");
 const chatBody = document.getElementById("chatBody");
 const form = document.querySelector("form");
 const input = document.getElementById("msgInput");
+
+async function loadProductInfo() {
+  try {
+    const res = await fetch(
+      `https://daegu-market-api.onrender.com/chat/rooms/${roomId}/product`
+    );
+
+    const product = await res.json();
+
+    if (!res.ok) return;
+
+    const productInfo = document.getElementById("productInfo");
+    const productImage = document.getElementById("productImage");
+    const productTitle = document.getElementById("productTitle");
+    const productPrice = document.getElementById("productPrice");
+    const productStatus = document.getElementById("productStatus");
+
+    productInfo.classList.remove("hidden");
+
+    productTitle.textContent = product.title;
+    productPrice.textContent =
+      Number(product.price).toLocaleString() + "원";
+
+    productStatus.textContent = product.status || "판매중";
+
+    // 첫 번째 이미지 사용
+    if (product.images) {
+      const images = product.images.split(",");
+      productImage.src = images[0];
+    } else {
+      productImage.src =
+        "https://placehold.co/100x100?text=No+Image";
+    }
+
+    // 상품 상세 페이지 이동
+    productInfo.href = `product_detail.html?id=${product.id}`;
+
+  } catch (err) {
+    console.log(err);
+  }
+}
 
 let lastRenderedDate = "";
 
@@ -257,6 +318,9 @@ function render(sender, text, createdAt, isRead) {
   chatBody.appendChild(div);
   chatBody.scrollTop = chatBody.scrollHeight;
 }
+
+loadProductInfo();
+
 </script>
 
 </body>

@@ -77,6 +77,34 @@ app.post('/chat/start', (req, res) => {
   });
 });
 
+app.get('/chat/rooms/:roomId/product', (req, res) => {
+  const roomId = req.params.roomId;
+
+  const sql = `
+    SELECT 
+      p.id,
+      p.title,
+      p.price,
+      p.images,
+      p.status
+    FROM rooms r
+    JOIN products p
+      ON r.product_id = p.id
+    WHERE r.id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [roomId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: '상품 정보를 찾을 수 없습니다.' });
+    }
+
+    res.json(results[0]);
+  });
+});
+
 function resolveUserId(payload, callback) {
   const { user_id, id, seller_id, email, user_email, seller_email } = payload || {};
   const directUserId = user_id || id || seller_id;
@@ -2398,3 +2426,4 @@ app.get('/api/club-posts/:postId/comments', (req, res) => {
     res.json(results);
   });
 });
+
