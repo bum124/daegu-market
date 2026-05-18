@@ -1139,11 +1139,15 @@ if (!id) {
 
     document.getElementById('sellerName').innerText = sellerName;
     document.getElementById('sellerDepartment').innerText = sellerDepartment;
-
-    if (item.seller_id) {
-      loadSellerClubBadge(item.seller_id);
-    }
     
+    // ✨ [추가된 부분] 판매자가 마이페이지에서 '동아리 노출(1)'을 켜둔 경우에만 뱃지를 띄웁니다!
+    if (item.seller_id && Number(item.show_club_badge) === 1) {
+      // (주의: 이전에 추가했던 loadSellerClubBadge 함수가 스크립트 어딘가에 있어야 작동합니다)
+      if (typeof loadSellerClubBadge === 'function') {
+        loadSellerClubBadge(item.seller_id);
+      }
+    }
+
     updateOwnerActions();
     loadLikeState();
 

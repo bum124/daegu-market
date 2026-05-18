@@ -137,7 +137,8 @@ function normalizeProduct(item) {
     image: item.image || item.image_url || images[0] || PLACEHOLDER_IMAGE,
     status,
     createdAt,
-    sellerId: item.seller_id || item.sellerId || null
+    sellerId: item.seller_id || item.sellerId || null,
+    showClubBadge: Number(item.show_club_badge || 0) // ✨ [추가] 온오프 상태값 저장 (0:숨김, 1:노출)
   };
 }
 
@@ -347,6 +348,16 @@ function renderItems() {
               >
                 수정
               </button>
+              
+              <button
+                type="button"
+                data-badge-toggle-id="${item.id}"
+                data-current-status="${item.showClubBadge}"
+                class="rounded-lg border ${item.showClubBadge === 1 ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-green-200 text-green-700 hover:bg-green-50'} px-3 py-1.5 text-xs font-medium transition-colors"
+              >
+                ${item.showClubBadge === 1 ? '동아리 숨기기 🙈' : '동아리 노출 ⚽'}
+              </button>
+
               <button
                 type="button"
                 data-sold-id="${item.id}"
@@ -436,6 +447,14 @@ tabButtons.forEach(button => {
 });
 
 itemList.addEventListener('click', event => {
+  // ✨ [추가] 동아리 뱃지 토글 버튼 클릭 시
+  const badgeBtn = event.target.closest('[data-badge-toggle-id]');
+  if (badgeBtn) {
+    event.stopPropagation();
+    toggleClubBadgeVisibility(badgeBtn.dataset.badgeToggleId, badgeBtn.dataset.currentStatus);
+    return;
+  }
+
   const editButton = event.target.closest('[data-edit-id]');
 
   if (editButton) {
@@ -597,5 +616,39 @@ async function loadMyClubBadge(userId) {
     }
   } catch (error) {
     console.warn('마이페이지 동아리 소속 뱃지 로드 실패:', error);
+  }
+}
+
+// ✨ [추가] 백엔드와 통신하여 실시간으로 동아리 뱃지 상태를 바꾸는 함수
+async function toggleClubBadgeVisibility(productId, currentStatus) {
+  const nextStatus = Number(currentStatus) === 1 ? 0 : 1;
+  const userStr = localStorage.getItem('loggedInUser');
+  const user = userStr ? JSON.parse(userStr) : {};
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/products/${productId}/badge-toggle`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seller_id: state.currentUserId,
+        seller_email: user.email,
+        show_club_badge: nextStatus
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      alert(result.message || '설정 변경에 실패했습니다.');
+      return;
+    }
+
+    // 메모리 내 데이터 상태 변경 후 리렌더링
+    const product = state.data.selling.find(item => String(item.id) === String(productId));
+    if (product) {
+      product.showClubBadge = nextStatus;
+    }
+    renderItems(); // 화면 갱신
+  } catch (error) {
+    alert('서버 통신 중 오류가 발생했습니다.');
   }
 }

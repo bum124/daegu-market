@@ -468,7 +468,8 @@ function normalizeProduct(product) {
     views: Number(product.views || 0),
     sellerRiskScore: Number(product.seller_risk_score || 0),
     seller: product.seller || product.seller_nickname || product.seller_name || (product.seller_id ? `판매자 ${product.seller_id}` : "판매자"),
-    sellerId: product.seller_id, // ✨ [추가된 부분] 판매자 ID를 챙겨줍니다!
+    sellerId: product.seller_id,
+    showClubBadge: Number(product.show_club_badge || 0), // ✨ 상태값 받아오기
     image: product.image || product.image_url || images[0] || PLACEHOLDER_IMAGE,
     status: normalizeStatus(product.status || product.condition),
     createdAt
@@ -617,7 +618,9 @@ function renderProducts() {
         <div class="mb-2 flex items-center justify-between gap-2">
           <div class="flex items-center gap-1">
             <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">${product.category}</span>
-            <span class="main-club-badge-wrap hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700" data-seller-badge-id="${product.id}" data-seller-uid="${product.sellerId}"></span>
+            
+            <span class="main-club-badge-wrap hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700" data-seller-badge-id="${product.id}" data-seller-uid="${product.sellerId}" data-show-badge="${product.showClubBadge}"></span>
+            
           </div>
           <span class="text-xs text-muted-foreground">${product.posted}</span>
         </div>
@@ -762,6 +765,10 @@ async function loadMainGridClubBadges() {
 
   for (const el of targets) {
     const sellerId = el.getAttribute('data-seller-uid');
+    const showBadge = el.getAttribute('data-show-badge');
+
+    // ✨ 유저가 비활성화(0) 해놓았다면 서버 조회조차 하지 않고 통과! (숨김 처리 완료)
+    if (showBadge !== '1' || !sellerId || sellerId === 'null') continue;
 
     if (!sellerId || sellerId === 'null' || sellerId === 'undefined') continue;
 

@@ -929,7 +929,7 @@ app.put('/api/products/:id', (req, res) => {
       });
     });
   };
-
+  
   resolveUserId({ seller_id, seller_email }, (userErr, userId) => {
     if (userErr) {
       console.error(userErr);
@@ -938,6 +938,24 @@ app.put('/api/products/:id', (req, res) => {
 
     updateProduct(userId);
   });
+});
+
+// ✨ 마이페이지: 내 상품 동아리 뱃지 온오프 토글 API
+app.put('/api/products/:id/badge-toggle', (req, res) => {
+  const productId = req.params.id;
+  const { seller_id, show_club_badge } = req.body;
+
+  db.query(
+    'UPDATE products SET show_club_badge = ? WHERE id = ? AND seller_id = ?',
+    [show_club_badge, productId, seller_id],
+    (err, result) => {
+      if (err) {
+        console.error('동아리 뱃지 토글 에러:', err);
+        return res.status(500).json({ message: 'DB 수정 오류가 발생했습니다.' });
+      }
+      res.json({ message: '동아리 표시 설정이 변경되었습니다.' });
+    }
+  );
 });
 
 app.post('/api/reports', (req, res) => {
