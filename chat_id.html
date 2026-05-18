@@ -89,16 +89,19 @@ async function loadProductInfo() {
     productStatus.textContent = product.status || "판매중";
 
     // 첫 번째 이미지 사용
-    if (product.images) {
-      const images = product.images.split(",");
-      productImage.src = images[0];
-    } else {
-      productImage.src =
-        "https://placehold.co/100x100?text=No+Image";
-    }
+    let images = [];
+
+    try {
+  images = JSON.parse(product.images || "[]");
+  } catch (e) {
+  images = [];
+  }
+
+ productImage.src =
+  images[0] || "https://placehold.co/100x100?text=No+Image";
 
     // 상품 상세 페이지 이동
-    productInfo.href = `product_detail.html?id=${product.id}`;
+    productInfo.href = `product.html?id=${product.id}`;
 
   } catch (err) {
     console.log(err);
