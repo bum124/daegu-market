@@ -705,6 +705,7 @@ app.post('/api/change-password', (req, res) => {
     });
 });
 
+// 상품 등록: 판매자와 입력값을 확인한 뒤 products 테이블에 저장합니다.
 app.post('/api/products', (req, res) => {
   const { seller_id, seller_email, title, category, target_college, target_department, condition, price, description, location, location_lat, location_lng, images } = req.body;
 
@@ -766,6 +767,7 @@ app.post('/api/products', (req, res) => {
   });
 });
 
+// 상품 목록 조회: 메인페이지에 보여줄 상품과 판매자 정보를 함께 반환합니다.
 app.get('/api/products', (req, res) => {
   ensureModerationSchema((schemaErr) => {
     if (schemaErr) {
@@ -812,6 +814,7 @@ app.get('/api/products', (req, res) => {
   });
 });
 
+// 상품 상세 조회: 특정 상품과 판매자 정보를 상세 페이지에 제공합니다.
 app.get('/api/products/:id', (req, res) => {
   const id = req.params.id;
 
@@ -841,6 +844,7 @@ app.get('/api/products/:id', (req, res) => {
   });
 });
 
+// 상품 수정: 본인 상품인지 확인한 뒤 products 테이블을 업데이트합니다.
 app.put('/api/products/:id', (req, res) => {
   const productId = req.params.id;
   const {
@@ -958,6 +962,7 @@ app.put('/api/products/:id/badge-toggle', (req, res) => {
   );
 });
 
+// 신고 접수: 신고자/대상/중복 여부를 검증하고 reports 테이블에 저장합니다.
 app.post('/api/reports', (req, res) => {
   const { reporter_id, reporter_email, target_type, target_id, reason, detail } = req.body || {};
   const allowedTypes = ['product', 'user', 'chat'];
@@ -1038,6 +1043,7 @@ app.get('/api/users/:id/risk', (req, res) => {
   });
 });
 
+// 관리자 신고 목록: 관리자 키를 확인한 뒤 신고 목록을 반환합니다.
 app.get('/api/admin/reports', (req, res) => {
   const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
   const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
@@ -1079,6 +1085,7 @@ app.get('/api/admin/reports', (req, res) => {
   });
 });
 
+// 관리자 신고 처리: 신고 상태와 조치를 저장하고 필요 시 상품/사용자 상태를 변경합니다.
 app.put('/api/admin/reports/:id', (req, res) => {
   const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
   const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
@@ -1849,6 +1856,7 @@ app.delete('/api/products/:id', (req, res) => {
   });
 });
 
+// 판매완료 처리: 상품 판매자 본인인지 확인한 뒤 status 값을 변경합니다.
 app.put('/api/products/:id/status', (req, res) => {
   const productId = req.params.id;
   const { seller_id, seller_email, status } = req.body || {};
@@ -2074,6 +2082,7 @@ server.listen(PORT, () => {
     console.log(`서버 실행중: ${PORT}`);
 });
 
+// 마이페이지 조회: 사용자 정보, 내 상품, 관심목록을 한 번에 구성해 반환합니다.
 app.get('/api/mypage', (req, res) => {
   const userId = Number(req.query.userId);
 
@@ -2159,6 +2168,7 @@ app.get('/api/mypage', (req, res) => {
   );
 });
 
+// 채팅 목록: 참여 중인 방, 마지막 메시지, 안 읽은 수를 반환합니다.
 app.get('/api/chat-list', (req, res) => {
   const userId = req.query.user_id;
 

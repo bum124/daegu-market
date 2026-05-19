@@ -304,6 +304,7 @@
 
   <script>
     const API_BASE_URL = 'https://daegu-market-api.onrender.com';
+    // URL에 id가 있으면 상품 수정 모드로 동작합니다.
     const params = new URLSearchParams(window.location.search);
     const editProductId = params.get('id');
     const isEditMode = Boolean(editProductId);
@@ -435,6 +436,7 @@
       '국제 대학': ['글로벌한국학부', '글로벌인재학부', '글로벌자율학부']
     };
 
+    // 상품과 관련 있는 단과대/학과 선택지를 생성합니다.
     function populateTargetCollegeOptions() {
       targetCollegeSelect.innerHTML = '<option value="">선택</option>' + Object.keys(departmentData)
         .map(college => `<option value="${college}">${college}</option>`)
@@ -458,6 +460,7 @@
       return Number(value).toFixed(5);
     }
 
+    // 지도에서 선택한 거래 장소 좌표와 표시 문구를 폼에 저장합니다.
     function setSelectedLocation(lat, lng) {
       locationInput.value = '지도 선택 위치';
       locationLatInput.value = String(lat);
@@ -483,6 +486,7 @@
       }
     }
 
+    // 대구대학교 중심 지도를 띄우고 클릭한 위치를 거래 장소로 선택합니다.
     function initializeLocationMap() {
       locationMap = L.map('locationMap', {
         scrollWheelZoom: false
@@ -555,6 +559,7 @@
       updateImagePreviews();
     }
 
+    // 수정 모드에서는 기존 상품 정보를 불러와 입력 폼에 채웁니다.
     async function loadProductForEdit() {
       if (!isEditMode) {
         return;
@@ -692,6 +697,7 @@
       return matchedUser ? matchedUser.user_id : null;
     }
 
+    // 상품 등록 또는 수정 버튼 클릭 시 입력값을 검증하고 API로 저장합니다.
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
       

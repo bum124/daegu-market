@@ -160,6 +160,7 @@ function isSold(item) {
   return normalizeStatus(item.status || item.condition) === '판매완료';
 }
 
+// /api/mypage 응답을 화면에서 바로 쓰기 좋은 구조로 정리합니다.
 function normalizeMyPageData(data, loggedInUser) {
   if (!data || !data.user || !data.stats) {
     throw new Error('Invalid mypage response');
@@ -185,6 +186,7 @@ function normalizeMyPageData(data, loggedInUser) {
   };
 }
 
+// 상품 상세에서 localStorage에 저장한 최근 본 상품 ID 목록을 가져옵니다.
 function getRecentProductIds() {
   try {
     const ids = JSON.parse(localStorage.getItem(RECENT_PRODUCTS_KEY) || '[]');
@@ -194,6 +196,7 @@ function getRecentProductIds() {
   }
 }
 
+// 최근 본 상품 ID를 실제 상품 데이터와 매칭해 마이페이지에 표시할 목록을 만듭니다.
 async function loadRecentProducts() {
   const recentIds = getRecentProductIds();
 
@@ -275,6 +278,7 @@ async function resolveUserId(user) {
   return matchedUser ? matchedUser.user_id : null;
 }
 
+// 사용자 이름, 학과, 이메일, 인증 상태와 각 탭의 개수를 상단 프로필 카드에 표시합니다.
 function renderProfile(data) {
   userName.textContent = data.user.name;
   userDepartment.textContent = data.user.department;
@@ -291,6 +295,7 @@ function renderProfile(data) {
   recentCount.textContent = (data.recent || []).length;
 }
 
+// 현재 선택된 탭에 맞춰 판매중/판매완료/관심/최근 본 상품 목록을 그립니다.
 function renderItems() {
   if (!state.data) {
     tabTitle.textContent = '마이페이지 데이터를 불러오는 중입니다.';
@@ -392,6 +397,7 @@ function syncTabs() {
   });
 }
 
+// 로그인 사용자를 확인한 뒤 마이페이지 API와 최근 본 상품 데이터를 불러옵니다.
 async function loadMyPage() {
   renderItems();
 
@@ -499,6 +505,7 @@ itemList.addEventListener('keydown', event => {
   navigateToProduct(card.dataset.productId);
 });
 
+// 내 상품의 status 값을 판매완료로 변경하고 화면 목록도 바로 갱신합니다.
 async function markMyProductSold(productId) {
   if (!state.currentUserId) {
     alert('로그인 정보를 확인하지 못했습니다.');
@@ -544,6 +551,7 @@ async function markMyProductSold(productId) {
   renderItems();
 }
 
+// 본인이 등록한 상품만 삭제 요청을 보내고, 성공하면 목록에서 제거합니다.
 async function deleteMyProduct(productId) {
   if (!state.currentUserId) {
     alert('로그인 정보를 확인하지 못했습니다.');

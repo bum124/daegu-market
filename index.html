@@ -25,6 +25,7 @@
     };
 
     // 🌟 [범석님 코드] 로그인 상태 확인 로직 융합
+    // 로그인 상태에 따라 상단 메뉴와 채팅 알림 배지를 초기화합니다.
     window.addEventListener('DOMContentLoaded', () => {
         const userStr = localStorage.getItem('loggedInUser');
         const loginBtn = document.getElementById('nav-login-btn'); 
@@ -49,6 +50,7 @@
         }
     });
 
+    // 채팅 목록 API의 unread 값을 합산해 PC/모바일 채팅 배지에 표시합니다.
     async function updateChatUnreadBadge(user) {
         const userId = user && (user.user_id || user.id);
         const badges = [

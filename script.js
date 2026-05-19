@@ -181,6 +181,7 @@
   }
 ];
 
+// 메인페이지의 현재 필터, 검색어, 정렬 상태를 한곳에서 관리합니다.
 const state = {
   activeCategory: "전체",
   activeCollege: "전체",
@@ -252,6 +253,7 @@ function redirectToLogin(targetUrl) {
   window.location.href = `login.html?next=${encodeURIComponent(next)}`;
 }
 
+// data-auth-required가 붙은 링크는 로그아웃 상태에서 로그인 화면으로 보냅니다.
 function bindAuthRequiredLinks() {
   document.addEventListener("click", event => {
     const link = event.target.closest("[data-auth-required='true']");
@@ -441,6 +443,7 @@ function normalizeCategory(value) {
   return aliases[category] || category;
 }
 
+// 추천순 정렬에 쓰는 점수: 최신성, 관심/조회 반응, 신고 위험도, 판매완료 여부를 반영합니다.
 function getExposureScore(product) {
   const ageHours = Math.max(0, (Date.now() - new Date(product.createdAt).getTime()) / 36e5);
   const recencyScore = Math.max(0, 48 - ageHours);
@@ -451,6 +454,7 @@ function getExposureScore(product) {
   return recencyScore + reactionScore - riskPenalty - soldPenalty;
 }
 
+// 서버에서 온 상품 데이터를 카드 렌더링에 쓰기 좋은 형태로 통일합니다.
 function normalizeProduct(product) {
   const images = parseImages(product.images);
   const createdAt = product.createdAt || product.created_at || new Date().toISOString();
@@ -534,6 +538,7 @@ function createCollegeButtons() {
   requestAnimationFrame(updateCollegeScrollButtons);
 }
 
+// 현재 선택된 카테고리, 단과대, 검색어, 정렬 기준을 적용해 보여줄 상품을 고릅니다.
 function getFilteredProducts() {
   const keyword = state.searchTerm.trim().toLowerCase();
 
@@ -567,6 +572,7 @@ function getFilteredProducts() {
   return [...filtered].sort((a, b) => compareActiveFirst(a, b) || new Date(b.createdAt) - new Date(a.createdAt));
 }
 
+// 백엔드 상품 목록 API에서 실제 상품 데이터를 불러옵니다.
 async function loadProducts() {
   try {
     const response = await fetchWithTimeout(`${API_BASE_URL}/api/products`);
@@ -583,6 +589,7 @@ async function loadProducts() {
     products = fallbackProductData.map(normalizeProduct);
   }
 }
+// 필터링된 상품들을 HTML 카드로 만들어 product-grid 영역에 출력합니다.
 function renderProducts() {
   if (isLoading || hasLoadError) {
     return;

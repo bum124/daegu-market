@@ -50,6 +50,7 @@
       restrict_user: '사용자 제한'
     };
 
+    // 관리자 키를 확인해 신고 관리 API 접근 권한을 검증합니다.
     function getAdminKey() {
       let key = localStorage.getItem('adminKey');
 
@@ -96,6 +97,7 @@
       return `채팅: #${report.target_id}`;
     }
 
+    // 서버에서 받은 신고 목록을 관리자용 카드와 처리 폼으로 렌더링합니다.
     function renderReports(reports) {
       const list = document.getElementById('reportList');
 
@@ -131,6 +133,7 @@
       `).join('');
     }
 
+    // 관리자 신고 목록 API를 호출해 reports 테이블의 신고 내역을 불러옵니다.
     async function loadReports() {
       const key = getAdminKey();
 
@@ -154,6 +157,7 @@
     }
 
     document.getElementById('refreshButton').addEventListener('click', loadReports);
+    // 저장 버튼 클릭 시 선택한 상태와 조치를 서버에 업데이트합니다.
     document.getElementById('reportList').addEventListener('click', async event => {
       const button = event.target.closest('[data-save-id]');
 

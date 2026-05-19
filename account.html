@@ -92,6 +92,7 @@
       newPassword: document.getElementById('newPassword')
     };
 
+    // 단과대 선택에 따라 표시할 대구대학교 학과 목록입니다.
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -203,12 +204,14 @@
       '국제 대학': ['글로벌한국학부', '글로벌인재학부', '글로벌자율학부']
     };
 
+    // 단과대 선택지를 계정 설정 폼에 채웁니다.
     function populateCollegeOptions() {
       fields.college.innerHTML = '<option value="">단과대학을 선택하세요</option>' + Object.keys(departmentData)
         .map(college => `<option value="${college}">${college}</option>`)
         .join('');
     }
 
+    // 선택한 단과대에 맞는 학과 선택지를 채웁니다.
     function populateDepartmentOptions(college) {
       const departments = departmentData[college] || [];
 
@@ -246,6 +249,7 @@
       return matchedUser && matchedUser.user_id;
     }
 
+    // 로그인 사용자의 현재 계정 정보를 불러와 폼에 표시합니다.
     async function loadAccount() {
       const user = getLoggedInUser();
 
@@ -277,6 +281,7 @@
       form.dataset.userId = userId;
     }
 
+    // 저장 버튼 클릭 시 계정 정보와 단과대/학과를 서버에 업데이트합니다.
     form.addEventListener('submit', async event => {
       event.preventDefault();
 

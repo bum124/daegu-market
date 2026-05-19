@@ -151,6 +151,7 @@
   <script>
     const API_BASE = 'https://daegu-market-api.onrender.com';
     const API_TIMEOUT_MS = 12000;
+    // URL의 userId로 조회할 판매자 프로필을 결정합니다.
     const params = new URLSearchParams(location.search);
     const userId = params.get('userId') || params.get('id');
     let loadedUser = null;
@@ -257,6 +258,7 @@
       document.getElementById('reportModal').classList.remove('flex');
     }
 
+    // 사용자 신고 내용을 reports 테이블에 저장하도록 신고 API에 보냅니다.
     async function submitReport(payload) {
       const response = await fetchWithTimeout(`${API_BASE}/api/reports`, {
         method: 'POST',
@@ -274,6 +276,7 @@
       return true;
     }
 
+    // 신고 이력을 기반으로 계산된 사용자 위험도를 배지로 표시합니다.
     function renderRiskBadge(risk) {
       const badge = document.getElementById('profileRisk');
       const level = risk && risk.risk_level ? risk.risk_level : '정상';
@@ -287,6 +290,7 @@
       badge.textContent = `거래 신뢰도 ${level}`;
     }
 
+    // 내 프로필이면 채팅/신고 버튼을 숨깁니다.
     function syncProfileActions() {
       const user = getLoggedInUser();
       const currentUserId = user && (user.user_id || user.id);
@@ -300,6 +304,7 @@
       return product.status === '판매완료' || product.condition === '판매완료';
     }
 
+    // 판매자 기본 정보와 등록 상품을 프로필 화면에 표시합니다.
     function renderProfile(user, products) {
       loadedUser = user;
       const displayName = getDisplayName(user);
@@ -320,6 +325,7 @@
       syncProfileActions();
     }
 
+    // 판매자 프로필에서 바로 채팅방으로 이동합니다.
     function openProfileChat() {
       const user = getLoggedInUser();
 
@@ -338,6 +344,7 @@
       window.location.href = `chat.html?sellerId=${encodeURIComponent(userId)}`;
     }
 
+    // 로그인 여부와 본인 프로필 여부를 확인한 뒤 사용자 신고 모달을 엽니다.
     async function reportProfile() {
       const user = getLoggedInUser();
 
@@ -443,6 +450,7 @@
       document.getElementById('emptyProducts').classList.remove('hidden');
     }
 
+    // 판매자 정보, 상품 목록, 위험도 정보를 함께 불러옵니다.
     async function loadProfile() {
       if (!userId) {
         showError('판매자 정보가 없습니다.');
