@@ -79,7 +79,6 @@ app.post('/upload/chat-image', upload.single('image'), (req, res) => {
   }
 });
 
-const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
 app.post('/chat/start', (req, res) => {
