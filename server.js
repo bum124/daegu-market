@@ -7,6 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
+const fs = require('fs');
 
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
@@ -14,6 +15,11 @@ dns.setDefaultResultOrder('ipv4first');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
+
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
