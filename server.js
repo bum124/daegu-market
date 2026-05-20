@@ -51,6 +51,10 @@ app.get('/api/health', (req, res) => {
     res.json({ ok: true, service: 'daegu-market-api' });
 });
 
+app.get('/upload/test', (req, res) => {
+  res.json({ ok: true, message: 'upload route connected' });
+});
+
 app.post('/upload/chat-image', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
