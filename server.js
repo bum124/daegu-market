@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mysql = require('mysql2');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
@@ -19,6 +21,28 @@ const io = new Server(server, {
     origin: "*"
   }
 });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+
+  filename: (req, file, cb) => {
+    const uniqueName =
+      Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+    cb(
+      null,
+      uniqueName + path.extname(file.originalname)
+    );
+  }
+});
+
+const upload = multer({ storage });
+
+// 업로드 폴더 공개
+app.use('/uploads', express.static('uploads'));
+
 app.use(cors()); // HTML 파일과 통신 허용
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
