@@ -111,6 +111,18 @@
 
 </div>
 
+<!-- 이미지 확대 모달 -->
+<div
+  id="imageModal"
+  class="hidden fixed inset-0 z-[999] bg-black/80 items-center justify-center p-4"
+  onclick="closeImageModal()"
+>
+  <img
+    id="modalImage"
+    class="max-w-full max-h-full rounded-lg"
+  />
+</div>
+
 <script>
 const socket = io("https://daegu-market-api.onrender.com");
 
@@ -364,7 +376,8 @@ function render(sender, text, createdAt, isRead) {
             ? `
               <img
                 src="${text}"
-                class="max-w-[220px] rounded-2xl border bg-white"
+                onclick="openImageModal('${text}')"
+                class="max-w-[220px] rounded-2xl border bg-white cursor-pointer"
               />
             `
             : text
@@ -444,6 +457,23 @@ imageInput.addEventListener("change", async (e) => {
     alert("업로드 실패");
   }
 });
+
+function openImageModal(src) {
+  const modal = document.getElementById("imageModal");
+  const modalImage = document.getElementById("modalImage");
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+
+  modalImage.src = src;
+}
+
+function closeImageModal() {
+  const modal = document.getElementById("imageModal");
+
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
 
 </script>
 
