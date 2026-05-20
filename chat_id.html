@@ -47,10 +47,67 @@
 
   <div id="chatBody" class="flex-1 overflow-y-auto p-4 no-scrollbar"></div>
 
-  <form class="p-3 border-t flex gap-2">
-    <input id="msgInput" class="flex-1 border p-2 rounded" />
-    <button class="bg-green-500 text-white px-4 rounded">전송</button>
-  </form>
+  <form class="p-3 border-t flex gap-2 items-center relative">
+
+  <!-- + 버튼 -->
+  <div class="relative">
+
+    <button
+      type="button"
+      id="plusBtn"
+      class="w-10 h-10 border rounded text-xl"
+    >
+      +
+    </button>
+
+    <!-- 메뉴 -->
+    <div
+      id="plusMenu"
+      class="hidden absolute bottom-12 left-0 bg-white border rounded-xl shadow-md overflow-hidden min-w-[140px]"
+    >
+
+      <label
+        for="imageInput"
+        class="block px-4 py-3 text-sm hover:bg-gray-100 cursor-pointer"
+      >
+        사진 보내기
+      </label>
+
+      <button
+        type="button"
+        id="completeBtn"
+        class="w-full text-left px-4 py-3 text-sm hover:bg-gray-100"
+      >
+        거래 완료
+      </button>
+
+    </div>
+
+    <!-- 파일 -->
+    <input
+      type="file"
+      id="imageInput"
+      accept="image/*"
+      class="hidden"
+    />
+
+  </div>
+
+  <!-- 입력 -->
+  <input
+    id="msgInput"
+    class="flex-1 border p-2 rounded"
+    placeholder="메시지를 입력하세요"
+  />
+
+  <!-- 전송 -->
+  <button
+    class="bg-green-500 text-white px-4 h-10 rounded"
+  >
+    전송
+  </button>
+
+</form>
 
 </div>
 
@@ -273,6 +330,8 @@ function render(sender, text, createdAt, isRead) {
   const user = getCurrentUser();
   const isMe = user && String(sender) === String(user.user_id || user.id);
 
+  const isImage = typeof text === "string" && text.startsWith("http");
+
   const time = createdAt
     ? new Date(createdAt).toLocaleTimeString("ko-KR", {
         hour: "2-digit",
@@ -291,12 +350,25 @@ function render(sender, text, createdAt, isRead) {
       isMe ? "flex-row-reverse" : ""
     }">
 
-      <div class="px-3 py-2 rounded-2xl break-words ${
-        isMe
-          ? "bg-green-500 text-white rounded-br-md"
-          : "bg-gray-200 text-gray-900 rounded-bl-md"
+      <div class="${
+        isImage
+          ? ""
+          : `px-3 py-2 rounded-2xl break-words ${
+              isMe
+                ? "bg-green-500 text-white rounded-br-md"
+                : "bg-gray-200 text-gray-900 rounded-bl-md"
+            }`
       }">
-        ${text}
+        ${
+          isImage
+            ? `
+              <img
+                src="${text}"
+                class="max-w-[220px] rounded-2xl border bg-white"
+              />
+            `
+            : text
+        }
       </div>
 
       <div class="flex items-end shrink-0 whitespace-nowrap text-[10px] text-gray-400 leading-none mb-[2px] ${
@@ -323,6 +395,48 @@ function render(sender, text, createdAt, isRead) {
 }
 
 loadProductInfo();
+
+const imageInput = document.getElementById("imageInput");
+
+imageInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const res = await fetch(
+      "https://daegu-market-api.onrender.com/upload/chat-image",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("이미지 업로드 실패");
+      return;
+    }
+
+    const user = getCurrentUser();
+
+    // 이미지 메시지 전송
+    socket.emit("send_message", {
+      roomId: roomId,
+      sender: user.user_id || user.id,
+      text: data.imageUrl,
+      type: "image"
+    });
+
+  } catch (err) {
+    console.log(err);
+    alert("업로드 실패");
+  }
+});
 
 </script>
 

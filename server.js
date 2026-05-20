@@ -2263,6 +2263,30 @@ app.get('/api/chat-list', (req, res) => {
   });
 });
 
+app.post('/upload/chat-image', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: '이미지가 없습니다.'
+      });
+    }
+
+    const imageUrl =
+      `https://daegu-market-api.onrender.com/uploads/${req.file.filename}`;
+
+    res.json({
+      imageUrl
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      message: '이미지 업로드 실패'
+    });
+  }
+});
+
 app.post('/messages', (req, res) => {
   const { room_id, sender_id, message } = req.body;
 
