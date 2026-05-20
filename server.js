@@ -51,6 +51,30 @@ app.get('/api/health', (req, res) => {
     res.json({ ok: true, service: 'daegu-market-api' });
 });
 
+app.post('/upload/chat-image', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: '이미지가 없습니다.'
+      });
+    }
+
+    const imageUrl =
+      `https://daegu-market-api.onrender.com/uploads/${req.file.filename}`;
+
+    res.json({
+      imageUrl
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      message: '이미지 업로드 실패'
+    });
+  }
+});
+
 const path = require('path');
 app.use(express.static(path.join(__dirname)));
 
@@ -2261,30 +2285,6 @@ app.get('/api/chat-list', (req, res) => {
 
     res.json(results);
   });
-});
-
-app.post('/upload/chat-image', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        message: '이미지가 없습니다.'
-      });
-    }
-
-    const imageUrl =
-      `https://daegu-market-api.onrender.com/uploads/${req.file.filename}`;
-
-    res.json({
-      imageUrl
-    });
-
-  } catch (err) {
-    console.log(err);
-
-    res.status(500).json({
-      message: '이미지 업로드 실패'
-    });
-  }
 });
 
 app.post('/messages', (req, res) => {
