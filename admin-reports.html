@@ -49,20 +49,26 @@
       warn_user: '사용자 경고',
       restrict_user: '사용자 제한'
     };
+    const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
 
-    // 관리자 키를 확인해 신고 관리 API 접근 권한을 검증합니다.
-    function getAdminKey() {
-      let key = localStorage.getItem('adminKey');
-
-      if (!key) {
-        key = prompt('관리자 키를 입력해주세요.');
-
-        if (key) {
-          localStorage.setItem('adminKey', key);
-        }
+    function getLoggedInUser() {
+      try {
+        return JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+      } catch (error) {
+        return null;
       }
+    }
 
-      return key;
+    function isAdminUser(email) {
+      return ADMIN_EMAILS.includes(String(email || '').trim().toLowerCase());
+    }
+
+    // 로그인한 사용자 이메일이 관리자 목록에 있는지 확인합니다.
+    function getAdminEmail() {
+      const user = getLoggedInUser();
+      const email = user && user.email;
+
+      return isAdminUser(email) ? email : '';
     }
 
     function escapeHtml(value) {
@@ -135,20 +141,22 @@
 
     // 관리자 신고 목록 API를 호출해 reports 테이블의 신고 내역을 불러옵니다.
     async function loadReports() {
-      const key = getAdminKey();
+      const adminEmail = getAdminEmail();
 
-      if (!key) {
-        showMessage('관리자 키가 필요합니다.', 'error');
+      if (!adminEmail) {
+        showMessage('신고 관리는 관리자 계정만 접근할 수 있습니다.', 'error');
+        setTimeout(() => {
+          window.location.href = 'mypage.html';
+        }, 1200);
         return;
       }
 
       const response = await fetch(`${API_BASE}/api/admin/reports`, {
-        headers: { 'x-admin-key': key }
+        headers: { 'x-admin-email': adminEmail }
       });
       const reports = await response.json().catch(() => []);
 
       if (!response.ok) {
-        localStorage.removeItem('adminKey');
         showMessage(reports.message || '신고 목록을 불러오지 못했습니다.', 'error');
         return;
       }
@@ -166,9 +174,14 @@
       }
 
       const id = button.dataset.saveId;
-      const key = getAdminKey();
+      const adminEmail = getAdminEmail();
       const status = document.querySelector(`[data-status-id="${id}"]`).value;
       const adminAction = document.querySelector(`[data-action-id="${id}"]`).value;
+
+      if (!adminEmail) {
+        showMessage('신고 관리는 관리자 계정만 접근할 수 있습니다.', 'error');
+        return;
+      }
 
       button.disabled = true;
       button.textContent = '저장 중';
@@ -177,7 +190,7 @@
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': key
+          'x-admin-email': adminEmail
         },
         body: JSON.stringify({
           status,

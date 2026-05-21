@@ -13,6 +13,7 @@ const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
 const PORT = process.env.PORT || 3000;
+const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
 
 const app = express();
 
@@ -313,6 +314,14 @@ function normalizeProductStatus(product) {
   }
 
   return '판매중';
+}
+
+function isAdminEmail(email) {
+  return ADMIN_EMAILS.includes(String(email || '').trim().toLowerCase());
+}
+
+function getRequestAdminEmail(req) {
+  return req.headers['x-admin-email'] || req.query.admin_email;
 }
 
 function ensureReportsTable(callback) {
@@ -1216,12 +1225,11 @@ app.get('/api/users/:id/risk', (req, res) => {
   });
 });
 
-// 관리자 신고 목록: 관리자 키를 확인한 뒤 신고 목록을 반환합니다.
+// 관리자 신고 목록: 지정된 팀원 이메일만 신고 목록을 확인할 수 있습니다.
 app.get('/api/admin/reports', (req, res) => {
-  const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
-  const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
+  const adminEmail = getRequestAdminEmail(req);
 
-  if (adminKey !== expectedKey) {
+  if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
   }
 
@@ -1258,15 +1266,14 @@ app.get('/api/admin/reports', (req, res) => {
   });
 });
 
-// 관리자 신고 처리: 신고 상태와 조치를 저장하고 필요 시 상품/사용자 상태를 변경합니다.
+// 관리자 신고 처리: 팀원 관리자만 신고 상태와 조치를 저장할 수 있습니다.
 app.put('/api/admin/reports/:id', (req, res) => {
-  const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
-  const expectedKey = process.env.ADMIN_KEY || 'daegu-market-admin';
+  const adminEmail = getRequestAdminEmail(req);
   const { status, admin_action } = req.body || {};
   const allowedStatuses = ['pending', 'reviewed', 'resolved', 'rejected'];
   const allowedActions = ['', 'none', 'hide_product', 'show_product', 'warn_user', 'restrict_user'];
 
-  if (adminKey !== expectedKey) {
+  if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
   }
 

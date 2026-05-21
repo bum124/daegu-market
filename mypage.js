@@ -35,6 +35,12 @@ const tabButtons = document.querySelectorAll('.tab-trigger');
 const API_BASE_URL = 'https://daegu-market-api.onrender.com';
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x800?text=Product';
 const RECENT_PRODUCTS_KEY = 'recentViewedProducts';
+const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
+const adminReportsLink = document.getElementById('adminReportsLink');
+
+function isAdminUser(email) {
+  return ADMIN_EMAILS.includes(String(email || '').trim().toLowerCase());
+}
 
 function navigateToProduct(productId) {
   window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
@@ -288,6 +294,10 @@ function renderProfile(data) {
     ? 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700'
     : 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700';
   profileBadge.textContent = data.user.name.slice(0, 2).toUpperCase();
+
+  if (adminReportsLink) {
+    adminReportsLink.classList.toggle('hidden', !isAdminUser(data.user.email));
+  }
 
   sellingCount.textContent = data.stats.sellingCount;
   soldCount.textContent = data.stats.soldCount;
