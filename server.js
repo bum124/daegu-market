@@ -430,6 +430,43 @@ function ensureProductStatusColumn(callback) {
   );
 }
 
+function ensureProductSoldAtColumn(callback) {
+  db.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'products'
+       AND COLUMN_NAME = 'sold_at'`,
+    (selectErr, rows) => {
+      if (selectErr) {
+        callback(selectErr);
+        return;
+      }
+
+      if (rows.length > 0) {
+        callback(null);
+        return;
+      }
+
+      db.query(
+        'ALTER TABLE products ADD COLUMN sold_at DATETIME NULL AFTER status',
+        callback
+      );
+    }
+  );
+}
+
+function ensureProductLifecycleColumns(callback) {
+  ensureProductStatusColumn((statusErr) => {
+    if (statusErr) {
+      callback(statusErr);
+      return;
+    }
+
+    ensureProductSoldAtColumn(callback);
+  });
+}
+
 function ensureUserCollegeColumn(callback) {
   db.query(
     `SELECT COLUMN_NAME
@@ -890,6 +927,12 @@ app.get('/api/products', (req, res) => {
       return res.status(500).json({ message: '상품 목록 준비 중 오류가 발생했습니다.' });
     }
 
+    ensureProductLifecycleColumns((lifecycleErr) => {
+      if (lifecycleErr) {
+        console.error(lifecycleErr);
+        return res.status(500).json({ message: '상품 상태 정보 준비 중 오류가 발생했습니다.' });
+      }
+
     const sql = `
       SELECT
         p.*,
@@ -919,12 +962,18 @@ app.get('/api/products', (req, res) => {
         ), 0) AS seller_risk_score
       FROM products p
       LEFT JOIN Users u ON u.user_id = p.seller_id
+      WHERE NOT (
+        p.status = '판매완료'
+        AND p.sold_at IS NOT NULL
+        AND p.sold_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+      )
       ORDER BY p.id DESC
     `;
 
     queryWithTimeout(sql, (err, results) => {
       if (err) return res.status(500).send(err);
       res.json(results);
+    });
     });
   });
 });
@@ -1986,14 +2035,19 @@ app.put('/api/products/:id/status', (req, res) => {
       return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다.' });
     }
 
-    ensureProductStatusColumn((columnErr) => {
+    ensureProductLifecycleColumns((columnErr) => {
       if (columnErr) {
         console.error(columnErr);
         return res.status(500).json({ message: '상품 상태 컬럼 준비에 실패했습니다.' });
       }
 
+      // 판매완료가 된 시점을 저장해 7일 뒤 일반 상품 목록에서 숨길 기준으로 사용합니다.
+      const updateSql = status === '판매완료'
+        ? 'UPDATE products SET status = ?, sold_at = COALESCE(sold_at, NOW()) WHERE id = ? AND seller_id = ?'
+        : 'UPDATE products SET status = ?, sold_at = NULL WHERE id = ? AND seller_id = ?';
+
       db.query(
-        'UPDATE products SET status = ? WHERE id = ? AND seller_id = ?',
+        updateSql,
         [status, productId, resolvedSellerId],
         (err, result) => {
           if (err) {
