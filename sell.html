@@ -326,6 +326,20 @@
     let locationMap;
     let locationMarker;
     let kakaoMapLoader;
+    const CAMPUS_PLACE_RADIUS_METERS = 120;
+    const campusPlaces = [
+      { name: '창파도서관', lat: 35.90225, lng: 128.84155 },
+      { name: '학생회관', lat: 35.90112, lng: 128.84212 },
+      { name: '성산홀', lat: 35.90016, lng: 128.84316 },
+      { name: '본관', lat: 35.89955, lng: 128.84235 },
+      { name: '정보통신원', lat: 35.90086, lng: 128.84492 },
+      { name: '공과대학', lat: 35.89945, lng: 128.84572 },
+      { name: '사범대학', lat: 35.90176, lng: 128.83988 },
+      { name: '재활과학대학', lat: 35.90262, lng: 128.84408 },
+      { name: '인문대학', lat: 35.89928, lng: 128.84047 },
+      { name: '체육관', lat: 35.90408, lng: 128.84115 },
+      { name: '대구대학교 정문', lat: 35.89805, lng: 128.84056 }
+    ];
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -457,8 +471,28 @@
       populateTargetDepartmentOptions(targetCollegeSelect.value);
     });
 
-    function formatCoordinate(value) {
-      return Number(value).toFixed(5);
+    function getDistanceMeters(pointA, pointB) {
+      const earthRadius = 6371000;
+      const toRadian = degree => degree * Math.PI / 180;
+      const lat1 = toRadian(pointA.lat);
+      const lat2 = toRadian(pointB.lat);
+      const deltaLat = toRadian(pointB.lat - pointA.lat);
+      const deltaLng = toRadian(pointB.lng - pointA.lng);
+      const haversine = Math.sin(deltaLat / 2) ** 2
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+
+      return earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    }
+
+    function findNearestCampusPlace(lat, lng) {
+      const selectedPoint = { lat: Number(lat), lng: Number(lng) };
+
+      return campusPlaces
+        .map(place => ({
+          ...place,
+          distance: getDistanceMeters(selectedPoint, { lat: place.lat, lng: place.lng })
+        }))
+        .sort((a, b) => a.distance - b.distance)[0];
     }
 
     // 카카오 지도 SDK를 필요한 순간에 불러옵니다. 실제 운영 전 JavaScript 키를 넣어야 합니다.
@@ -474,7 +508,7 @@
       if (!kakaoMapLoader) {
         kakaoMapLoader = new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_MAP_APP_KEY)}&autoload=false`;
+          script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_MAP_APP_KEY)}&libraries=services&autoload=false`;
           script.async = true;
           script.onload = () => window.kakao.maps.load(resolve);
           script.onerror = () => reject(new Error('카카오 지도를 불러오지 못했습니다.'));
@@ -485,12 +519,43 @@
       return kakaoMapLoader;
     }
 
+    async function getAddressFromCoordinate(lat, lng) {
+      return new Promise(resolve => {
+        if (!(window.kakao && window.kakao.maps && window.kakao.maps.services)) {
+          resolve('지도 선택 위치');
+          return;
+        }
+
+        const geocoder = new kakao.maps.services.Geocoder();
+
+        geocoder.coord2Address(lng, lat, (result, status) => {
+          if (status !== kakao.maps.services.Status.OK || !result[0]) {
+            resolve('지도 선택 위치');
+            return;
+          }
+
+          const address = result[0].road_address?.address_name || result[0].address?.address_name;
+          resolve(address || '지도 선택 위치');
+        });
+      });
+    }
+
+    async function resolveLocationLabel(lat, lng) {
+      const nearestPlace = findNearestCampusPlace(lat, lng);
+
+      if (nearestPlace && nearestPlace.distance <= CAMPUS_PLACE_RADIUS_METERS) {
+        return `${nearestPlace.name} 근처`;
+      }
+
+      return getAddressFromCoordinate(lat, lng);
+    }
+
     // 지도에서 선택한 거래 장소 좌표와 표시 문구를 폼에 저장합니다.
-    function setSelectedLocation(lat, lng) {
-      locationInput.value = '지도 선택 위치';
+    async function setSelectedLocation(lat, lng) {
       locationLatInput.value = String(lat);
       locationLngInput.value = String(lng);
-      locationMapText.textContent = `선택 위치: 위도 ${formatCoordinate(lat)}, 경도 ${formatCoordinate(lng)}`;
+      locationInput.value = '지도 선택 위치';
+      locationMapText.textContent = '선택 위치를 확인하는 중입니다.';
 
       if (!locationMap || !(window.kakao && window.kakao.maps)) {
         return;
@@ -504,6 +569,10 @@
       } else {
         locationMarker.setPosition(position);
       }
+
+      const locationLabel = await resolveLocationLabel(lat, lng);
+      locationInput.value = locationLabel;
+      locationMapText.textContent = `선택 위치: ${locationLabel}`;
     }
 
     function setFallbackLocation() {
