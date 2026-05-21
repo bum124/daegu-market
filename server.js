@@ -276,6 +276,22 @@ function ensureTradeReviewsTable(callback) {
   );
 }
 
+function ensureInquiriesTable(callback) {
+  db.query(
+    `CREATE TABLE IF NOT EXISTS inquiries (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      category VARCHAR(40) NOT NULL,
+      message TEXT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      admin_memo TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`,
+    callback
+  );
+}
+
 function refreshProductLikeCount(productId, callback) {
   db.query(
     `UPDATE products
@@ -1364,6 +1380,123 @@ app.post('/api/reviews', (req, res) => {
   });
 });
 
+// 문의 접수: 사용자가 남긴 계정/상품/신고/채팅 문의를 운영자 확인용으로 저장합니다.
+app.post('/api/inquiries', (req, res) => {
+  const { user_id, user_email, category, message } = req.body || {};
+  const allowedCategories = ['account', 'product', 'report', 'chat', 'other'];
+  const inquiryMessage = String(message || '').trim();
+
+  if (!allowedCategories.includes(category) || !inquiryMessage) {
+    return res.status(400).json({ message: '문의 유형과 내용을 입력해주세요.' });
+  }
+
+  ensureInquiriesTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '문의 테이블 준비에 실패했습니다.' });
+    }
+
+    resolveUserId({ user_id, email: user_email }, (userErr, resolvedUserId) => {
+      if (userErr) {
+        console.error(userErr);
+        return res.status(500).json({ message: '문의자 확인 중 오류가 발생했습니다.' });
+      }
+
+      if (!resolvedUserId) {
+        return res.status(400).json({ message: '로그인이 필요합니다.' });
+      }
+
+      db.query(
+        'INSERT INTO inquiries (user_id, category, message) VALUES (?, ?, ?)',
+        [resolvedUserId, category, inquiryMessage.slice(0, 1000)],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: '문의 접수 중 오류가 발생했습니다.' });
+          }
+
+          res.json({ message: '문의가 접수되었습니다.', inquiry_id: result.insertId });
+        }
+      );
+    });
+  });
+});
+
+// 관리자 문의 목록: 팀원 관리자만 문의 접수 내역을 확인할 수 있습니다.
+app.get('/api/admin/inquiries', (req, res) => {
+  const adminEmail = getRequestAdminEmail(req);
+
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
+  }
+
+  ensureInquiriesTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '문의 테이블 준비에 실패했습니다.' });
+    }
+
+    const sql = `
+      SELECT
+        i.*,
+        u.nickname AS user_nickname,
+        u.name AS user_name,
+        u.email AS user_email
+      FROM inquiries i
+      LEFT JOIN Users u ON u.user_id = i.user_id
+      ORDER BY i.status = 'pending' DESC, i.created_at DESC
+    `;
+
+    queryWithTimeout(sql, (err, inquiries) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: '문의 목록을 불러오지 못했습니다.' });
+      }
+
+      res.json(inquiries);
+    });
+  });
+});
+
+// 관리자 문의 처리: 문의 상태와 관리자 메모를 저장합니다.
+app.put('/api/admin/inquiries/:id', (req, res) => {
+  const adminEmail = getRequestAdminEmail(req);
+  const { status, admin_memo } = req.body || {};
+  const allowedStatuses = ['pending', 'reviewing', 'answered', 'closed'];
+
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
+  }
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: '문의 상태 값을 확인해주세요.' });
+  }
+
+  ensureInquiriesTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '문의 테이블 준비에 실패했습니다.' });
+    }
+
+    db.query(
+      'UPDATE inquiries SET status = ?, admin_memo = ? WHERE id = ?',
+      [status, String(admin_memo || '').trim() || null, req.params.id],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: '문의 처리 저장에 실패했습니다.' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: '문의를 찾을 수 없습니다.' });
+        }
+
+        res.json({ message: '문의 처리가 저장되었습니다.' });
+      }
+    );
+  });
+});
+
 // 관리자 신고 목록: 지정된 팀원 이메일만 신고 목록을 확인할 수 있습니다.
 app.get('/api/admin/reports', (req, res) => {
   const adminEmail = getRequestAdminEmail(req);
@@ -2287,6 +2420,11 @@ db.getConnection((err, connection) => {
         ensureTradeReviewsTable((tableErr) => {
           if (tableErr) {
             console.log('trade_reviews 테이블 준비 실패:', tableErr);
+          }
+        });
+        ensureInquiriesTable((tableErr) => {
+          if (tableErr) {
+            console.log('inquiries 테이블 준비 실패:', tableErr);
           }
         });
         ensureUserModerationColumn((columnErr) => {

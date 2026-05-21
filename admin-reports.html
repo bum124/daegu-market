@@ -16,14 +16,20 @@
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">메인으로</a>
-        <h1 class="mt-2 text-2xl font-bold">신고 관리</h1>
-        <p class="mt-1 text-sm text-slate-500">신고 접수 내용을 확인하고 관리자 조치를 저장합니다.</p>
+        <h1 class="mt-2 text-2xl font-bold">운영 관리</h1>
+        <p class="mt-1 text-sm text-slate-500">신고와 문의 접수 내용을 확인하고 관리자 조치를 저장합니다.</p>
       </div>
       <button id="refreshButton" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">새로고침</button>
     </div>
 
+    <div class="mb-4 inline-grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+      <button type="button" data-admin-tab="reports" class="admin-tab rounded-lg px-4 py-2 text-sm font-medium">신고 관리</button>
+      <button type="button" data-admin-tab="inquiries" class="admin-tab rounded-lg px-4 py-2 text-sm font-medium">문의 관리</button>
+    </div>
+
     <div id="statusMessage" class="mb-4 hidden rounded-lg border px-4 py-3 text-sm"></div>
     <div id="reportList" class="space-y-3"></div>
+    <div id="inquiryList" class="hidden space-y-3"></div>
   </main>
 
   <script>
@@ -49,7 +55,21 @@
       warn_user: '사용자 경고',
       restrict_user: '사용자 제한'
     };
+    const inquiryCategoryLabels = {
+      account: '계정 문의',
+      product: '상품 문의',
+      report: '신고/제재 문의',
+      chat: '채팅 오류',
+      other: '기타'
+    };
+    const inquiryStatusLabels = {
+      pending: '대기',
+      reviewing: '확인중',
+      answered: '답변완료',
+      closed: '종료'
+    };
     const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
+    let activeAdminTab = 'reports';
 
     function getLoggedInUser() {
       try {
@@ -89,6 +109,18 @@
       element.className = `mb-4 rounded-lg border px-4 py-3 text-sm ${tone}`;
       element.textContent = message;
       element.classList.remove('hidden');
+    }
+
+    function syncAdminTabs() {
+      document.querySelectorAll('.admin-tab').forEach(button => {
+        const active = button.dataset.adminTab === activeAdminTab;
+        button.className = active
+          ? 'admin-tab rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm'
+          : 'admin-tab rounded-lg px-4 py-2 text-sm font-medium text-slate-500';
+      });
+
+      document.getElementById('reportList').classList.toggle('hidden', activeAdminTab !== 'reports');
+      document.getElementById('inquiryList').classList.toggle('hidden', activeAdminTab !== 'inquiries');
     }
 
     function getTargetLabel(report) {
@@ -139,6 +171,38 @@
       `).join('');
     }
 
+    function renderInquiries(inquiries) {
+      const list = document.getElementById('inquiryList');
+
+      if (!inquiries.length) {
+        list.innerHTML = '<div class="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">접수된 문의가 없습니다.</div>';
+        return;
+      }
+
+      list.innerHTML = inquiries.map(inquiry => `
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">${inquiryStatusLabels[inquiry.status] || inquiry.status}</span>
+                <span class="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">${inquiryCategoryLabels[inquiry.category] || inquiry.category}</span>
+                <span class="text-xs text-slate-400">${new Date(inquiry.created_at).toLocaleString('ko-KR')}</span>
+              </div>
+              <p class="mt-2 text-sm text-slate-500">문의자: ${escapeHtml(inquiry.user_nickname || inquiry.user_name || inquiry.user_email || `#${inquiry.user_id}`)}</p>
+              <p class="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-600">${escapeHtml(inquiry.message)}</p>
+            </div>
+            <div class="grid min-w-full gap-2 sm:min-w-[360px]">
+              <select data-inquiry-status-id="${inquiry.id}" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                ${Object.entries(inquiryStatusLabels).map(([value, label]) => `<option value="${value}" ${inquiry.status === value ? 'selected' : ''}>${label}</option>`).join('')}
+              </select>
+              <textarea data-inquiry-memo-id="${inquiry.id}" rows="3" class="resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="관리자 메모">${escapeHtml(inquiry.admin_memo || '')}</textarea>
+              <button data-inquiry-save-id="${inquiry.id}" class="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">저장</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
     // 관리자 신고 목록 API를 호출해 reports 테이블의 신고 내역을 불러옵니다.
     async function loadReports() {
       const adminEmail = getAdminEmail();
@@ -164,7 +228,43 @@
       renderReports(reports);
     }
 
-    document.getElementById('refreshButton').addEventListener('click', loadReports);
+    async function loadInquiries() {
+      const adminEmail = getAdminEmail();
+
+      if (!adminEmail) {
+        showMessage('문의 관리는 관리자 계정만 접근할 수 있습니다.', 'error');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/api/admin/inquiries`, {
+        headers: { 'x-admin-email': adminEmail }
+      });
+      const inquiries = await response.json().catch(() => []);
+
+      if (!response.ok) {
+        showMessage(inquiries.message || '문의 목록을 불러오지 못했습니다.', 'error');
+        return;
+      }
+
+      renderInquiries(inquiries);
+    }
+
+    function loadActiveTab() {
+      syncAdminTabs();
+      if (activeAdminTab === 'reports') {
+        loadReports();
+        return;
+      }
+      loadInquiries();
+    }
+
+    document.getElementById('refreshButton').addEventListener('click', loadActiveTab);
+    document.querySelectorAll('.admin-tab').forEach(button => {
+      button.addEventListener('click', () => {
+        activeAdminTab = button.dataset.adminTab;
+        loadActiveTab();
+      });
+    });
     // 저장 버튼 클릭 시 선택한 상태와 조치를 서버에 업데이트합니다.
     document.getElementById('reportList').addEventListener('click', async event => {
       const button = event.target.closest('[data-save-id]');
@@ -211,7 +311,52 @@
       loadReports();
     });
 
-    loadReports();
+    document.getElementById('inquiryList').addEventListener('click', async event => {
+      const button = event.target.closest('[data-inquiry-save-id]');
+
+      if (!button) {
+        return;
+      }
+
+      const id = button.dataset.inquirySaveId;
+      const adminEmail = getAdminEmail();
+      const status = document.querySelector(`[data-inquiry-status-id="${id}"]`).value;
+      const adminMemo = document.querySelector(`[data-inquiry-memo-id="${id}"]`).value;
+
+      if (!adminEmail) {
+        showMessage('문의 관리는 관리자 계정만 접근할 수 있습니다.', 'error');
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = '저장 중';
+
+      const response = await fetch(`${API_BASE}/api/admin/inquiries/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-email': adminEmail
+        },
+        body: JSON.stringify({
+          status,
+          admin_memo: adminMemo
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+
+      button.disabled = false;
+      button.textContent = '저장';
+
+      if (!response.ok) {
+        showMessage(result.message || '문의 처리 저장에 실패했습니다.', 'error');
+        return;
+      }
+
+      showMessage('문의 처리가 저장되었습니다.');
+      loadInquiries();
+    });
+
+    loadActiveTab();
   </script>
 </body>
 </html>

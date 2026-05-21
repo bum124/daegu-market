@@ -31,6 +31,10 @@ const itemList = document.getElementById('item-list');
 const emptyState = document.getElementById('empty-state');
 const tabTitle = document.getElementById('tab-title');
 const tabButtons = document.querySelectorAll('.tab-trigger');
+const inquiryModal = document.getElementById('inquiryModal');
+const inquiryForm = document.getElementById('inquiryForm');
+const inquiryButton = document.getElementById('inquiryButton');
+const inquirySubmitButton = document.getElementById('inquirySubmitButton');
 
 const API_BASE_URL = 'https://daegu-market-api.onrender.com';
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/800x800?text=Product';
@@ -40,6 +44,19 @@ const adminReportsLink = document.getElementById('adminReportsLink');
 
 function isAdminUser(email) {
   return ADMIN_EMAILS.includes(String(email || '').trim().toLowerCase());
+}
+
+function openInquiryModal() {
+  if (!inquiryModal || !inquiryForm) return;
+  inquiryForm.reset();
+  inquiryModal.classList.remove('hidden');
+  inquiryModal.classList.add('flex');
+}
+
+function closeInquiryModal() {
+  if (!inquiryModal) return;
+  inquiryModal.classList.add('hidden');
+  inquiryModal.classList.remove('flex');
 }
 
 function navigateToProduct(productId) {
@@ -514,6 +531,73 @@ itemList.addEventListener('keydown', event => {
   event.preventDefault();
   navigateToProduct(card.dataset.productId);
 });
+
+if (inquiryButton) {
+  inquiryButton.addEventListener('click', openInquiryModal);
+}
+
+['inquiryCloseButton', 'inquiryCancelButton'].forEach(id => {
+  const button = document.getElementById(id);
+  if (button) {
+    button.addEventListener('click', closeInquiryModal);
+  }
+});
+
+if (inquiryModal) {
+  inquiryModal.addEventListener('click', event => {
+    if (event.target === inquiryModal) {
+      closeInquiryModal();
+    }
+  });
+}
+
+// 문의하기는 로그인 사용자 정보를 함께 보내 관리자 문의 목록에서 확인할 수 있게 합니다.
+if (inquiryForm) {
+  inquiryForm.addEventListener('submit', async event => {
+    event.preventDefault();
+
+    const userStr = localStorage.getItem('loggedInUser');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const message = document.getElementById('inquiryMessage').value.trim();
+
+    if (!user) {
+      alert('로그인이 필요한 서비스입니다.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    if (!message) {
+      alert('문의 내용을 입력해주세요.');
+      return;
+    }
+
+    inquirySubmitButton.disabled = true;
+    inquirySubmitButton.textContent = '접수 중';
+
+    const response = await fetch(`${API_BASE_URL}/api/inquiries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: state.currentUserId || user.user_id || user.id,
+        user_email: user.email,
+        category: document.getElementById('inquiryCategory').value,
+        message
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+
+    inquirySubmitButton.disabled = false;
+    inquirySubmitButton.textContent = '접수';
+
+    if (!response.ok) {
+      alert(result.message || '문의 접수에 실패했습니다.');
+      return;
+    }
+
+    alert('문의가 접수되었습니다. 운영자가 확인할 예정입니다.');
+    closeInquiryModal();
+  });
+}
 
 // 내 상품의 status 값을 판매완료로 변경하고 화면 목록도 바로 갱신합니다.
 async function markMyProductSold(productId) {
