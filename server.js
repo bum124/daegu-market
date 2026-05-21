@@ -87,6 +87,64 @@ app.post('/upload/chat-image', upload.single('image'), (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
+app.post('/club/chat/start', (req, res) => {
+  const { club_id, user_id, leader_id } = req.body;
+
+  if (!club_id || !user_id || !leader_id) {
+    return res.status(400).json({
+      message: 'club_id, user_id, leader_id가 필요합니다.'
+    });
+  }
+
+  if (Number(user_id) === Number(leader_id)) {
+    return res.status(400).json({
+      message: '본인이 만든 동아리에는 문의할 수 없습니다.'
+    });
+  }
+
+  const checkRoomSql = `
+    SELECT r.id
+    FROM rooms r
+    JOIN room_users ru1 ON r.id = ru1.room_id
+    JOIN room_users ru2 ON r.id = ru2.room_id
+    WHERE r.club_id = ?
+      AND r.type = 'club'
+      AND ru1.user_id = ?
+      AND ru2.user_id = ?
+    LIMIT 1
+  `;
+
+  db.query(checkRoomSql, [club_id, user_id, leader_id], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      return res.json({ room_id: results[0].id });
+    }
+
+    const createRoomSql = `
+      INSERT INTO rooms (club_id, type)
+      VALUES (?, 'club')
+    `;
+
+    db.query(createRoomSql, [club_id], (err, result) => {
+      if (err) return res.status(500).send(err);
+
+      const room_id = result.insertId;
+
+      const insertUsersSql = `
+        INSERT INTO room_users (room_id, user_id, is_active)
+        VALUES (?, ?, 1), (?, ?, 1)
+      `;
+
+      db.query(insertUsersSql, [room_id, user_id, room_id, leader_id], (err) => {
+        if (err) return res.status(500).send(err);
+
+        res.json({ room_id });
+      });
+    });
+  });
+});
+
 app.post('/chat/start', (req, res) => {
   const { product_id, buyer_id, seller_id } = req.body;
 

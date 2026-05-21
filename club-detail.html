@@ -157,6 +157,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const clubId = urlParams.get('id');
     const API_BASE_URL = "https://daegu-market-api.onrender.com";
+    let currentClub = null;
 
     // 시간 계산 마법사
     function getTimeAgo(dateString) {
@@ -184,6 +185,8 @@
         if (!response.ok) throw new Error('동아리 정보를 불러오는데 실패했습니다.');
 
         const club = await response.json();
+        currentClub = club;
+        console.log(currentClub);
 
         // 1. 기본 정보 꽂아넣기
         document.getElementById('clubCategory').textContent = club.category;
@@ -275,9 +278,47 @@
       }
     }
 
-    function contactPresident() {
-      alert('회장에게 채팅을 보냅니다.');
-    }
+    async function contactPresident() {
+  let user = null;
+
+  try {
+    user =
+      JSON.parse(localStorage.getItem("user")) ||
+      JSON.parse(localStorage.getItem("loggedInUser"));
+  } catch (e) {}
+
+  if (!user) {
+    alert("로그인 후 이용 가능합니다.");
+    location.href = "login.html";
+    return;
+  }
+
+  if (!currentClub || !currentClub.leader_id) {
+    alert("회장 정보를 불러오지 못했습니다.");
+    return;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/club/chat/start`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      club_id: clubId,
+      user_id: user.user_id || user.id,
+      leader_id: currentClub.leader_id
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    alert(data.message || "채팅방 생성 실패");
+    return;
+  }
+
+  location.href = `chat_id.html?room_id=${data.room_id}&type=club`;
+ }
 
     // 진짜 가입 신청 함수
     async function applyToClub() {
