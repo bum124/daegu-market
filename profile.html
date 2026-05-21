@@ -70,11 +70,14 @@
                 <button id="profileReportButton" onclick="reportProfile()" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
                   신고하기
                 </button>
+                <button id="profileReviewButton" onclick="openReviewModal()" class="inline-flex items-center justify-center rounded-lg border border-amber-200 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50">
+                  신뢰도 평가
+                </button>
               </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 text-center md:w-72">
+          <div class="grid grid-cols-4 gap-2 text-center md:w-[360px]">
             <div class="rounded-lg border border-gray-200 px-3 py-3">
               <p id="sellingCount" class="text-xl font-bold text-gray-900">0</p>
               <p class="mt-1 text-xs text-gray-500">판매중</p>
@@ -87,7 +90,19 @@
               <p id="trustCount" class="text-xl font-bold text-gray-900">0</p>
               <p class="mt-1 text-xs text-gray-500">관심 합계</p>
             </div>
+            <div class="rounded-lg border border-gray-200 px-3 py-3">
+              <p id="reviewScore" class="text-xl font-bold text-gray-900">-</p>
+              <p class="mt-1 text-xs text-gray-500">신뢰도</p>
+            </div>
           </div>
+        </div>
+
+        <div id="reviewSummary" class="mt-5 hidden rounded-xl border border-amber-100 bg-amber-50/60 p-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <p id="reviewSummaryText" class="text-sm font-semibold text-amber-900"></p>
+            <div id="reviewTags" class="flex flex-wrap gap-2"></div>
+          </div>
+          <div id="reviewComments" class="mt-3 space-y-2"></div>
         </div>
       </div>
     </section>
@@ -148,6 +163,49 @@
     </div>
   </div>
 
+  <div id="reviewModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">거래 신뢰도 평가</h2>
+          <p id="reviewTargetLabel" class="mt-1 text-sm text-gray-500">거래 경험을 짧게 남겨주세요.</p>
+        </div>
+        <button type="button" onclick="closeReviewModal()" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="평가 창 닫기">×</button>
+      </div>
+
+      <form id="reviewForm" class="mt-5 space-y-4">
+        <div>
+          <p class="text-sm font-medium text-gray-700">하트 점수</p>
+          <div id="ratingButtons" class="mt-2 flex gap-1">
+            <button type="button" data-rating="1" class="rating-button text-3xl text-gray-300">♥</button>
+            <button type="button" data-rating="2" class="rating-button text-3xl text-gray-300">♥</button>
+            <button type="button" data-rating="3" class="rating-button text-3xl text-gray-300">♥</button>
+            <button type="button" data-rating="4" class="rating-button text-3xl text-gray-300">♥</button>
+            <button type="button" data-rating="5" class="rating-button text-3xl text-gray-300">♥</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="약속을 잘 지켜요" class="mr-2">약속을 잘 지켜요</label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="답장이 빨라요" class="mr-2">답장이 빨라요</label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="상품 설명이 정확해요" class="mr-2">상품 설명이 정확해요</label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="친절해요" class="mr-2">친절해요</label>
+          <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="다시 거래하고 싶어요" class="mr-2">다시 거래하고 싶어요</label>
+        </div>
+
+        <div>
+          <label for="reviewComment" class="text-sm font-medium text-gray-700">한 줄 평가</label>
+          <textarea id="reviewComment" rows="3" maxlength="300" class="mt-2 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="선택 입력입니다."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeReviewModal()" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">취소</button>
+          <button id="reviewSubmitButton" type="submit" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const API_BASE = 'https://daegu-market-api.onrender.com';
     const API_TIMEOUT_MS = 12000;
@@ -155,6 +213,7 @@
     const params = new URLSearchParams(location.search);
     const userId = params.get('userId') || params.get('id');
     let loadedUser = null;
+    let selectedRating = 5;
 
     async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
       const controller = new AbortController();
@@ -243,6 +302,14 @@
       window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
     }
 
+    function renderRatingButtons() {
+      document.querySelectorAll('.rating-button').forEach(button => {
+        const rating = Number(button.dataset.rating);
+        button.classList.toggle('text-red-500', rating <= selectedRating);
+        button.classList.toggle('text-gray-300', rating > selectedRating);
+      });
+    }
+
     function openReportModal() {
       const displayName = getDisplayName(loadedUser || {});
       document.getElementById('reportForm').reset();
@@ -256,6 +323,34 @@
     function closeReportModal() {
       document.getElementById('reportModal').classList.add('hidden');
       document.getElementById('reportModal').classList.remove('flex');
+    }
+
+    function openReviewModal() {
+      const user = getLoggedInUser();
+
+      if (!user) {
+        redirectToLogin(`profile.html?userId=${encodeURIComponent(userId || '')}`);
+        return;
+      }
+
+      const currentUserId = user.user_id || user.id;
+
+      if (currentUserId && String(currentUserId) === String(userId)) {
+        alert('본인에게는 평가를 남길 수 없습니다.');
+        return;
+      }
+
+      selectedRating = 5;
+      document.getElementById('reviewForm').reset();
+      document.getElementById('reviewTargetLabel').textContent = `${getDisplayName(loadedUser || {})}님과의 거래 경험을 남겨주세요.`;
+      renderRatingButtons();
+      document.getElementById('reviewModal').classList.remove('hidden');
+      document.getElementById('reviewModal').classList.add('flex');
+    }
+
+    function closeReviewModal() {
+      document.getElementById('reviewModal').classList.add('hidden');
+      document.getElementById('reviewModal').classList.remove('flex');
     }
 
     // 사용자 신고 내용을 reports 테이블에 저장하도록 신고 API에 보냅니다.
@@ -298,6 +393,30 @@
 
       document.getElementById('profileReportButton').classList.toggle('hidden', Boolean(isMyProfile));
       document.getElementById('profileChatButton').classList.toggle('hidden', Boolean(isMyProfile));
+      document.getElementById('profileReviewButton').classList.toggle('hidden', Boolean(isMyProfile));
+    }
+
+    function renderReviewSummary(reviewData) {
+      const summary = document.getElementById('reviewSummary');
+      const score = document.getElementById('reviewScore');
+
+      if (!reviewData || !reviewData.review_count) {
+        score.textContent = '-';
+        summary.classList.add('hidden');
+        return;
+      }
+
+      score.textContent = reviewData.average_rating.toFixed(1);
+      document.getElementById('reviewSummaryText').textContent = `거래 신뢰도 ${reviewData.average_rating.toFixed(1)} / 5.0 · 평가 ${reviewData.review_count}개`;
+      document.getElementById('reviewTags').innerHTML = (reviewData.top_tags || []).map(item => `
+        <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800">${escapeHtml(item.tag)} ${item.count}</span>
+      `).join('');
+      document.getElementById('reviewComments').innerHTML = (reviewData.reviews || [])
+        .filter(review => review.comment)
+        .slice(0, 3)
+        .map(review => `<p class="rounded-lg bg-white px-3 py-2 text-sm text-gray-600">${'♥'.repeat(review.rating)} ${escapeHtml(review.comment)}</p>`)
+        .join('');
+      summary.classList.remove('hidden');
     }
 
     function isSold(product) {
@@ -396,6 +515,63 @@
       }
     });
 
+    document.querySelectorAll('.rating-button').forEach(button => {
+      button.addEventListener('click', () => {
+        selectedRating = Number(button.dataset.rating);
+        renderRatingButtons();
+      });
+    });
+
+    document.getElementById('reviewModal').addEventListener('click', event => {
+      if (event.target.id === 'reviewModal') {
+        closeReviewModal();
+      }
+    });
+
+    document.getElementById('reviewForm').addEventListener('submit', async event => {
+      event.preventDefault();
+
+      const user = getLoggedInUser();
+
+      if (!user) {
+        closeReviewModal();
+        redirectToLogin(`profile.html?userId=${encodeURIComponent(userId || '')}`);
+        return;
+      }
+
+      const submitButton = document.getElementById('reviewSubmitButton');
+      const tags = Array.from(document.querySelectorAll('input[name="reviewTag"]:checked')).map(input => input.value);
+      const comment = document.getElementById('reviewComment').value.trim();
+      submitButton.disabled = true;
+      submitButton.textContent = '저장 중';
+
+      const response = await fetchWithTimeout(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewer_id: user.user_id || user.id,
+          reviewer_email: user.email,
+          target_user_id: userId,
+          rating: selectedRating,
+          tags,
+          comment
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+
+      submitButton.disabled = false;
+      submitButton.textContent = '저장';
+
+      if (!response.ok) {
+        showToast(result.message || '거래 신뢰도 저장에 실패했습니다.', 'error');
+        return;
+      }
+
+      closeReviewModal();
+      showToast('거래 신뢰도 평가가 저장되었습니다.');
+      loadProfile();
+    });
+
     function createProductCard(product) {
       const images = parseImages(product.images);
       const image = images[0] || 'https://via.placeholder.com/400x400?text=Product';
@@ -458,10 +634,11 @@
       }
 
       try {
-        const [userResponse, productsResponse, riskResponse] = await Promise.all([
+        const [userResponse, productsResponse, riskResponse, reviewResponse] = await Promise.all([
           fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}`),
           fetchWithTimeout(`${API_BASE}/api/products`),
-          fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}/risk`)
+          fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}/risk`),
+          fetchWithTimeout(`${API_BASE}/api/users/${encodeURIComponent(userId)}/reviews`)
         ]);
 
         if (!userResponse.ok) {
@@ -473,9 +650,11 @@
         const allProducts = productsResponse.ok ? await productsResponse.json() : [];
         const products = allProducts.filter(product => String(product.seller_id) === String(userId));
         const risk = riskResponse.ok ? await riskResponse.json() : null;
+        const reviews = reviewResponse.ok ? await reviewResponse.json() : null;
 
         renderProfile(user, products);
         renderRiskBadge(risk);
+        renderReviewSummary(reviews);
         renderProducts(products);
       } catch (error) {
         console.error('판매자 프로필 로딩 실패:', error);

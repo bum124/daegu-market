@@ -260,6 +260,22 @@ function ensureProductLikesTable(callback) {
   );
 }
 
+function ensureTradeReviewsTable(callback) {
+  db.query(
+    `CREATE TABLE IF NOT EXISTS trade_reviews (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      reviewer_id INT NOT NULL,
+      target_user_id INT NOT NULL,
+      rating TINYINT NOT NULL,
+      tags TEXT NULL,
+      comment VARCHAR(300) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_reviewer_target (reviewer_id, target_user_id)
+    )`,
+    callback
+  );
+}
+
 function refreshProductLikeCount(productId, callback) {
   db.query(
     `UPDATE products
@@ -1225,6 +1241,129 @@ app.get('/api/users/:id/risk', (req, res) => {
   });
 });
 
+app.get('/api/users/:id/reviews', (req, res) => {
+  const targetUserId = Number(req.params.id);
+
+  if (!targetUserId) {
+    return res.status(400).json({ message: '사용자 정보가 필요합니다.' });
+  }
+
+  ensureTradeReviewsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '거래 신뢰도 테이블 준비에 실패했습니다.' });
+    }
+
+    const sql = `
+      SELECT
+        tr.*,
+        reviewer.nickname AS reviewer_nickname,
+        reviewer.name AS reviewer_name
+      FROM trade_reviews tr
+      LEFT JOIN Users reviewer ON reviewer.user_id = tr.reviewer_id
+      WHERE tr.target_user_id = ?
+      ORDER BY tr.created_at DESC
+    `;
+
+    queryWithTimeout(sql, [targetUserId], (err, reviews) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: '거래 신뢰도를 불러오지 못했습니다.' });
+      }
+
+      const tagCounts = {};
+      let ratingSum = 0;
+
+      const normalizedReviews = reviews.map(review => {
+        let tags = [];
+
+        try {
+          tags = JSON.parse(review.tags || '[]');
+        } catch (error) {
+          tags = [];
+        }
+
+        tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+
+        ratingSum += Number(review.rating || 0);
+
+        return {
+          id: review.id,
+          rating: Number(review.rating || 0),
+          tags,
+          comment: review.comment || '',
+          reviewer_name: review.reviewer_nickname || review.reviewer_name || '사용자',
+          created_at: review.created_at
+        };
+      });
+
+      const topTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([tag, count]) => ({ tag, count }));
+
+      res.json({
+        average_rating: reviews.length ? Number((ratingSum / reviews.length).toFixed(1)) : 0,
+        review_count: reviews.length,
+        top_tags: topTags,
+        reviews: normalizedReviews.slice(0, 5)
+      });
+    });
+  });
+});
+
+// 거래 신뢰도 평가: 하트 점수, 선택 태그, 짧은 평가를 사용자 프로필에 저장합니다.
+app.post('/api/reviews', (req, res) => {
+  const { reviewer_id, reviewer_email, target_user_id, rating, tags, comment } = req.body || {};
+  const numericRating = Number(rating);
+
+  if (!target_user_id || !numericRating || numericRating < 1 || numericRating > 5) {
+    return res.status(400).json({ message: '평가 대상과 점수를 확인해주세요.' });
+  }
+
+  ensureTradeReviewsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '거래 신뢰도 테이블 준비에 실패했습니다.' });
+    }
+
+    resolveUserId({ user_id: reviewer_id, email: reviewer_email }, (userErr, reviewerId) => {
+      if (userErr) {
+        console.error(userErr);
+        return res.status(500).json({ message: '평가자 확인 중 오류가 발생했습니다.' });
+      }
+
+      if (!reviewerId) {
+        return res.status(400).json({ message: '로그인이 필요합니다.' });
+      }
+
+      if (String(reviewerId) === String(target_user_id)) {
+        return res.status(400).json({ message: '본인에게는 평가를 남길 수 없습니다.' });
+      }
+
+      const safeTags = Array.isArray(tags) ? tags.slice(0, 5) : [];
+      const safeComment = String(comment || '').trim().slice(0, 300) || null;
+
+      db.query(
+        `INSERT INTO trade_reviews (reviewer_id, target_user_id, rating, tags, comment)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE rating = VALUES(rating), tags = VALUES(tags), comment = VALUES(comment), created_at = CURRENT_TIMESTAMP`,
+        [reviewerId, target_user_id, numericRating, JSON.stringify(safeTags), safeComment],
+        (err) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: '거래 신뢰도 저장 중 오류가 발생했습니다.' });
+          }
+
+          res.json({ message: '거래 신뢰도 평가가 저장되었습니다.' });
+        }
+      );
+    });
+  });
+});
+
 // 관리자 신고 목록: 지정된 팀원 이메일만 신고 목록을 확인할 수 있습니다.
 app.get('/api/admin/reports', (req, res) => {
   const adminEmail = getRequestAdminEmail(req);
@@ -2143,6 +2282,11 @@ db.getConnection((err, connection) => {
         ensureReportsTable((tableErr) => {
           if (tableErr) {
             console.log('reports 테이블 준비 실패:', tableErr);
+          }
+        });
+        ensureTradeReviewsTable((tableErr) => {
+          if (tableErr) {
+            console.log('trade_reviews 테이블 준비 실패:', tableErr);
           }
         });
         ensureUserModerationColumn((columnErr) => {
