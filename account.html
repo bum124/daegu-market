@@ -76,12 +76,23 @@
         저장하기
       </button>
     </form>
+
+    <section class="mt-5 rounded-3xl border border-red-100 bg-white p-6 shadow-sm">
+      <p class="text-sm font-semibold text-red-600">회원 탈퇴</p>
+      <p class="mt-2 text-sm leading-6 text-slate-500">
+        탈퇴하면 로그인할 수 없고 등록한 상품은 숨김 처리됩니다. 채팅과 신고 기록은 안전한 운영을 위해 보관됩니다.
+      </p>
+      <button id="deleteAccountButton" type="button" class="mt-4 h-11 rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50">
+        탈퇴하기
+      </button>
+    </section>
   </main>
 
   <script>
     const API_BASE_URL = 'https://daegu-market-api.onrender.com';
     const form = document.getElementById('accountForm');
     const saveButton = document.getElementById('saveButton');
+    const deleteAccountButton = document.getElementById('deleteAccountButton');
     const fields = {
       email: document.getElementById('email'),
       name: document.getElementById('name'),
@@ -335,6 +346,46 @@
       fields.currentPassword.value = '';
       fields.newPassword.value = '';
       window.location.href = 'mypage.html';
+    });
+
+    // 회원 탈퇴는 실제 데이터를 지우지 않고 서버에서 계정 비활성화와 상품 숨김으로 처리합니다.
+    deleteAccountButton.addEventListener('click', async () => {
+      const user = getLoggedInUser();
+      const userId = form.dataset.userId || (user && (user.user_id || user.id));
+
+      if (!userId) {
+        alert('사용자 정보를 확인하지 못했습니다. 다시 로그인해주세요.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const confirmed = confirm('정말 탈퇴하시겠습니까? 탈퇴 후에는 로그인할 수 없고 등록한 상품은 숨김 처리됩니다.');
+
+      if (!confirmed) {
+        return;
+      }
+
+      deleteAccountButton.disabled = true;
+      deleteAccountButton.textContent = '탈퇴 처리 중...';
+
+      const response = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: fields.email.value || (user && user.email) })
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(result.message || '탈퇴 처리에 실패했습니다.');
+        deleteAccountButton.disabled = false;
+        deleteAccountButton.textContent = '탈퇴하기';
+        return;
+      }
+
+      localStorage.removeItem('loggedInUser');
+      alert('탈퇴 처리가 완료되었습니다.');
+      window.location.href = 'index.html';
     });
 
     populateCollegeOptions();

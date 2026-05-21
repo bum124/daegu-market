@@ -742,6 +742,10 @@ app.post('/api/login', (req, res) => {
             return res.status(403).json({ message: '이메일 인증을 먼저 완료해주세요!' });
         }
 
+        if (user.account_status === 'deleted') {
+            return res.status(403).json({ message: '탈퇴 처리된 계정입니다.' });
+        }
+
         if (user.account_status === 'restricted') {
             return res.status(403).json({ message: '관리자 검토로 이용이 제한된 계정입니다.' });
         }
@@ -962,11 +966,13 @@ app.get('/api/products', (req, res) => {
         ), 0) AS seller_risk_score
       FROM products p
       LEFT JOIN Users u ON u.user_id = p.seller_id
-      WHERE NOT (
-        p.status = '판매완료'
-        AND p.sold_at IS NOT NULL
-        AND p.sold_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-      )
+      WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
+        AND COALESCE(u.account_status, 'active') <> 'deleted'
+        AND NOT (
+          p.status = '판매완료'
+          AND p.sold_at IS NOT NULL
+          AND p.sold_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+        )
       ORDER BY p.id DESC
     `;
 
@@ -998,10 +1004,13 @@ app.get('/api/products/:id', (req, res) => {
         u.email AS seller_email
        FROM products p
        LEFT JOIN Users u ON u.user_id = p.seller_id
-       WHERE p.id = ?`,
+       WHERE p.id = ?
+         AND COALESCE(p.moderation_status, 'visible') <> 'hidden'
+         AND COALESCE(u.account_status, 'active') <> 'deleted'`,
       [id],
       (err, result) => {
         if (err) return res.status(500).send(err);
+        if (!result[0]) return res.status(404).json({ message: '상품 정보를 찾을 수 없습니다.' });
         res.json(result[0]);
       }
     );
@@ -2144,7 +2153,7 @@ db.getConnection((err, connection) => {
 
 // 2. 길(API) 터주기: 이 주소로 접속하면 DB에서 데이터를 꺼내줌
 app.get('/api/users', (req, res) => {
-    const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users';
+    const sql = "SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE COALESCE(account_status, 'active') <> 'deleted'";
 
     queryWithTimeout(sql, (err, results) => {
         if (err) {
@@ -2196,7 +2205,7 @@ app.post('/messages', (req, res) => {
 });
 
 app.get('/api/users/:id', (req, res) => {
-    const sql = 'SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE user_id = ?';
+    const sql = "SELECT user_id, student_id, email, name, nickname, college, department FROM Users WHERE user_id = ? AND COALESCE(account_status, 'active') <> 'deleted'";
 
     queryWithTimeout(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).send('데이터 가져오기 에러');
@@ -2247,6 +2256,52 @@ app.put('/api/users/:id', (req, res) => {
     });
 });
 
+// 회원 탈퇴: 사용자 정보는 보관하되 계정은 비활성화하고 등록 상품은 숨김 처리합니다.
+app.delete('/api/users/:id', (req, res) => {
+    const userId = Number(req.params.id);
+    const { email } = req.body || {};
+
+    if (!userId) {
+        return res.status(400).json({ message: '사용자 정보가 필요합니다.' });
+    }
+
+    ensureModerationSchema((schemaErr) => {
+        if (schemaErr) {
+            console.error(schemaErr);
+            return res.status(500).json({ message: '탈퇴 처리 준비 중 오류가 발생했습니다.' });
+        }
+
+        db.query(
+            'SELECT user_id, email, account_status FROM Users WHERE user_id = ?',
+            [userId],
+            (selectErr, users) => {
+                if (selectErr) return res.status(500).json({ message: '사용자 확인 실패' });
+                if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+                if (email && users[0].email !== email) {
+                    return res.status(403).json({ message: '본인 계정만 탈퇴할 수 있습니다.' });
+                }
+
+                db.query(
+                    "UPDATE Users SET account_status = 'deleted' WHERE user_id = ?",
+                    [userId],
+                    (updateUserErr) => {
+                        if (updateUserErr) return res.status(500).json({ message: '계정 탈퇴 처리 실패' });
+
+                        db.query(
+                            "UPDATE products SET moderation_status = 'hidden' WHERE seller_id = ?",
+                            [userId],
+                            (updateProductErr) => {
+                                if (updateProductErr) return res.status(500).json({ message: '등록 상품 숨김 처리 실패' });
+                                res.json({ message: '탈퇴 처리가 완료되었습니다.' });
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    });
+});
+
 server.listen(PORT, () => {
     console.log(`서버 실행중: ${PORT}`);
 });
@@ -2260,11 +2315,12 @@ app.get('/api/mypage', (req, res) => {
   }
 
     db.query(
-    'SELECT user_id, email, name, nickname, college, department FROM Users WHERE user_id = ?',
+    'SELECT user_id, email, name, nickname, college, department, account_status FROM Users WHERE user_id = ?',
     [userId],
     (userErr, users) => {
       if (userErr) return res.status(500).send(userErr);
       if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+      if (users[0].account_status === 'deleted') return res.status(403).json({ message: '탈퇴 처리된 계정입니다.' });
 
       const user = users[0];
       const productSql = `
