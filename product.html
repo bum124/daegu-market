@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>상품 상세 - 대구대 마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="config.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -683,7 +682,34 @@ function isSoldProduct(product) {
       }
     }
 
-// 상품에 좌표가 있으면 Leaflet 지도로 거래 희망 장소를 표시합니다.
+const KAKAO_MAP_APP_KEY = window.KAKAO_MAP_APP_KEY || '';
+let kakaoMapLoader;
+
+// 카카오 지도 SDK를 필요한 순간에 불러옵니다. 실제 운영 전 JavaScript 키를 넣어야 합니다.
+function loadKakaoMapSdk() {
+  if (window.kakao && window.kakao.maps) {
+    return new Promise(resolve => window.kakao.maps.load(resolve));
+  }
+
+  if (!KAKAO_MAP_APP_KEY) {
+    return Promise.reject(new Error('카카오 지도 JavaScript 키가 설정되지 않았습니다.'));
+  }
+
+  if (!kakaoMapLoader) {
+    kakaoMapLoader = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_MAP_APP_KEY)}&autoload=false`;
+      script.async = true;
+      script.onload = () => window.kakao.maps.load(resolve);
+      script.onerror = () => reject(new Error('카카오 지도를 불러오지 못했습니다.'));
+      document.head.appendChild(script);
+    });
+  }
+
+  return kakaoMapLoader;
+}
+
+// 상품에 좌표가 있으면 카카오 지도로 거래 희망 장소를 표시합니다.
 function renderTradeMap(locationName, lat, lng) {
   const section = document.getElementById('tradeMapSection');
   const label = document.getElementById('tradeMapLabel');
@@ -697,20 +723,24 @@ function renderTradeMap(locationName, lat, lng) {
   label.textContent = locationName;
   section.classList.remove('hidden');
 
-  const coordinate = [Number(lat), Number(lng)];
-  setTimeout(() => {
-    const map = L.map('tradeMap', {
-      scrollWheelZoom: false,
-      dragging: false
-    }).setView(coordinate, 17);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(map);
-    L.marker(coordinate).addTo(map);
-    map.invalidateSize();
-  }, 0);
+  loadKakaoMapSdk()
+    .then(() => {
+      const coordinate = new kakao.maps.LatLng(Number(lat), Number(lng));
+      const map = new kakao.maps.Map(document.getElementById('tradeMap'), {
+        center: coordinate,
+        level: 2,
+        draggable: false,
+        scrollwheel: false,
+        disableDoubleClickZoom: true
+      });
+      const marker = new kakao.maps.Marker({ position: coordinate });
+      marker.setMap(map);
+      setTimeout(() => map.relayout(), 0);
+    })
+    .catch(error => {
+      console.warn('카카오 지도 렌더링 실패:', error);
+      document.getElementById('tradeMap').innerHTML = '<div class="flex h-full items-center justify-center px-4 text-center text-sm text-gray-500">카카오 지도 API 키 설정 후 거래 장소 지도가 표시됩니다.</div>';
+    });
 }
 
 function createRelatedProductCard(product) {

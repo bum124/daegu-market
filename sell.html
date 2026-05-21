@@ -32,8 +32,7 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="config.js"></script>
   <style>
     * { font-family: 'Pretendard', sans-serif; }
     input:focus, textarea:focus, select:focus, button:focus {
@@ -304,6 +303,7 @@
 
   <script>
     const API_BASE_URL = 'https://daegu-market-api.onrender.com';
+    const KAKAO_MAP_APP_KEY = window.KAKAO_MAP_APP_KEY || '';
     // URL에 id가 있으면 상품 수정 모드로 동작합니다.
     const params = new URLSearchParams(window.location.search);
     const editProductId = params.get('id');
@@ -325,6 +325,7 @@
     const daeguUniversityCenter = [35.9007, 128.8426];
     let locationMap;
     let locationMarker;
+    let kakaoMapLoader;
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -460,6 +461,30 @@
       return Number(value).toFixed(5);
     }
 
+    // 카카오 지도 SDK를 필요한 순간에 불러옵니다. 실제 운영 전 JavaScript 키를 넣어야 합니다.
+    function loadKakaoMapSdk() {
+      if (window.kakao && window.kakao.maps) {
+        return new Promise(resolve => window.kakao.maps.load(resolve));
+      }
+
+      if (!KAKAO_MAP_APP_KEY) {
+        return Promise.reject(new Error('카카오 지도 JavaScript 키가 설정되지 않았습니다.'));
+      }
+
+      if (!kakaoMapLoader) {
+        kakaoMapLoader = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_MAP_APP_KEY)}&autoload=false`;
+          script.async = true;
+          script.onload = () => window.kakao.maps.load(resolve);
+          script.onerror = () => reject(new Error('카카오 지도를 불러오지 못했습니다.'));
+          document.head.appendChild(script);
+        });
+      }
+
+      return kakaoMapLoader;
+    }
+
     // 지도에서 선택한 거래 장소 좌표와 표시 문구를 폼에 저장합니다.
     function setSelectedLocation(lat, lng) {
       locationInput.value = '지도 선택 위치';
@@ -467,10 +492,17 @@
       locationLngInput.value = String(lng);
       locationMapText.textContent = `선택 위치: 위도 ${formatCoordinate(lat)}, 경도 ${formatCoordinate(lng)}`;
 
+      if (!locationMap || !(window.kakao && window.kakao.maps)) {
+        return;
+      }
+
+      const position = new kakao.maps.LatLng(lat, lng);
+
       if (!locationMarker) {
-        locationMarker = L.marker([lat, lng]).addTo(locationMap);
+        locationMarker = new kakao.maps.Marker({ position });
+        locationMarker.setMap(locationMap);
       } else {
-        locationMarker.setLatLng([lat, lng]);
+        locationMarker.setPosition(position);
       }
     }
 
@@ -481,25 +513,32 @@
       locationMapText.textContent = '정확한 거래 장소는 채팅으로 협의해 주세요.';
 
       if (locationMarker) {
-        locationMap.removeLayer(locationMarker);
+        locationMarker.setMap(null);
         locationMarker = null;
       }
     }
 
-    // 대구대학교 중심 지도를 띄우고 클릭한 위치를 거래 장소로 선택합니다.
-    function initializeLocationMap() {
-      locationMap = L.map('locationMap', {
-        scrollWheelZoom: false
-      }).setView(daeguUniversityCenter, 16);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20
-      }).addTo(locationMap);
-      locationMap.on('click', event => {
-        setSelectedLocation(event.latlng.lat, event.latlng.lng);
-      });
-      setTimeout(() => locationMap.invalidateSize(), 200);
+    // 대구대학교 중심의 카카오 지도를 띄우고 클릭한 위치를 거래 장소로 선택합니다.
+    async function initializeLocationMap() {
+      try {
+        await loadKakaoMapSdk();
+
+        const center = new kakao.maps.LatLng(daeguUniversityCenter[0], daeguUniversityCenter[1]);
+        locationMap = new kakao.maps.Map(document.getElementById('locationMap'), {
+          center,
+          level: 3
+        });
+
+        kakao.maps.event.addListener(locationMap, 'click', mouseEvent => {
+          const latlng = mouseEvent.latLng;
+          setSelectedLocation(latlng.getLat(), latlng.getLng());
+        });
+
+        setTimeout(() => locationMap.relayout(), 200);
+      } catch (error) {
+        console.warn('카카오 지도 초기화 실패:', error);
+        locationMapText.textContent = '카카오 지도 API 키 설정 후 지도 선택을 사용할 수 있습니다. 지금은 기타(협의)를 선택해주세요.';
+      }
     }
 
     locationFallbackButton.addEventListener('click', setFallbackLocation);
@@ -542,7 +581,10 @@
 
       if (item.location_lat && item.location_lng) {
         setSelectedLocation(Number(item.location_lat), Number(item.location_lng));
-        locationMap.setView([Number(item.location_lat), Number(item.location_lng)], 17);
+        if (locationMap && window.kakao && window.kakao.maps) {
+          locationMap.setCenter(new kakao.maps.LatLng(Number(item.location_lat), Number(item.location_lng)));
+          locationMap.setLevel(2);
+        }
       } else if (item.location === '기타 (협의)') {
         setFallbackLocation();
       } else {
