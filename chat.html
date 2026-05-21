@@ -57,6 +57,8 @@
 
 <script>
 
+  let currentType = "all";
+
 /* -------------------------
    서버에서 채팅 목록 가져오기
 ------------------------- */
@@ -88,7 +90,11 @@ function loadChatList() {
 
             <div class="flex justify-between items-center mt-1 gap-2">
               <div class="text-sm text-gray-500 truncate">
-                ${chat.last_message || "대화 없음"}
+                ${
+                  chat.last_message?.startsWith("http")
+                    ? "📷 사진"
+                    : (chat.last_message || "대화 없음")
+                }
               </div>
 
               <div class="text-xs text-gray-400 whitespace-nowrap">
@@ -115,6 +121,11 @@ function loadChatList() {
           }
         `;
 
+        if (currentType !== "all") {
+          div.style.display =
+            chat.type === currentType ? "flex" : "none";
+        }
+
         list.appendChild(div);
       });
     })
@@ -127,6 +138,8 @@ function loadChatList() {
 document.querySelectorAll(".tab").forEach(btn => {
   btn.onclick = () => {
     const type = btn.dataset.type;
+
+    currentType = type;
 
     document.querySelectorAll(".item").forEach(el => {
       if (type === "all") el.style.display = "flex";
