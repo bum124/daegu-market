@@ -828,19 +828,26 @@ if (notiToggle) {
           const token = await messaging.getToken({ vapidKey: 'BGAfaPxHzHgVtvwtLZrPX5p_g_CAXehN3q-wT0E70bv9rDynGK-v6FNkT2X7pp_J2guk1P7dkF1Z8yrnFmvyv8I' });
           
           if (token) {
-            // 현재 마이페이지에 로그인된 유저 ID 가져오기 (URL 파라미터에서 추출)
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentUserId = urlParams.get('userId');
+            // 현재 로그인된 유저 ID를 localStorage에서 확실하게 꺼내오기
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const currentUserId = storedUser.user_id || storedUser.id;
 
-            // 백엔드에 토큰 저장 요청 보내기
-            const response = await fetch('https://daegu-market-api.onrender.com/api/save-fcm-token', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                user_id: currentUserId,
+            // 혹시 로그인이 풀렸을 경우를 대비한 안전장치
+            if (!currentUserId) {
+                alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
+                 e.target.checked = false;
+                  return;
+                }
+
+              // 백엔드에 토큰 저장 요청 보내기
+              const response = await fetch('https://daegu-market-api.onrender.com/api/save-fcm-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                user_id: currentUserId,  // 이제 빈값이 아니라 진짜 내 유저 번호가 들어갑니다!
                 token: token 
-              })
-            });
+                })
+              });
 
             if (response.ok) {
               alert('✅ 알림이 켜졌습니다! 이제 채팅이 오면 바탕화면에 표시됩니다.');
