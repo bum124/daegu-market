@@ -832,6 +832,8 @@ if (notiToggle) {
             const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
             const currentUserId = storedUser.user_id || storedUser.id;
 
+            console.log("👀 백엔드로 보낼 내 유저 번호:", currentUserId);
+
             // 혹시 로그인이 풀렸을 경우를 대비한 안전장치
             if (!currentUserId) {
                 alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
