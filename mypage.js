@@ -822,7 +822,7 @@ if (notiToggle) {
       const permission = await Notification.requestPermission();
       
       if (permission === 'granted') {
-        const token = await messaging.getToken({ vapidKey: '여기에_VAPID_키_입력' }); // 🌟 VAPID 키 유지!
+        const token = await messaging.getToken({ vapidKey: '여기에_VAPIDBGAfaPxHzHgVtvwtLZrPX5p_g_CAXehN3q-wT0E70bv9rDynGK-v6FNkT2X7pp_J2guk1P7dkF1Z8yrnFmvyv8I' }); // 🌟 VAPID 키 유지!
         
         if (token) {
           // 🔎 [무적의 유저 번호 탐지기]
