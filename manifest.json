@@ -1,0 +1,9 @@
+{
+  "name": "대구마켓",
+  "short_name": "대구마켓",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "gcm_sender_id": "103953800507" 
+}

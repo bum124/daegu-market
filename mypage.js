@@ -785,3 +785,84 @@ async function toggleClubBadgeVisibility(productId, currentStatus) {
     alert('서버 통신 중 오류가 발생했습니다.');
   }
 }
+
+// ==========================================
+// 🔔 [푸시 알림] 토글 스위치 설정 로직
+// ==========================================
+
+// 1. 파이어베이스 설정 (파이어베이스 콘솔에서 복사해둔 내 config 코드로 덮어쓰세요!)
+const firebaseConfig = {
+    apiKey: "AIzaSyB5NZNgEhcq8njI2-7z4LgmyGi9RYr05xk",
+    authDomain: "daegu-market.firebaseapp.com",
+    projectId: "daegu-market",
+    storageBucket: "daegu-market.firebasestorage.app",
+    messagingSenderId: "767402252031",
+    appId: "1:767402252031:web:266d3c3760a950b7b91eca"
+  };
+
+// 파이어베이스가 여러 번 실행되는 것을 방지
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const messaging = firebase.messaging();
+
+// 2. 알림 토글 스위치 찾기
+const notiToggle = document.getElementById('notiToggle');
+
+if (notiToggle) {
+  // UX 디테일: 사용자가 이미 알림을 허용해둔 상태라면 새로고침해도 스위치를 켜진 상태로 보여줌
+  if (Notification.permission === 'granted') {
+    notiToggle.checked = true;
+  }
+
+  // 스위치를 누를 때마다 실행되는 이벤트
+  notiToggle.addEventListener('change', async (e) => {
+    // 스위치를 켰을 때 (ON)
+    if (e.target.checked) {
+      try {
+        // 브라우저 권한 묻기 팝업 띄우기
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+          // 🌟 파이어베이스 콘솔에서 발급받은 'VAPID 키'를 여기에 넣으세요!
+          const token = await messaging.getToken({ vapidKey: 'BGAfaPxHzHgVtvwtLZrPX5p_g_CAXehN3q-wT0E70bv9rDynGK-v6FNkT2X7pp_J2guk1P7dkF1Z8yrnFmvyv8I' });
+          
+          if (token) {
+            // 현재 마이페이지에 로그인된 유저 ID 가져오기 (URL 파라미터에서 추출)
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentUserId = urlParams.get('userId');
+
+            // 백엔드에 토큰 저장 요청 보내기
+            const response = await fetch('https://daegu-market-api.onrender.com/api/save-fcm-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                user_id: currentUserId,
+                token: token 
+              })
+            });
+
+            if (response.ok) {
+              alert('✅ 알림이 켜졌습니다! 이제 채팅이 오면 바탕화면에 표시됩니다.');
+            } else {
+              throw new Error('서버 저장 실패');
+            }
+          }
+        } else {
+          // 사용자가 권한을 거부한 경우
+          alert('알림 권한이 차단되었습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림을 허용해주세요.');
+          e.target.checked = false; // 스위치 다시 끄기
+        }
+      } catch (error) {
+        console.error('알림 설정 에러:', error);
+        alert('알림 설정 중 오류가 발생했습니다.');
+        e.target.checked = false; // 스위치 다시 끄기
+      }
+    } 
+    // 스위치를 껐을 때 (OFF)
+    else {
+      alert('알림이 꺼졌습니다. (기기 설정에서 토큰이 삭제됩니다.)');
+      // 백엔드에 토큰 삭제를 요청하는 로직을 나중에 추가할 수 있습니다.
+    }
+  });
+}

@@ -9,6 +9,13 @@ const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 const fs = require('fs');
 
+const admin = require('firebase-admin');
+const serviceAccount = require('./firebase-key.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
@@ -2604,6 +2611,27 @@ app.delete('/api/users/:id', (req, res) => {
             }
         );
     });
+});
+
+// 유저의 기기별 푸시 알림 토큰(FCM Token)을 DB에 저장하는 API
+app.post('/api/save-fcm-token', (req, res) => {
+  const { user_id, token } = req.body;
+
+  if (!user_id || !token) {
+    return res.status(400).json({ message: '유저 ID와 토큰이 필요합니다.' });
+  }
+
+  db.query(
+    'UPDATE Users SET fcm_token = ? WHERE user_id = ?',
+    [token, user_id],
+    (err, result) => {
+      if (err) {
+        console.error('FCM 토큰 저장 중 DB 에러:', err);
+        return res.status(500).json({ message: 'DB에 토큰을 저장하지 못했습니다.' });
+      }
+      res.json({ success: true, message: '알림 토큰이 성공적으로 저장되었습니다.' });
+    }
+  );
 });
 
 server.listen(PORT, () => {

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>마이페이지 - 대구마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json">
   <script>
     tailwind.config = {
       theme: {
@@ -40,8 +41,23 @@
             <p id="user-department" class="font-medium"></p>
             <span class="hidden h-3 w-[1px] bg-slate-300 sm:block"></span> <p id="user-email"></p>
           </div>
-          
-        </div>
+
+          <div class="mt-2 flex items-center justify-end gap-4">
+            <button class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">
+              프로필 신고하기
+            </button>
+            
+            <div class="w-px h-4 bg-slate-300"></div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700">채팅 알림</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="notiToggle" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              </label>
+            </div>
+          </div>
+          </div>
       </div>
 
       <div class="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6 text-center sm:grid-cols-5">
@@ -83,6 +99,7 @@
         표시할 항목이 없습니다.
       </div>
     </section>
+
     <div class="mt-6 grid grid-cols-2 gap-2">
       <a href="index.html" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
         메인으로
@@ -133,6 +150,9 @@
       </form>
     </div>
   </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
   <script src="./mypage.js"></script>
 </body>
