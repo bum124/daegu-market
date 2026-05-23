@@ -2891,11 +2891,46 @@ io.on('connection', (socket) => {
             'UPDATE room_users SET is_active = 1 WHERE room_id = ?',
             [data.roomId]
           );
+
+          // 🚀 [푸시 알림 발송 로직 추가] 🚀
+          // 1. 현재 채팅방에서 메시지를 보낸 '나(sender)'를 제외한 '상대방'의 fcm_token을 찾습니다.
+          const findTokenSql = `
+            SELECT u.fcm_token 
+            FROM room_users ru
+            JOIN Users u ON ru.user_id = u.user_id
+            WHERE ru.room_id = ? AND ru.user_id != ?
+          `;
+
+          db.query(findTokenSql, [data.roomId, data.sender], (tokenErr, users) => {
+            if (!tokenErr && users.length > 0) {
+              const opponentToken = users[0].fcm_token;
+
+              // 2. 상대방이 알림 토큰을 가지고 있다면 (알림을 켜둔 유저라면) 파이어베이스에 발송 명령!
+              if (opponentToken) {
+                const messagePayload = {
+                  notification: {
+                    title: '대구마켓 새 채팅 💬',
+                    body: data.text // 보낸 메시지 내용 그대로 바탕화면에 띄움
+                  },
+                  token: opponentToken
+                };
+
+                admin.messaging().send(messagePayload)
+                  .then((response) => {
+                    console.log('✅ 푸시 알림 발송 대성공:', response);
+                  })
+                  .catch((error) => {
+                    console.error('🚨 푸시 알림 발송 실패:', error);
+                  });
+              }
+            }
+          });
+          // 🚀 [푸시 알림 발송 로직 끝] 🚀
         }
       }
     );
   });
-
+       
   // 접속 중인 채팅방에서 메시지를 받았을 때 즉시 읽음 처리
   socket.on('mark_read', (data) => {
     const roomId = data.roomId;
