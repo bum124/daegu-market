@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div class="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6 text-center sm:grid-cols-4">
+      <div class="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6 text-center sm:grid-cols-5">
         <div class="rounded-2xl bg-slate-50 p-4">
           <p id="selling-count" class="text-2xl font-bold">0</p>
           <p class="mt-1 text-sm text-slate-500">판매중</p>
@@ -61,7 +61,12 @@
           <p id="recent-count" class="text-2xl font-bold">0</p>
           <p class="mt-1 text-sm text-slate-500">최근 본 상품</p>
         </div>
+        <div class="rounded-2xl bg-amber-50 p-4">
+          <p id="review-score" class="text-2xl font-bold text-amber-700">-</p>
+          <p class="mt-1 text-sm text-amber-700">거래 신뢰도</p>
+        </div>
       </div>
+      <div id="review-summary" class="mt-4 hidden rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3 text-sm text-amber-900"></div>
     </section>
 
     <section class="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">

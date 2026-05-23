@@ -27,6 +27,8 @@ const sellingCount = document.getElementById('selling-count');
 const soldCount = document.getElementById('sold-count');
 const likedCount = document.getElementById('liked-count');
 const recentCount = document.getElementById('recent-count');
+const reviewScore = document.getElementById('review-score');
+const reviewSummary = document.getElementById('review-summary');
 const itemList = document.getElementById('item-list');
 const emptyState = document.getElementById('empty-state');
 const tabTitle = document.getElementById('tab-title');
@@ -205,7 +207,8 @@ function normalizeMyPageData(data, loggedInUser) {
     selling: Array.isArray(data.selling) ? data.selling.map(normalizeProduct) : [],
     sold: Array.isArray(data.sold) ? data.sold.map(normalizeProduct) : [],
     liked: Array.isArray(data.liked) ? data.liked.map(normalizeProduct) : [],
-    recent: []
+    recent: [],
+    reviews: null
   };
 }
 
@@ -301,6 +304,16 @@ async function resolveUserId(user) {
   return matchedUser ? matchedUser.user_id : null;
 }
 
+async function loadMyReviewSummary(userId) {
+  const response = await fetch(`${API_BASE_URL}/api/users/${encodeURIComponent(userId)}/reviews`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.json();
+}
+
 // 사용자 이름, 학과, 이메일, 인증 상태와 각 탭의 개수를 상단 프로필 카드에 표시합니다.
 function renderProfile(data) {
   userName.textContent = data.user.name;
@@ -320,6 +333,17 @@ function renderProfile(data) {
   soldCount.textContent = data.stats.soldCount;
   likedCount.textContent = data.stats.likedCount;
   recentCount.textContent = (data.recent || []).length;
+
+  if (!data.reviews || !data.reviews.review_count) {
+    reviewScore.textContent = '-';
+    reviewSummary.classList.add('hidden');
+    return;
+  }
+
+  reviewScore.textContent = Number(data.reviews.average_rating || 0).toFixed(1);
+  const topTags = (data.reviews.top_tags || []).map(item => `${item.tag} ${item.count}`).join(' · ');
+  reviewSummary.textContent = `평가 ${data.reviews.review_count}개${topTags ? ` · 많이 받은 평가: ${topTags}` : ''}`;
+  reviewSummary.classList.remove('hidden');
 }
 
 // 현재 선택된 탭에 맞춰 판매중/판매완료/관심/최근 본 상품 목록을 그립니다.
@@ -464,6 +488,13 @@ async function loadMyPage() {
   } catch (error) {
     console.warn('최근 본 상품을 불러오지 못했습니다.', error);
     state.data.recent = [];
+  }
+
+  try {
+    state.data.reviews = await loadMyReviewSummary(userId);
+  } catch (error) {
+    console.warn('거래 신뢰도를 불러오지 못했습니다.', error);
+    state.data.reviews = null;
   }
 
   renderProfile(state.data);

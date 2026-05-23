@@ -1587,12 +1587,6 @@ app.put('/api/admin/reports/:id', (req, res) => {
 
       if (admin_action === 'hide_product' || admin_action === 'show_product') {
         const productStatus = admin_action === 'hide_product' ? 'hidden' : 'visible';
-        const productId = report.target_type === 'product' ? report.target_id : null;
-
-        if (!productId) {
-          finish();
-          return;
-        }
 
         ensureProductModerationColumn((columnErr) => {
           if (columnErr) {
@@ -1600,18 +1594,39 @@ app.put('/api/admin/reports/:id', (req, res) => {
             return res.status(500).json({ message: '상품 제재 컬럼 준비에 실패했습니다.' });
           }
 
-          db.query(
-            'UPDATE products SET moderation_status = ? WHERE id = ?',
-            [productStatus, productId],
-            (productErr) => {
+          const updateProductModeration = (sql, values) => {
+            db.query(sql, values, (productErr, result) => {
               if (productErr) {
                 console.error(productErr);
                 return res.status(500).json({ message: '상품 제재 처리에 실패했습니다.' });
               }
 
+              if (result.affectedRows === 0) {
+                return res.status(404).json({ message: '숨김 처리할 상품을 찾지 못했습니다.' });
+              }
+
               finish();
-            }
-          );
+            });
+          };
+
+          // 상품 신고는 해당 상품만, 사용자 신고는 해당 사용자의 상품 전체를 숨김/공개 처리합니다.
+          if (report.target_type === 'product') {
+            updateProductModeration(
+              'UPDATE products SET moderation_status = ? WHERE id = ?',
+              [productStatus, report.target_id]
+            );
+            return;
+          }
+
+          if (report.target_type === 'user') {
+            updateProductModeration(
+              'UPDATE products SET moderation_status = ? WHERE seller_id = ?',
+              [productStatus, report.target_id]
+            );
+            return;
+          }
+
+          finish();
         });
         return;
       }

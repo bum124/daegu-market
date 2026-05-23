@@ -326,20 +326,6 @@
     let locationMap;
     let locationMarker;
     let kakaoMapLoader;
-    const CAMPUS_PLACE_RADIUS_METERS = 100;
-    const campusPlaces = [
-      '창파도서관',
-      '학생회관',
-      '성산홀',
-      '본관',
-      '정보통신원',
-      '공과대학',
-      '사범대학',
-      '재활과학대학',
-      '인문대학',
-      '체육관',
-      '대구대학교 정문'
-    ];
     const departmentData = {
       '공공인재대학': [
         '공공안전학부 소방·행정학전공',
@@ -471,19 +457,6 @@
       populateTargetDepartmentOptions(targetCollegeSelect.value);
     });
 
-    function getDistanceMeters(pointA, pointB) {
-      const earthRadius = 6371000;
-      const toRadian = degree => degree * Math.PI / 180;
-      const lat1 = toRadian(pointA.lat);
-      const lat2 = toRadian(pointB.lat);
-      const deltaLat = toRadian(pointB.lat - pointA.lat);
-      const deltaLng = toRadian(pointB.lng - pointA.lng);
-      const haversine = Math.sin(deltaLat / 2) ** 2
-        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
-
-      return earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-    }
-
     // 카카오 지도 SDK를 필요한 순간에 불러옵니다. 실제 운영 전 JavaScript 키를 넣어야 합니다.
     function loadKakaoMapSdk() {
       if (window.kakao && window.kakao.maps) {
@@ -529,55 +502,8 @@
       });
     }
 
-    function searchCampusPlace(keyword, center) {
-      return new Promise(resolve => {
-        if (!(window.kakao && window.kakao.maps && window.kakao.maps.services)) {
-          resolve(null);
-          return;
-        }
-
-        const places = new kakao.maps.services.Places();
-
-        places.keywordSearch(`대구대학교 ${keyword}`, (results, status) => {
-          if (status !== kakao.maps.services.Status.OK || !results.length) {
-            resolve(null);
-            return;
-          }
-
-          const nearest = results
-            .map(place => ({
-              name: place.place_name.replace(/^대구대학교\s*/, ''),
-              lat: Number(place.y),
-              lng: Number(place.x),
-              distance: getDistanceMeters(center, { lat: Number(place.y), lng: Number(place.x) })
-            }))
-            .sort((a, b) => a.distance - b.distance)[0];
-
-          resolve(nearest && nearest.distance <= CAMPUS_PLACE_RADIUS_METERS ? nearest : null);
-        }, {
-          location: new kakao.maps.LatLng(center.lat, center.lng),
-          radius: CAMPUS_PLACE_RADIUS_METERS,
-          sort: kakao.maps.services.SortBy.DISTANCE
-        });
-      });
-    }
-
-    async function findNearestCampusPlace(lat, lng) {
-      const selectedPoint = { lat: Number(lat), lng: Number(lng) };
-      const results = await Promise.all(campusPlaces.map(place => searchCampusPlace(place, selectedPoint)));
-
-      return results
-        .filter(Boolean)
-        .sort((a, b) => a.distance - b.distance)[0] || null;
-    }
-
     async function resolveLocationLabel(lat, lng) {
-      const nearestPlace = await findNearestCampusPlace(lat, lng);
-
-      if (nearestPlace) {
-        return `${nearestPlace.name} 근처`;
-      }
-
+      // 카카오 장소 검색은 캠퍼스 건물을 엉뚱하게 매칭할 수 있어, 지금은 주소 변환 결과를 우선 사용합니다.
       return getAddressFromCoordinate(lat, lng);
     }
 
