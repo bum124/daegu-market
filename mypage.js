@@ -817,61 +817,69 @@ if (notiToggle) {
 
   // 스위치를 누를 때마다 실행되는 이벤트
   notiToggle.addEventListener('change', async (e) => {
-    // 스위치를 켰을 때 (ON)
-    if (e.target.checked) {
-      try {
-        // 브라우저 권한 묻기 팝업 띄우기
-        const permission = await Notification.requestPermission();
+  if (e.target.checked) {
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        const token = await messaging.getToken({ vapidKey: '여기에_VBGAfaPxHzHgVtvwtLZrPX5p_g_CAXehN3q-wT0E70bv9rDynGK-v6FNkT2X7pp_J2guk1P7dkF1Z8yrnFmvyv8IAPID_키_입력' }); // 🌟 VAPID 키 유지!
         
-        if (permission === 'granted') {
-          // 🌟 파이어베이스 콘솔에서 발급받은 'VAPID 키'를 여기에 넣으세요!
-          const token = await messaging.getToken({ vapidKey: 'BGAfaPxHzHgVtvwtLZrPX5p_g_CAXehN3q-wT0E70bv9rDynGK-v6FNkT2X7pp_J2guk1P7dkF1Z8yrnFmvyv8I' });
-          
-          if (token) {
-            // 현재 로그인된 유저 ID를 localStorage에서 확실하게 꺼내오기
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const currentUserId = storedUser.user_id || storedUser.id;
+        if (token) {
+          // 🔎 [무적의 유저 번호 탐지기]
+          let currentUserId = null;
 
-            console.log("👀 백엔드로 보낼 내 유저 번호:", currentUserId);
+          // 1순위: 주소창 확인 (예: ?userId=3)
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.has('userId')) currentUserId = urlParams.get('userId');
 
-            // 혹시 로그인이 풀렸을 경우를 대비한 안전장치
-            if (!currentUserId) {
-                alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
-                 e.target.checked = false;
-                  return;
-                }
+          // 2순위: 로컬 스토리지 단독 키 확인
+          if (!currentUserId) currentUserId = localStorage.getItem('userId') || localStorage.getItem('user_id');
 
-              // 백엔드에 토큰 저장 요청 보내기
-              const response = await fetch('https://daegu-market-api.onrender.com/api/save-fcm-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                user_id: currentUserId,  // 이제 빈값이 아니라 진짜 내 유저 번호가 들어갑니다!
-                token: token 
-                })
-              });
-
-            if (response.ok) {
-              alert('✅ 알림이 켜졌습니다! 이제 채팅이 오면 바탕화면에 표시됩니다.');
-            } else {
-              throw new Error('서버 저장 실패');
-            }
+          // 3순위: 로컬 스토리지 묶음 객체(user) 확인
+          if (!currentUserId) {
+            try {
+              const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+              currentUserId = storedUser.user_id || storedUser.id;
+            } catch (err) {}
           }
-        } else {
-          // 사용자가 권한을 거부한 경우
-          alert('알림 권한이 차단되었습니다. 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 알림을 허용해주세요.');
-          e.target.checked = false; // 스위치 다시 끄기
+
+          // 👀 콘솔창에서 최종 결과 확인!
+          console.log("👀 샅샅이 뒤져서 찾아낸 유저 번호:", currentUserId);
+          console.log("🔑 발급된 토큰:", token);
+
+          // 다 뒤졌는데도 없으면 멈춤! (에러 방지)
+          if (!currentUserId) {
+            alert('로그인 정보를 찾을 수 없습니다. 다시 로그인해주세요!');
+            e.target.checked = false;
+            return; 
+          }
+
+          // 🚀 드디어 백엔드로 완벽한 데이터 상자 보내기
+          const response = await fetch('https://daegu-market-api.onrender.com/api/save-fcm-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              user_id: currentUserId, // 이제 빈값이 절대 아님!
+              token: token 
+            })
+          });
+
+          if (response.ok) {
+            alert('✅ 알림이 켜졌습니다! 이제 채팅이 오면 바탕화면에 표시됩니다.');
+          } else {
+            throw new Error('서버 저장 실패');
+          }
         }
-      } catch (error) {
-        console.error('알림 설정 에러:', error);
-        alert('알림 설정 중 오류가 발생했습니다.');
-        e.target.checked = false; // 스위치 다시 끄기
+      } else {
+        alert('알림 권한이 차단되었습니다.');
+        e.target.checked = false;
       }
-    } 
-    // 스위치를 껐을 때 (OFF)
-    else {
-      alert('알림이 꺼졌습니다. (기기 설정에서 토큰이 삭제됩니다.)');
-      // 백엔드에 토큰 삭제를 요청하는 로직을 나중에 추가할 수 있습니다.
+    } catch (error) {
+      console.error('알림 설정 에러:', error);
+      alert('알림 설정 중 오류가 발생했습니다.');
+      e.target.checked = false;
     }
-  });
-}
+  } else {
+    alert('알림이 꺼졌습니다.');
+  }
+});
