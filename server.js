@@ -2629,20 +2629,19 @@ app.post('/api/save-fcm-token', (req, res) => {
   const { user_id, token } = req.body;
 
   if (!user_id || !token) {
-    return res.status(400).json({ message: '유저 ID와 토큰이 필요합니다.' });
+    return res.status(400).json({ message: '데이터가 부족합니다.' });
   }
 
-  db.query(
-    'UPDATE Users SET fcm_token = ? WHERE user_id = ?',
-    [token, user_id],
-    (err, result) => {
-      if (err) {
-        console.error('FCM 토큰 저장 중 DB 에러:', err);
-        return res.status(500).json({ message: 'DB에 토큰을 저장하지 못했습니다.' });
-      }
-      res.json({ success: true, message: '알림 토큰이 성공적으로 저장되었습니다.' });
+  // INSERT IGNORE를 쓰면 이미 등록된 토큰일 경우 중복 저장하지 않고 조용히 넘어갑니다.
+  const sql = 'INSERT IGNORE INTO User_Tokens (user_id, fcm_token) VALUES (?, ?)';
+  
+  db.query(sql, [user_id, token], (err, result) => {
+    if (err) {
+      console.error('토큰 저장 실패:', err);
+      return res.status(500).json({ message: '서버 오류' });
     }
-  );
+    res.json({ message: '✅ 기기 등록 및 알림 설정 완료!' });
+  });
 });
 
 server.listen(PORT, () => {
@@ -2903,37 +2902,49 @@ io.on('connection', (socket) => {
             [data.roomId]
           );
 
-          // 🚀 [푸시 알림 발송 로직 추가] 🚀
-          // 1. 현재 채팅방에서 메시지를 보낸 '나(sender)'를 제외한 '상대방'의 fcm_token을 찾습니다.
-          const findTokenSql = `
-            SELECT u.fcm_token 
+          // 🚀 [푸시 알림 발송 로직 - 1:N 멀티 디바이스 버전] 🚀
+          // 현재 채팅방에서 나(sender)를 제외한 상대방의 모든 FCM 토큰 리스트를 가져옵니다.
+          const findTokensSql = `
+            SELECT ut.fcm_token 
             FROM room_users ru
-            JOIN Users u ON ru.user_id = u.user_id
+            JOIN User_Tokens ut ON ru.user_id = ut.user_id
             WHERE ru.room_id = ? AND ru.user_id != ?
           `;
 
-          db.query(findTokenSql, [data.roomId, data.sender], (tokenErr, users) => {
-            if (!tokenErr && users.length > 0) {
-              const opponentToken = users[0].fcm_token;
+          db.query(findTokensSql, [data.roomId, data.sender], (tokenErr, tokenRows) => {
+            if (!tokenErr && tokenRows.length > 0) {
+              
+              // 상대방이 등록한 모든 기기 토큰을 배열로 추출
+              // 예: ['pc_token_1111', 'mobile_token_2222']
+              const tokens = tokenRows.map(row => row.fcm_token);
 
-              // 2. 상대방이 알림 토큰을 가지고 있다면 (알림을 켜둔 유저라면) 파이어베이스에 발송 명령!
-              if (opponentToken) {
-                const messagePayload = {
-                  notification: {
-                    title: '대구마켓 새 채팅 💬',
-                    body: data.text // 보낸 메시지 내용 그대로 바탕화면에 띄움
-                  },
-                  token: opponentToken
-                };
+              // 파이어베이스 Admin SDK의 sendEachForMulticast를 사용하면 
+              // 여러 기기에 동시에 알림을 보낼 수 있습니다!
+              const multicastMessage = {
+                notification: {
+                  title: '대구마켓 새 채팅 💬',
+                  body: data.text
+                },
+                tokens: tokens // 토큰 배열을 그대로 넣어줍니다.
+              };
 
-                admin.messaging().send(messagePayload)
-                  .then((response) => {
-                    console.log('✅ 푸시 알림 발송 대성공:', response);
-                  })
-                  .catch((error) => {
-                    console.error('🚨 푸시 알림 발송 실패:', error);
-                  });
-              }
+              admin.messaging().sendEachForMulticast(multicastMessage)
+                .then((response) => {
+                  console.log(`✅ 총 ${response.successCount}개의 기기에 알림 전송 성공!`);
+                  
+                  // 만약 수명이 다한 만료된 토큰(예: 앱 삭제 등)이 있다면 DB에서 청소해주는 것이 좋습니다 (선택)
+                  if (response.failureCount > 0) {
+                    response.responses.forEach((resp, idx) => {
+                      if (!resp.success) {
+                        // 만료된 토큰은 DB에서 지워주는 로직을 여기에 추가할 수 있음
+                        console.log(`❌ 만료된 토큰 무시: ${tokens[idx]}`);
+                      }
+                    });
+                  }
+                })
+                .catch((error) => {
+                  console.error('🚨 멀티캐스트 알림 발송 중 완전 실패:', error);
+                });
             }
           });
           // 🚀 [푸시 알림 발송 로직 끝] 🚀
