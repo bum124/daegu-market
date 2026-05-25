@@ -8,6 +8,7 @@ const path = require('path');
 const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 
 const admin = require('firebase-admin');
 const serviceAccount = require('./firebase-key.json');
@@ -23,6 +24,12 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
 
 const app = express();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
@@ -69,7 +76,7 @@ app.get('/upload/test', (req, res) => {
   res.json({ ok: true, message: 'upload route connected' });
 });
 
-app.post('/upload/chat-image', upload.single('image'), (req, res) => {
+app.post('/upload/chat-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -77,11 +84,15 @@ app.post('/upload/chat-image', upload.single('image'), (req, res) => {
       });
     }
 
-    const imageUrl =
-      `https://daegu-market-api.onrender.com/uploads/${req.file.filename}`;
+    const result = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        folder: "chat-images"
+      }
+    );
 
     res.json({
-      imageUrl
+      imageUrl: result.secure_url
     });
 
   } catch (err) {
