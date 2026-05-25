@@ -2629,18 +2629,18 @@ app.post('/api/save-fcm-token', (req, res) => {
   const { user_id, token } = req.body;
 
   if (!user_id || !token) {
-    return res.status(400).json({ message: '데이터가 부족합니다.' });
+    return res.status(400).json({ message: 'user_id와 token이 필요합니다.' });
   }
 
-  // INSERT IGNORE를 쓰면 이미 등록된 토큰일 경우 중복 저장하지 않고 조용히 넘어갑니다.
+  // 💡 1:N 관계 적재를 위해 User_Tokens 테이블에 INSERT IGNORE 사용
   const sql = 'INSERT IGNORE INTO User_Tokens (user_id, fcm_token) VALUES (?, ?)';
   
   db.query(sql, [user_id, token], (err, result) => {
     if (err) {
-      console.error('토큰 저장 실패:', err);
-      return res.status(500).json({ message: '서버 오류' });
+      console.error('FCM 토큰 저장 중 DB 에러:', err);
+      return res.status(500).json({ message: '토큰 저장 실패', error: err });
     }
-    res.json({ message: '✅ 기기 등록 및 알림 설정 완료!' });
+    res.json({ message: 'FCM 토큰이 성공적으로 저장되었습니다.' });
   });
 });
 

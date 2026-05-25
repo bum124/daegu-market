@@ -838,9 +838,15 @@ if (notiToggle) {
           // 3순위: 로컬 스토리지 묶음 객체(user) 확인
           if (!currentUserId) {
             try {
-              const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+              // 💡 'user'가 없으면 'loggedInUser'를 가져오고, 그것도 없으면 '{}'를 파싱합니다.
+              const rawData = localStorage.getItem('user') || localStorage.getItem('loggedInUser') || '{}';
+              const storedUser = JSON.parse(rawData);
+              
+              // 유저 ID 추출 (user_id나 id 둘 중 존재하는 것으로 매핑)
               currentUserId = storedUser.user_id || storedUser.id;
-            } catch (err) {}
+            } catch (err) {
+              console.error("로컬스토리지 파싱 에러:", err);
+            }
           }
 
           // 👀 콘솔창에서 최종 결과 확인!
