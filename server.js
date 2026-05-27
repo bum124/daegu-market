@@ -22,6 +22,9 @@ dns.setDefaultResultOrder('ipv4first');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears0144@daegu.ac.kr'];
+const AUTO_HIDE_PRODUCT_REPORT_COUNT = 3;
+const AUTO_HIDE_PRODUCT_SERIOUS_COUNT = 2;
+const SERIOUS_REPORT_REASONS = ['scam', 'prohibited'];
 
 const app = express();
 
@@ -689,6 +692,74 @@ function ensureModerationSchema(callback) {
       ensureProductModerationColumn(callback);
     });
   });
+}
+
+function applyAutomaticReportModeration(report, callback) {
+  if (report.target_type !== 'product') {
+    callback(null, { autoHidden: false });
+    return;
+  }
+
+  // Product reports are semi-automatic: enough repeated reports hide the item first,
+  // then admins can review and restore/reject it later from the admin page.
+  db.query(
+    `SELECT
+       COUNT(*) AS active_report_count,
+       SUM(CASE WHEN reason IN (?, ?) THEN 1 ELSE 0 END) AS serious_report_count
+     FROM reports
+     WHERE target_type = 'product'
+       AND target_id = ?
+       AND status <> 'rejected'`,
+    [SERIOUS_REPORT_REASONS[0], SERIOUS_REPORT_REASONS[1], report.target_id],
+    (countErr, rows) => {
+      if (countErr) {
+        callback(countErr);
+        return;
+      }
+
+      const counts = rows[0] || {};
+      const activeReportCount = Number(counts.active_report_count || 0);
+      const seriousReportCount = Number(counts.serious_report_count || 0);
+      const shouldHide =
+        activeReportCount >= AUTO_HIDE_PRODUCT_REPORT_COUNT ||
+        seriousReportCount >= AUTO_HIDE_PRODUCT_SERIOUS_COUNT;
+
+      if (!shouldHide) {
+        callback(null, { autoHidden: false, activeReportCount, seriousReportCount });
+        return;
+      }
+
+      ensureProductModerationColumn((columnErr) => {
+        if (columnErr) {
+          callback(columnErr);
+          return;
+        }
+
+        db.query(
+          "UPDATE products SET moderation_status = 'hidden' WHERE id = ?",
+          [report.target_id],
+          (hideErr) => {
+            if (hideErr) {
+              callback(hideErr);
+              return;
+            }
+
+            db.query(
+              `UPDATE reports
+               SET status = 'reviewed', admin_action = 'auto_hide_product'
+               WHERE target_type = 'product'
+                 AND target_id = ?
+                 AND status = 'pending'`,
+              [report.target_id],
+              (reportErr) => {
+                callback(reportErr, { autoHidden: true, activeReportCount, seriousReportCount });
+              }
+            );
+          }
+        );
+      });
+    }
+  );
 }
 
 function ensureProductStatusColumn(callback) {
@@ -1462,7 +1533,20 @@ app.post('/api/reports', (req, res) => {
             return res.status(500).json({ message: '신고 접수 중 DB 오류가 발생했습니다.' });
           }
 
-          res.json({ message: '신고가 접수되었습니다.', report_id: result.insertId });
+          applyAutomaticReportModeration({ target_type, target_id, reason }, (autoErr, moderation) => {
+            if (autoErr) {
+              console.error(autoErr);
+              return res.status(500).json({ message: '신고 자동 처리 중 오류가 발생했습니다.' });
+            }
+
+            res.json({
+              message: moderation && moderation.autoHidden
+                ? '신고가 접수되었고 누적 신고 기준에 따라 상품이 임시 숨김 처리되었습니다.'
+                : '신고가 접수되었습니다.',
+              report_id: result.insertId,
+              auto_hidden: Boolean(moderation && moderation.autoHidden)
+            });
+          });
         }
       );
     });
@@ -1820,7 +1904,7 @@ app.put('/api/admin/reports/:id', (req, res) => {
   const adminEmail = getRequestAdminEmail(req);
   const { status, admin_action } = req.body || {};
   const allowedStatuses = ['pending', 'reviewed', 'resolved', 'rejected'];
-  const allowedActions = ['', 'none', 'hide_product', 'show_product', 'warn_user', 'restrict_user'];
+  const allowedActions = ['', 'none', 'hide_product', 'show_product', 'auto_hide_product', 'warn_user', 'restrict_user'];
 
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
@@ -1862,8 +1946,8 @@ app.put('/api/admin/reports/:id', (req, res) => {
         );
       };
 
-      if (admin_action === 'hide_product' || admin_action === 'show_product') {
-        const productStatus = admin_action === 'hide_product' ? 'hidden' : 'visible';
+      if (admin_action === 'hide_product' || admin_action === 'show_product' || admin_action === 'auto_hide_product') {
+        const productStatus = admin_action === 'show_product' ? 'visible' : 'hidden';
 
         ensureProductModerationColumn((columnErr) => {
           if (columnErr) {
