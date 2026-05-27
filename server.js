@@ -239,6 +239,128 @@ app.get('/chat/rooms/:roomId/product', (req, res) => {
   });
 });
 
+app.get('/chat/rooms/:roomId/deal', (req, res) => {
+  const roomId = req.params.roomId;
+  const userId = Number(req.query.user_id);
+
+  if (!userId) {
+    return res.status(400).json({ message: 'user_id가 필요합니다.' });
+  }
+
+  ensureDealConfirmationsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '거래완료 확인 테이블 준비에 실패했습니다.' });
+    }
+
+    getRoomDealContext(roomId, (contextErr, context) => {
+      if (contextErr) return res.status(500).json({ message: '채팅방 정보를 불러오지 못했습니다.' });
+      if (!context || !context.productId) return res.status(404).json({ message: '상품 거래 채팅방을 찾지 못했습니다.' });
+      if (!ensureRoomParticipant(context, userId)) return res.status(403).json({ message: '채팅방 참여자만 확인할 수 있습니다.' });
+
+      db.query(
+        'SELECT user_id FROM deal_confirmations WHERE room_id = ?',
+        [roomId],
+        (confirmErr, confirmations) => {
+          if (confirmErr) return res.status(500).json({ message: '거래완료 상태를 불러오지 못했습니다.' });
+
+          const confirmedUserIds = confirmations.map(item => Number(item.user_id));
+          const completed = context.participants.length >= 2
+            && context.participants.every(participantId => confirmedUserIds.includes(Number(participantId)));
+          const otherUserId = context.participants.find(participantId => String(participantId) !== String(userId)) || null;
+
+          db.query(
+            'SELECT id FROM trade_reviews WHERE room_id = ? AND reviewer_id = ?',
+            [roomId, userId],
+            (reviewErr, reviews) => {
+              if (reviewErr) return res.status(500).json({ message: '후기 상태를 불러오지 못했습니다.' });
+
+              res.json({
+                room_id: context.roomId,
+                product_id: context.productId,
+                seller_id: context.sellerId,
+                participants: context.participants,
+                confirmed_user_ids: confirmedUserIds,
+                is_confirmed_by_me: confirmedUserIds.includes(Number(userId)),
+                is_completed: completed,
+                other_user_id: otherUserId,
+                has_reviewed: reviews.length > 0
+              });
+            }
+          );
+        }
+      );
+    });
+  });
+});
+
+// 채팅방 거래완료 확인: 양쪽 참여자가 모두 누르면 상품을 판매완료로 변경합니다.
+app.post('/chat/rooms/:roomId/deal/confirm', (req, res) => {
+  const roomId = req.params.roomId;
+  const { user_id } = req.body || {};
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'user_id가 필요합니다.' });
+  }
+
+  ensureDealConfirmationsTable((tableErr) => {
+    if (tableErr) {
+      console.error(tableErr);
+      return res.status(500).json({ message: '거래완료 확인 테이블 준비에 실패했습니다.' });
+    }
+
+    getRoomDealContext(roomId, (contextErr, context) => {
+      if (contextErr) return res.status(500).json({ message: '채팅방 정보를 불러오지 못했습니다.' });
+      if (!context || !context.productId) return res.status(404).json({ message: '상품 거래 채팅방을 찾지 못했습니다.' });
+      if (!ensureRoomParticipant(context, user_id)) return res.status(403).json({ message: '채팅방 참여자만 거래완료를 확인할 수 있습니다.' });
+
+      db.query(
+        'INSERT IGNORE INTO deal_confirmations (room_id, user_id) VALUES (?, ?)',
+        [roomId, user_id],
+        (insertErr) => {
+          if (insertErr) return res.status(500).json({ message: '거래완료 확인 저장에 실패했습니다.' });
+
+          db.query(
+            'SELECT user_id FROM deal_confirmations WHERE room_id = ?',
+            [roomId],
+            (confirmErr, confirmations) => {
+              if (confirmErr) return res.status(500).json({ message: '거래완료 상태 확인에 실패했습니다.' });
+
+              const confirmedUserIds = confirmations.map(item => Number(item.user_id));
+              const completed = context.participants.length >= 2
+                && context.participants.every(participantId => confirmedUserIds.includes(Number(participantId)));
+
+              const finish = () => res.json({
+                message: completed ? '거래가 완료되었습니다. 후기를 작성할 수 있습니다.' : '거래완료 확인이 저장되었습니다. 상대방 확인을 기다려주세요.',
+                is_completed: completed,
+                confirmed_user_ids: confirmedUserIds
+              });
+
+              if (!completed) {
+                finish();
+                return;
+              }
+
+              ensureProductLifecycleColumns((lifecycleErr) => {
+                if (lifecycleErr) return res.status(500).json({ message: '상품 상태 컬럼 준비에 실패했습니다.' });
+
+                db.query(
+                  "UPDATE products SET status = '판매완료', sold_at = COALESCE(sold_at, NOW()) WHERE id = ?",
+                  [context.productId],
+                  (productErr) => {
+                    if (productErr) return res.status(500).json({ message: '상품 판매완료 처리에 실패했습니다.' });
+                    finish();
+                  }
+                );
+              });
+            }
+          );
+        }
+      );
+    });
+  });
+});
+
 function resolveUserId(payload, callback) {
   const { user_id, id, seller_id, email, user_email, seller_email } = payload || {};
   const directUserId = user_id || id || seller_id;
@@ -282,6 +404,8 @@ function ensureTradeReviewsTable(callback) {
   db.query(
     `CREATE TABLE IF NOT EXISTS trade_reviews (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      room_id INT NULL,
+      product_id INT NULL,
       reviewer_id INT NOT NULL,
       target_user_id INT NOT NULL,
       rating TINYINT NOT NULL,
@@ -289,6 +413,71 @@ function ensureTradeReviewsTable(callback) {
       comment VARCHAR(300) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_reviewer_target (reviewer_id, target_user_id)
+    )`,
+    (createErr) => {
+      if (createErr) {
+        callback(createErr);
+        return;
+      }
+
+      const addColumns = [
+        { name: 'room_id', sql: 'ALTER TABLE trade_reviews ADD COLUMN room_id INT NULL AFTER id' },
+        { name: 'product_id', sql: 'ALTER TABLE trade_reviews ADD COLUMN product_id INT NULL AFTER room_id' }
+      ];
+
+      let index = 0;
+      const runNext = () => {
+        if (index >= addColumns.length) {
+          callback(null);
+          return;
+        }
+
+        const column = addColumns[index];
+        db.query(
+          `SELECT COLUMN_NAME
+           FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE()
+             AND TABLE_NAME = 'trade_reviews'
+             AND COLUMN_NAME = ?`,
+          [column.name],
+          (selectErr, rows) => {
+            if (selectErr) {
+              callback(selectErr);
+              return;
+            }
+
+            if (rows.length > 0) {
+              index += 1;
+              runNext();
+              return;
+            }
+
+            db.query(column.sql, (alterErr) => {
+              if (alterErr) {
+                callback(alterErr);
+                return;
+              }
+
+              index += 1;
+              runNext();
+            });
+          }
+        );
+      };
+
+      runNext();
+    }
+  );
+}
+
+function ensureDealConfirmationsTable(callback) {
+  db.query(
+    `CREATE TABLE IF NOT EXISTS deal_confirmations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      room_id INT NOT NULL,
+      user_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_room_user_confirmation (room_id, user_id)
     )`,
     callback
   );
@@ -308,6 +497,45 @@ function ensureInquiriesTable(callback) {
     )`,
     callback
   );
+}
+
+function getRoomDealContext(roomId, callback) {
+  const sql = `
+    SELECT
+      r.id AS room_id,
+      r.product_id,
+      p.seller_id,
+      p.status AS product_status,
+      ru.user_id
+    FROM rooms r
+    LEFT JOIN products p ON p.id = r.product_id
+    JOIN room_users ru ON ru.room_id = r.id
+    WHERE r.id = ?
+  `;
+
+  db.query(sql, [roomId], (err, rows) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    if (!rows.length) {
+      callback(null, null);
+      return;
+    }
+
+    callback(null, {
+      roomId: Number(rows[0].room_id),
+      productId: rows[0].product_id,
+      sellerId: rows[0].seller_id,
+      productStatus: rows[0].product_status,
+      participants: rows.map(row => Number(row.user_id)).filter(Boolean)
+    });
+  });
+}
+
+function ensureRoomParticipant(context, userId) {
+  return context && context.participants.some(participantId => String(participantId) === String(userId));
 }
 
 function refreshProductLikeCount(productId, callback) {
@@ -1348,13 +1576,13 @@ app.get('/api/users/:id/reviews', (req, res) => {
   });
 });
 
-// 거래 신뢰도 평가: 하트 점수, 선택 태그, 짧은 평가를 사용자 프로필에 저장합니다.
+// 거래 신뢰도 평가: 거래완료된 채팅방 참여자끼리만 후기를 저장할 수 있습니다.
 app.post('/api/reviews', (req, res) => {
-  const { reviewer_id, reviewer_email, target_user_id, rating, tags, comment } = req.body || {};
+  const { room_id, product_id, reviewer_id, reviewer_email, target_user_id, rating, tags, comment } = req.body || {};
   const numericRating = Number(rating);
 
-  if (!target_user_id || !numericRating || numericRating < 1 || numericRating > 5) {
-    return res.status(400).json({ message: '평가 대상과 점수를 확인해주세요.' });
+  if (!room_id || !target_user_id || !numericRating || numericRating < 1 || numericRating > 5) {
+    return res.status(400).json({ message: '거래 채팅방, 평가 대상, 점수를 확인해주세요.' });
   }
 
   ensureTradeReviewsTable((tableErr) => {
@@ -1377,23 +1605,54 @@ app.post('/api/reviews', (req, res) => {
         return res.status(400).json({ message: '본인에게는 평가를 남길 수 없습니다.' });
       }
 
-      const safeTags = Array.isArray(tags) ? tags.slice(0, 5) : [];
-      const safeComment = String(comment || '').trim().slice(0, 300) || null;
+      ensureDealConfirmationsTable((confirmTableErr) => {
+        if (confirmTableErr) {
+          console.error(confirmTableErr);
+          return res.status(500).json({ message: '거래완료 확인 테이블 준비에 실패했습니다.' });
+        }
 
-      db.query(
-        `INSERT INTO trade_reviews (reviewer_id, target_user_id, rating, tags, comment)
-         VALUES (?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE rating = VALUES(rating), tags = VALUES(tags), comment = VALUES(comment), created_at = CURRENT_TIMESTAMP`,
-        [reviewerId, target_user_id, numericRating, JSON.stringify(safeTags), safeComment],
-        (err) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ message: '거래 신뢰도 저장 중 오류가 발생했습니다.' });
+        getRoomDealContext(room_id, (contextErr, context) => {
+          if (contextErr) return res.status(500).json({ message: '채팅방 정보를 불러오지 못했습니다.' });
+          if (!context || !context.productId) return res.status(404).json({ message: '상품 거래 채팅방을 찾지 못했습니다.' });
+          if (!ensureRoomParticipant(context, reviewerId) || !ensureRoomParticipant(context, target_user_id)) {
+            return res.status(403).json({ message: '해당 채팅방 참여자끼리만 평가할 수 있습니다.' });
           }
 
-          res.json({ message: '거래 신뢰도 평가가 저장되었습니다.' });
-        }
-      );
+          db.query(
+            'SELECT user_id FROM deal_confirmations WHERE room_id = ?',
+            [room_id],
+            (confirmErr, confirmations) => {
+              if (confirmErr) return res.status(500).json({ message: '거래완료 상태 확인에 실패했습니다.' });
+
+              const confirmedUserIds = confirmations.map(item => Number(item.user_id));
+              const completed = context.participants.length >= 2
+                && context.participants.every(participantId => confirmedUserIds.includes(Number(participantId)));
+
+              if (!completed) {
+                return res.status(403).json({ message: '거래완료가 확정된 채팅방에서만 후기를 남길 수 있습니다.' });
+              }
+
+              const safeTags = Array.isArray(tags) ? tags.slice(0, 5) : [];
+              const safeComment = String(comment || '').trim().slice(0, 300) || null;
+
+              db.query(
+                `INSERT INTO trade_reviews (room_id, product_id, reviewer_id, target_user_id, rating, tags, comment)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE room_id = VALUES(room_id), product_id = VALUES(product_id), rating = VALUES(rating), tags = VALUES(tags), comment = VALUES(comment), created_at = CURRENT_TIMESTAMP`,
+                [room_id, product_id || context.productId, reviewerId, target_user_id, numericRating, JSON.stringify(safeTags), safeComment],
+                (err) => {
+                  if (err) {
+                    console.error(err);
+                    return res.status(500).json({ message: '거래 신뢰도 저장 중 오류가 발생했습니다.' });
+                  }
+
+                  res.json({ message: '거래 신뢰도 평가가 저장되었습니다.' });
+                }
+              );
+            }
+          );
+        });
+      });
     });
   });
 });
@@ -2453,6 +2712,11 @@ db.getConnection((err, connection) => {
         ensureTradeReviewsTable((tableErr) => {
           if (tableErr) {
             console.log('trade_reviews 테이블 준비 실패:', tableErr);
+          }
+        });
+        ensureDealConfirmationsTable((tableErr) => {
+          if (tableErr) {
+            console.log('deal_confirmations 테이블 준비 실패:', tableErr);
           }
         });
         ensureInquiriesTable((tableErr) => {

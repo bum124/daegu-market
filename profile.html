@@ -70,7 +70,7 @@
                 <button id="profileReportButton" onclick="reportProfile()" class="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
                   신고하기
                 </button>
-                <button id="profileReviewButton" onclick="openReviewModal()" class="inline-flex items-center justify-center rounded-lg border border-amber-200 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50">
+                <button id="profileReviewButton" onclick="openReviewModal()" class="hidden inline-flex items-center justify-center rounded-lg border border-amber-200 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50">
                   신뢰도 평가
                 </button>
               </div>
@@ -393,7 +393,7 @@
 
       document.getElementById('profileReportButton').classList.toggle('hidden', Boolean(isMyProfile));
       document.getElementById('profileChatButton').classList.toggle('hidden', Boolean(isMyProfile));
-      document.getElementById('profileReviewButton').classList.toggle('hidden', Boolean(isMyProfile));
+      document.getElementById('profileReviewButton').classList.add('hidden');
     }
 
     function renderReviewSummary(reviewData) {

@@ -45,6 +45,15 @@
   </div>
 </a>
 
+  <div id="dealStatusBox" class="hidden border-b bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p id="dealStatusText">거래 상태를 확인하는 중입니다.</p>
+      <button id="reviewBtn" type="button" class="hidden rounded-lg bg-amber-500 px-3 py-2 text-sm font-medium text-white">
+        후기 작성
+      </button>
+    </div>
+  </div>
+
   <div id="chatBody" class="flex-1 overflow-y-auto p-4 no-scrollbar"></div>
 
   <form class="p-3 border-t flex gap-2 items-center relative">
@@ -111,6 +120,50 @@
 
 </div>
 
+<!-- 거래 신뢰도 평가 모달 -->
+<div
+  id="reviewModal"
+  class="hidden fixed inset-0 z-[999] bg-black/50 items-center justify-center p-4"
+>
+  <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900">거래 신뢰도 평가</h2>
+        <p class="mt-1 text-sm text-gray-500">거래가 완료된 상대에게만 후기를 남길 수 있습니다.</p>
+      </div>
+      <button type="button" onclick="closeReviewModal()" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100">×</button>
+    </div>
+
+    <form id="reviewForm" class="mt-5 space-y-4">
+      <div>
+        <p class="text-sm font-medium text-gray-700">하트 점수</p>
+        <div class="mt-2 flex gap-1">
+          <button type="button" data-rating="1" class="rating-button text-3xl text-gray-300">♥</button>
+          <button type="button" data-rating="2" class="rating-button text-3xl text-gray-300">♥</button>
+          <button type="button" data-rating="3" class="rating-button text-3xl text-gray-300">♥</button>
+          <button type="button" data-rating="4" class="rating-button text-3xl text-gray-300">♥</button>
+          <button type="button" data-rating="5" class="rating-button text-3xl text-gray-300">♥</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="약속을 잘 지켜요" class="mr-2">약속을 잘 지켜요</label>
+        <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="답장이 빨라요" class="mr-2">답장이 빨라요</label>
+        <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="상품 설명이 정확해요" class="mr-2">상품 설명이 정확해요</label>
+        <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="친절해요" class="mr-2">친절해요</label>
+        <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"><input type="checkbox" name="reviewTag" value="다시 거래하고 싶어요" class="mr-2">다시 거래하고 싶어요</label>
+      </div>
+
+      <textarea id="reviewComment" rows="3" maxlength="300" class="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="한 줄 평가는 선택입니다."></textarea>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeReviewModal()" class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-50">취소</button>
+        <button id="reviewSubmitButton" type="submit" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 이미지 확대 모달 -->
 <div
   id="imageModal"
@@ -124,10 +177,14 @@
 </div>
 
 <script>
-const socket = io("https://daegu-market-api.onrender.com");
+const API_BASE = "https://daegu-market-api.onrender.com";
+const socket = io(API_BASE);
 
 const params = new URLSearchParams(location.search);
 const roomId = params.get("room_id");
+let currentDeal = null;
+let currentProduct = null;
+let selectedRating = 5;
 
 const chatBody = document.getElementById("chatBody");
 const form = document.querySelector("form");
@@ -136,12 +193,13 @@ const input = document.getElementById("msgInput");
 async function loadProductInfo() {
   try {
     const res = await fetch(
-      `https://daegu-market-api.onrender.com/chat/rooms/${roomId}/product`
+      `${API_BASE}/chat/rooms/${roomId}/product`
     );
 
     const product = await res.json();
 
     if (!res.ok) return;
+    currentProduct = product;
 
     const productInfo = document.getElementById("productInfo");
     const productImage = document.getElementById("productImage");
@@ -189,6 +247,108 @@ function getCurrentUser() {
 function getCurrentUserId() {
   const user = getCurrentUser();
   return user ? (user.user_id || user.id) : null;
+}
+
+function renderRatingButtons() {
+  document.querySelectorAll(".rating-button").forEach(button => {
+    const rating = Number(button.dataset.rating);
+    button.classList.toggle("text-red-500", rating <= selectedRating);
+    button.classList.toggle("text-gray-300", rating > selectedRating);
+  });
+}
+
+async function loadDealStatus() {
+  const userId = getCurrentUserId();
+  const statusBox = document.getElementById("dealStatusBox");
+  const statusText = document.getElementById("dealStatusText");
+  const reviewBtn = document.getElementById("reviewBtn");
+  const completeBtn = document.getElementById("completeBtn");
+
+  if (!userId || !roomId) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/rooms/${roomId}/deal?user_id=${encodeURIComponent(userId)}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      statusBox.classList.add("hidden");
+      return;
+    }
+
+    currentDeal = data;
+    statusBox.classList.remove("hidden");
+
+    if (data.is_completed) {
+      statusText.textContent = data.has_reviewed
+        ? "거래가 완료되었고 후기를 작성했습니다."
+        : "거래가 완료되었습니다. 서로 후기를 작성할 수 있습니다.";
+      completeBtn.textContent = "거래 완료됨";
+      completeBtn.disabled = true;
+      reviewBtn.classList.toggle("hidden", Boolean(data.has_reviewed));
+      return;
+    }
+
+    reviewBtn.classList.add("hidden");
+    completeBtn.disabled = Boolean(data.is_confirmed_by_me);
+    completeBtn.textContent = data.is_confirmed_by_me ? "상대 확인 대기" : "거래 완료";
+    statusText.textContent = data.is_confirmed_by_me
+      ? "내 거래완료 확인이 저장되었습니다. 상대방 확인을 기다리는 중입니다."
+      : "거래가 끝났다면 거래 완료를 눌러주세요. 양쪽 확인 후 후기를 작성할 수 있습니다.";
+  } catch (error) {
+    console.warn("거래 상태 로딩 실패:", error);
+  }
+}
+
+async function confirmDeal() {
+  const userId = getCurrentUserId();
+
+  if (!userId) {
+    alert("로그인이 필요합니다.");
+    return;
+  }
+
+  if (!confirm("거래 완료로 확인할까요? 상대방도 확인하면 후기를 작성할 수 있습니다.")) {
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/chat/rooms/${roomId}/deal/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId })
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    alert(data.message || "거래완료 처리에 실패했습니다.");
+    return;
+  }
+
+  alert(data.message || "거래완료 확인이 저장되었습니다.");
+  loadProductInfo();
+  loadDealStatus();
+}
+
+function openReviewModal() {
+  if (!currentDeal || !currentDeal.is_completed) {
+    alert("양쪽 거래완료 확인 후 후기를 작성할 수 있습니다.");
+    return;
+  }
+
+  if (currentDeal.has_reviewed) {
+    alert("이미 이 거래 후기를 작성했습니다.");
+    return;
+  }
+
+  selectedRating = 5;
+  document.getElementById("reviewForm").reset();
+  renderRatingButtons();
+  document.getElementById("reviewModal").classList.remove("hidden");
+  document.getElementById("reviewModal").classList.add("flex");
+}
+
+function closeReviewModal() {
+  document.getElementById("reviewModal").classList.add("hidden");
+  document.getElementById("reviewModal").classList.remove("flex");
 }
 
 socket.on("connect", () => {
@@ -408,6 +568,7 @@ function render(sender, text, createdAt, isRead) {
 }
 
 loadProductInfo();
+loadDealStatus();
 
 const plusBtn = document.getElementById("plusBtn");
 const plusMenu = document.getElementById("plusMenu");
@@ -456,6 +617,61 @@ imageInput.addEventListener("change", async (e) => {
     console.log(err);
     alert("업로드 실패");
   }
+});
+
+document.getElementById("completeBtn").addEventListener("click", confirmDeal);
+document.getElementById("reviewBtn").addEventListener("click", openReviewModal);
+
+document.querySelectorAll(".rating-button").forEach(button => {
+  button.addEventListener("click", () => {
+    selectedRating = Number(button.dataset.rating);
+    renderRatingButtons();
+  });
+});
+
+document.getElementById("reviewForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const user = getCurrentUser();
+
+  if (!user || !currentDeal || !currentDeal.other_user_id) {
+    alert("후기 작성 정보를 확인하지 못했습니다.");
+    return;
+  }
+
+  const submitButton = document.getElementById("reviewSubmitButton");
+  const tags = Array.from(document.querySelectorAll('input[name="reviewTag"]:checked')).map(input => input.value);
+  const comment = document.getElementById("reviewComment").value.trim();
+  submitButton.disabled = true;
+  submitButton.textContent = "저장 중";
+
+  const res = await fetch(`${API_BASE}/api/reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      room_id: roomId,
+      product_id: currentDeal.product_id,
+      reviewer_id: user.user_id || user.id,
+      reviewer_email: user.email,
+      target_user_id: currentDeal.other_user_id,
+      rating: selectedRating,
+      tags,
+      comment
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+
+  submitButton.disabled = false;
+  submitButton.textContent = "저장";
+
+  if (!res.ok) {
+    alert(data.message || "후기 저장에 실패했습니다.");
+    return;
+  }
+
+  alert("후기가 저장되었습니다.");
+  closeReviewModal();
+  loadDealStatus();
 });
 
 function openImageModal(src) {
