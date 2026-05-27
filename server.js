@@ -2508,7 +2508,7 @@ app.get('/api/clubs/:clubId/approved-members', (req, res) => {
   });
 });
 
-// 13. 동아리 부원 뱃지 회수(추방) API
+// 13. 동아리 추방 API
 app.delete('/api/clubs/:clubId/members/:userId', (req, res) => {
   const { clubId, userId } = req.params;
   const sql = `DELETE FROM Club_Members WHERE club_id = ? AND user_id = ?`;
@@ -2516,6 +2516,59 @@ app.delete('/api/clubs/:clubId/members/:userId', (req, res) => {
   queryWithTimeout(sql, [clubId, userId], (err) => {
     if (err) return res.status(500).json({ message: '부원 추방 중 오류가 발생했습니다.' });
     res.json({ message: '해당 부원이 동아리에서 제외되었습니다.' });
+  });
+});
+
+// 동아리 탈퇴 API - 일반 부원용
+app.delete('/api/clubs/:clubId/leave', (req, res) => {
+  const { clubId } = req.params;
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: '로그인 정보가 없습니다.' });
+  }
+
+  // 1. 회장은 바로 탈퇴 못 하게 막기
+  const checkLeaderSql = `
+    SELECT leader_id 
+    FROM Clubs 
+    WHERE club_id = ?
+  `;
+
+  queryWithTimeout(checkLeaderSql, [clubId], (leaderErr, leaderResults) => {
+    if (leaderErr) {
+      console.error('회장 확인 에러:', leaderErr);
+      return res.status(500).json({ message: '탈퇴 처리 중 오류가 발생했습니다.' });
+    }
+
+    if (leaderResults.length === 0) {
+      return res.status(404).json({ message: '해당 동아리를 찾을 수 없습니다.' });
+    }
+
+    if (Number(leaderResults[0].leader_id) === Number(userId)) {
+      return res.status(400).json({
+        message: '회장은 바로 탈퇴할 수 없습니다. 먼저 회장 권한을 넘기거나 동아리를 폐부해주세요.'
+      });
+    }
+
+    // 2. 일반 부원이면 멤버 목록에서 삭제
+    const deleteSql = `
+      DELETE FROM Club_Members
+      WHERE club_id = ? AND user_id = ? AND status = 'APPROVED'
+    `;
+
+    queryWithTimeout(deleteSql, [clubId, userId], (deleteErr, result) => {
+      if (deleteErr) {
+        console.error('동아리 탈퇴 에러:', deleteErr);
+        return res.status(500).json({ message: '탈퇴 처리 중 오류가 발생했습니다.' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(400).json({ message: '가입된 동아리가 아니거나 이미 탈퇴한 상태입니다.' });
+      }
+
+      res.json({ message: '동아리에서 탈퇴되었습니다.' });
+    });
   });
 });
 

@@ -172,6 +172,10 @@
           <button type="button" id="transferModeBtn" onclick="toggleTransferMode()" class="rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-white hover:bg-black transition-colors shadow-sm whitespace-nowrap">
             상속하기
           </button>
+
+          <button type="button" onclick="leaveClub()" class="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors shadow-sm whitespace-nowrap">
+           탈퇴하기
+          </button>
         </div>
       </div>
       <div id="approvedMemberGrid" class="h-48 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto pr-2 scrollbar-hide">
@@ -608,6 +612,38 @@
       currentMode = (currentMode === 'REVOKE') ? 'NORMAL' : 'REVOKE';
       updateModeButtons();
     }
+
+    async function leaveClub() {
+  if (!confirm('정말 이 동아리에서 탈퇴하시겠습니까?')) return;
+
+  try {
+    const user = JSON.parse(localStorage.getItem('loggedInUser'));
+
+    const response = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/leave`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId: user.user_id || user.id
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert(result.message);
+      window.location.href = 'club-main.html';
+    } else {
+      alert(result.message);
+    }
+
+  } catch (error) {
+    console.error('동아리 탈퇴 오류:', error);
+    alert('탈퇴 처리 중 오류가 발생했습니다.');
+  }
+ }
+
   </script>
 </body>
 </html>
