@@ -1475,24 +1475,6 @@ app.put('/api/products/:id', (req, res) => {
   });
 });
 
-// ✨ 마이페이지: 내 상품 동아리 뱃지 온오프 토글 API
-app.put('/api/products/:id/badge-toggle', (req, res) => {
-  const productId = req.params.id;
-  const { seller_id, show_club_badge } = req.body;
-
-  db.query(
-    'UPDATE products SET show_club_badge = ? WHERE id = ? AND seller_id = ?',
-    [show_club_badge, productId, seller_id],
-    (err, result) => {
-      if (err) {
-        console.error('동아리 뱃지 토글 에러:', err);
-        return res.status(500).json({ message: 'DB 수정 오류가 발생했습니다.' });
-      }
-      res.json({ message: '동아리 표시 설정이 변경되었습니다.' });
-    }
-  );
-});
-
 // 신고 접수: 신고자/대상/중복 여부를 검증하고 reports 테이블에 저장합니다.
 app.post('/api/reports', (req, res) => {
   const { reporter_id, reporter_email, target_type, target_id, reason, detail } = req.body || {};
@@ -2532,8 +2514,8 @@ app.delete('/api/clubs/:clubId/members/:userId', (req, res) => {
   const sql = `DELETE FROM Club_Members WHERE club_id = ? AND user_id = ?`;
   
   queryWithTimeout(sql, [clubId, userId], (err) => {
-    if (err) return res.status(500).json({ message: '뱃지 회수 중 오류가 발생했습니다.' });
-    res.json({ message: '해당 부원의 인증 뱃지가 회수(내보내기) 되었습니다.' });
+    if (err) return res.status(500).json({ message: '부원 추방 중 오류가 발생했습니다.' });
+    res.json({ message: '해당 부원이 동아리에서 제외되었습니다.' });
   });
 });
 

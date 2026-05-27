@@ -709,34 +709,6 @@ loadMyPage().catch(error => {
   emptyState.textContent = '마이페이지 데이터를 불러오지 못했습니다. 서버와 DB 연결을 확인하세요.';
 });
 
-// ✨ 마이페이지 전용: 내 동아리 뱃지 실시간 연동 제어 함수
-async function loadMyClubBadge(userId) {
-  const badgeEl = document.getElementById('userClubBadge');
-  if (!badgeEl) return;
-
-  const emojiMap = {
-    '운동': '⚽', '음악': '🎸', '게임': '🎮', 'IT': '💻', '학술': '📚', '기타': '✨'
-  };
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/users/${userId}/my-clubs`);
-    if (!response.ok) return;
-    
-    const myClubs = await response.json();
-    
-    // 가입하거나 개설한 동아리가 존재한다면 첫 번째 동아리를 대표로 매운맛 뱃지 주입!
-    if (myClubs && myClubs.length > 0) {
-      const repClub = myClubs[0];
-      const emoji = emojiMap[repClub.category] || '✨';
-      
-      badgeEl.innerHTML = `<span>${emoji}</span><span>${repClub.name}</span>`;
-      badgeEl.classList.remove('hidden');
-      badgeEl.classList.add('inline-flex');
-    }
-  } catch (error) {
-    console.warn('마이페이지 동아리 소속 뱃지 로드 실패:', error);
-  }
-}
 
 // ==========================================
 // 🔔 [푸시 알림] 토글 스위치 설정 로직

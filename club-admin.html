@@ -537,7 +537,7 @@
     }
 
     async function revokeMember(userId, name) {
-      if (!confirm(`정말로 '${name}' 부원을 추방(뱃지 회수) 하시겠습니까?`)) return;
+      if (!confirm(`정말로 '${name}' 부원을 추방하시겠습니까?`)) return;
       try {
         const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/members/${userId}`, { method: 'DELETE' });
         const data = await res.json();

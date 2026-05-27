@@ -626,7 +626,6 @@ function renderProducts() {
           <div class="flex items-center gap-1">
             <span class="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">${product.category}</span>
             
-            <span class="main-club-badge-wrap hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700" data-seller-badge-id="${product.id}" data-seller-uid="${product.sellerId}" data-show-badge="${product.showClubBadge}"></span>
             
           </div>
           <span class="text-xs text-muted-foreground">${product.posted}</span>
@@ -646,8 +645,7 @@ function renderProducts() {
 
   updateUrl();
   updateCollegeScrollButtons();
-  // ✨ 화면에 카드를 다 그린 후, 동아리 뱃지들을 일제히 불러옵니다!
-  loadMainGridClubBadges();
+  
 }
 
 function syncSortButtons() {
@@ -762,39 +760,3 @@ loadProducts().then(() => {
   renderProducts();
 });
 
-// ✨ 메인 장터 화면에 노출된 모든 상품 카드를 순회하며 판매자의 동아리 뱃지를 달아주는 함수
-async function loadMainGridClubBadges() {
-  const targets = document.querySelectorAll('.main-club-badge-wrap[data-seller-badge-id]');
-
-  const emojiMap = {
-    '운동': '⚽', '음악': '🎸', '게임': '🎮', 'IT': '💻', '학술': '📚', '기타': '✨'
-  };
-
-  for (const el of targets) {
-    const sellerId = el.getAttribute('data-seller-uid');
-    const showBadge = el.getAttribute('data-show-badge');
-
-    // ✨ 유저가 비활성화(0) 해놓았다면 서버 조회조차 하지 않고 통과! (숨김 처리 완료)
-    if (showBadge !== '1' || !sellerId || sellerId === 'null') continue;
-
-    if (!sellerId || sellerId === 'null' || sellerId === 'undefined') continue;
-
-    try {
-      const response = await fetch(`https://daegu-market-api.onrender.com/api/users/${sellerId}/my-clubs`);
-      if (!response.ok) continue;
-      
-      const clubs = await response.json();
-      
-      if (clubs && clubs.length > 0) {
-        const repClub = clubs[0];
-        const emoji = emojiMap[repClub.category] || '✨';
-        
-        el.innerHTML = `<span>${emoji}</span><span>${repClub.name}</span>`;
-        el.classList.remove('hidden');
-        el.classList.add('inline-flex');
-      }
-    } catch (error) {
-      console.warn('메인 화면 동아리 뱃지 로딩 실패:', error);
-    }
-  }
-}
