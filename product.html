@@ -128,8 +128,6 @@
              <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <p id="sellerName" class="font-medium text-gray-900">판매자 정보를 불러오는 중...</p>
-                  <span id="sellerClubBadge" class="hidden items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700 shadow-sm">
-                  </span>
                 </div>
                 <p id="sellerDepartment" class="text-sm text-gray-500">대구대 마켓</p>
               </div>
@@ -654,34 +652,6 @@ function isSoldProduct(product) {
   return normalizeStatus(product.status || product.condition) === '판매완료';
 }
 
-// ✨ 판매자의 동아리를 조회해서 뱃지를 그려주는 마법의 함수
-    async function loadSellerClubBadge(sellerId) {
-      try {
-        const response = await fetchWithTimeout(`https://daegu-market-api.onrender.com/api/users/${sellerId}/my-clubs`);
-        if (!response.ok) return;
-        
-        const clubs = await response.json();
-        
-        if (clubs && clubs.length > 0) {
-          // 가입된 동아리가 여러 개일 경우 가장 첫 번째 동아리를 대표 뱃지로 띄웁니다.
-          const repClub = clubs[0];
-          const badgeEl = document.getElementById('sellerClubBadge');
-          
-          // 카테고리별 맞춤 이모지 세팅
-          const emojiMap = {
-            '운동': '⚽', '음악': '🎸', '게임': '🎮', 'IT': '💻', '학술': '📚', '기타': '✨'
-          };
-          const emoji = emojiMap[repClub.category] || '✨';
-          
-          badgeEl.innerHTML = `<span>${emoji}</span><span>${repClub.name}</span>`;
-          badgeEl.classList.remove('hidden');
-          badgeEl.classList.add('inline-flex'); // flex 속성 부여로 예쁘게 정렬
-        }
-      } catch (error) {
-        console.warn('동아리 뱃지 로딩 실패:', error);
-      }
-    }
-
 const KAKAO_MAP_APP_KEY = window.KAKAO_MAP_APP_KEY || '';
 let kakaoMapLoader;
 
@@ -1178,14 +1148,6 @@ if (!id) {
 
     document.getElementById('sellerName').innerText = sellerName;
     document.getElementById('sellerDepartment').innerText = sellerDepartment;
-    
-    // ✨ [추가된 부분] 판매자가 마이페이지에서 '동아리 노출(1)'을 켜둔 경우에만 뱃지를 띄웁니다!
-    if (item.seller_id && Number(item.show_club_badge) === 1) {
-      // (주의: 이전에 추가했던 loadSellerClubBadge 함수가 스크립트 어딘가에 있어야 작동합니다)
-      if (typeof loadSellerClubBadge === 'function') {
-        loadSellerClubBadge(item.seller_id);
-      }
-    }
 
     updateOwnerActions();
     loadLikeState();
