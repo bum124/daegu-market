@@ -2952,6 +2952,52 @@ app.get('/api/users/:id', (req, res) => {
     });
 });
 
+app.get('/api/account-status', (req, res) => {
+    const userId = Number(req.query.user_id || req.query.id);
+    const email = req.query.email;
+    const whereSql = userId ? 'user_id = ?' : 'email = ?';
+    const whereValue = userId || email;
+
+    if (!whereValue) {
+        return res.status(400).json({ message: '사용자 정보가 필요합니다.' });
+    }
+
+    ensureUserModerationColumn((columnErr) => {
+        if (columnErr) {
+            console.error(columnErr);
+            return res.status(500).json({ message: '계정 상태 확인 준비에 실패했습니다.' });
+        }
+
+        db.query(
+            `SELECT user_id, email, account_status FROM Users WHERE ${whereSql}`,
+            [whereValue],
+            (err, users) => {
+                if (err) return res.status(500).json({ message: '계정 상태 확인에 실패했습니다.' });
+                if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+
+                const status = users[0].account_status || 'active';
+                const restricted = status === 'restricted';
+                const deleted = status === 'deleted';
+
+                res.json({
+                    user_id: users[0].user_id,
+                    email: users[0].email,
+                    account_status: status,
+                    allowed: !restricted && !deleted,
+                    message: restricted
+                        ? '관리자 검토로 이용이 제한된 계정입니다.'
+                        : deleted
+                            ? '탈퇴 처리된 계정입니다.'
+                            : '',
+                    warning_message: status === 'warned'
+                        ? '관리자 검토 결과 계정에 경고가 부여되었습니다. 안전한 거래 이용을 부탁드립니다.'
+                        : ''
+                });
+            }
+        );
+    });
+});
+
 app.put('/api/users/:id', (req, res) => {
     const { name, nickname, college, department, currentPassword, newPassword } = req.body;
     const values = [name, nickname, department, college || null];

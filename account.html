@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>계정 설정 - 대구마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./auth-guard.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -342,6 +343,7 @@
         department: payload.department,
         email: fields.email.value
       }));
+      localStorage.setItem('login_at', String(Date.now()));
 
       fields.currentPassword.value = '';
       fields.newPassword.value = '';

@@ -184,6 +184,7 @@
       .then(data => {
       // ★ 핵심: 브라우저에 내 정보를 문자열로 바꿔서 영구 저장합니다.
       localStorage.setItem('loggedInUser', JSON.stringify(data.user)); // 👈 'user'를 'loggedInUser'로 수정!
+      localStorage.setItem('login_at', String(Date.now()));
       if (data.user && data.user.warning_message) {
         alert(data.user.warning_message);
       }
