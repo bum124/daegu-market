@@ -460,7 +460,6 @@ async function loadMyPage() {
 
   state.currentUserId = userId;
 
-  loadMyClubBadge(userId);
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/mypage?userId=${encodeURIComponent(userId)}`);
