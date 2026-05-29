@@ -1886,7 +1886,7 @@ app.put('/api/admin/reports/:id', (req, res) => {
   const adminEmail = getRequestAdminEmail(req);
   const { status, admin_action } = req.body || {};
   const allowedStatuses = ['pending', 'reviewed', 'resolved', 'rejected'];
-  const allowedActions = ['', 'none', 'hide_product', 'show_product', 'auto_hide_product', 'warn_user', 'restrict_user'];
+  const allowedActions = ['', 'none', 'hide_product', 'show_product', 'auto_hide_product', 'warn_user', 'restrict_user', 'restore_user'];
 
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
@@ -1974,8 +1974,12 @@ app.put('/api/admin/reports/:id', (req, res) => {
         return;
       }
 
-      if (admin_action === 'warn_user' || admin_action === 'restrict_user') {
-        const accountStatus = admin_action === 'restrict_user' ? 'restricted' : 'warned';
+      if (admin_action === 'warn_user' || admin_action === 'restrict_user' || admin_action === 'restore_user') {
+        const accountStatus = admin_action === 'restore_user'
+          ? 'active'
+          : admin_action === 'restrict_user'
+            ? 'restricted'
+            : 'warned';
 
         ensureUserModerationColumn((columnErr) => {
           if (columnErr) {
