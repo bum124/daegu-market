@@ -137,6 +137,22 @@
       return `채팅: #${report.target_id}`;
     }
 
+    function getTargetUrl(report) {
+      if (report.target_type === 'product') {
+        return `product.html?id=${encodeURIComponent(report.target_id)}`;
+      }
+
+      if (report.target_type === 'user') {
+        return `profile.html?userId=${encodeURIComponent(report.target_id)}`;
+      }
+
+      if (report.target_type === 'chat') {
+        return `chat_id.html?roomId=${encodeURIComponent(report.target_id)}`;
+      }
+
+      return '';
+    }
+
     // 서버에서 받은 신고 목록을 관리자용 카드와 처리 폼으로 렌더링합니다.
     function renderReports(reports) {
       const list = document.getElementById('reportList');
@@ -146,7 +162,13 @@
         return;
       }
 
-      list.innerHTML = reports.map(report => `
+      list.innerHTML = reports.map(report => {
+        const targetUrl = getTargetUrl(report);
+        const targetLink = targetUrl
+          ? `<a href="${targetUrl}" target="_blank" rel="noopener" class="text-slate-900 underline decoration-slate-300 underline-offset-4 hover:text-primary">${escapeHtml(getTargetLabel(report))}</a>`
+          : escapeHtml(getTargetLabel(report));
+
+        return `
         <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -155,7 +177,8 @@
                 <span class="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">${reasonLabels[report.reason] || report.reason}</span>
                 <span class="text-xs text-slate-400">${new Date(report.created_at).toLocaleString('ko-KR')}</span>
               </div>
-              <h2 class="mt-3 text-base font-semibold">${escapeHtml(getTargetLabel(report))}</h2>
+              <h2 class="mt-3 text-base font-semibold">${targetLink}</h2>
+              ${targetUrl ? `<a href="${targetUrl}" target="_blank" rel="noopener" class="mt-2 inline-flex rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">대상 열기</a>` : ''}
               <p class="mt-1 text-sm text-slate-500">신고자: ${escapeHtml(report.reporter_nickname || report.reporter_email || `#${report.reporter_id}`)}</p>
               <p class="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-600">${escapeHtml(report.detail || '상세 설명 없음')}</p>
             </div>
@@ -170,7 +193,8 @@
             </div>
           </div>
         </article>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function renderInquiries(inquiries) {
