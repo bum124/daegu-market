@@ -1108,6 +1108,8 @@ app.post('/api/login', (req, res) => {
             return res.status(403).json({ message: '관리자 검토로 이용이 제한된 계정입니다.' });
         }
 
+        const accountStatus = user.account_status || 'active';
+
         // 4. 로그인 성공! 프론트엔드에 필요한 유저 정보(이름, 학과 등)만 쏙 빼서 줍니다. (비밀번호는 주면 안 됨)
         res.json({ 
             message: '로그인 성공!', 
@@ -1118,7 +1120,11 @@ app.post('/api/login', (req, res) => {
                 nickname: user.nickname,
                 college: user.college,
                 department: user.department,
-                email: user.email
+                email: user.email,
+                account_status: accountStatus,
+                warning_message: accountStatus === 'warned'
+                  ? '관리자 검토 결과 계정에 경고가 부여되었습니다. 안전한 거래 이용을 부탁드립니다.'
+                  : ''
             } 
         });
     });
@@ -1325,7 +1331,7 @@ app.get('/api/products', (req, res) => {
       FROM products p
       LEFT JOIN Users u ON u.user_id = p.seller_id
       WHERE COALESCE(p.moderation_status, 'visible') <> 'hidden'
-        AND COALESCE(u.account_status, 'active') <> 'deleted'
+        AND COALESCE(u.account_status, 'active') NOT IN ('deleted', 'restricted')
         AND NOT (
           p.status = '판매완료'
           AND p.sold_at IS NOT NULL
@@ -1364,7 +1370,7 @@ app.get('/api/products/:id', (req, res) => {
        LEFT JOIN Users u ON u.user_id = p.seller_id
        WHERE p.id = ?
          AND COALESCE(p.moderation_status, 'visible') <> 'hidden'
-         AND COALESCE(u.account_status, 'active') <> 'deleted'`,
+         AND COALESCE(u.account_status, 'active') NOT IN ('deleted', 'restricted')`,
       [id],
       (err, result) => {
         if (err) return res.status(500).send(err);
@@ -2002,7 +2008,30 @@ app.put('/api/admin/reports/:id', (req, res) => {
                   return res.status(500).json({ message: '사용자 제재 처리에 실패했습니다.' });
                 }
 
-                finish();
+                if (admin_action !== 'restrict_user' && admin_action !== 'restore_user') {
+                  finish();
+                  return;
+                }
+
+                ensureProductModerationColumn((productColumnErr) => {
+                  if (productColumnErr) {
+                    console.error(productColumnErr);
+                    return res.status(500).json({ message: '상품 제재 컬럼 준비에 실패했습니다.' });
+                  }
+
+                  db.query(
+                    'UPDATE products SET moderation_status = ? WHERE seller_id = ?',
+                    [admin_action === 'restrict_user' ? 'hidden' : 'visible', targetUserId],
+                    (productStatusErr) => {
+                      if (productStatusErr) {
+                        console.error(productStatusErr);
+                        return res.status(500).json({ message: '사용자 상품 제재 처리에 실패했습니다.' });
+                      }
+
+                      finish();
+                    }
+                  );
+                });
               }
             );
           };
@@ -3050,6 +3079,7 @@ app.get('/api/mypage', (req, res) => {
       if (userErr) return res.status(500).send(userErr);
       if (users.length === 0) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
       if (users[0].account_status === 'deleted') return res.status(403).json({ message: '탈퇴 처리된 계정입니다.' });
+      if (users[0].account_status === 'restricted') return res.status(403).json({ message: '관리자 검토로 이용이 제한된 계정입니다.', account_status: 'restricted' });
 
       const user = users[0];
       const productSql = `
@@ -3104,7 +3134,11 @@ app.get('/api/mypage', (req, res) => {
                 college: user.college,
                 department: user.department,
                 email: user.email,
-                verified: true
+                verified: true,
+                accountStatus: user.account_status || 'active',
+                warningMessage: user.account_status === 'warned'
+                  ? '관리자 검토 결과 계정에 경고가 부여되었습니다. 안전한 거래 이용을 부탁드립니다.'
+                  : ''
               },
               stats: {
                 sellingCount: selling.length,
