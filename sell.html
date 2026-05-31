@@ -94,6 +94,10 @@
         <label for="title" class="text-sm font-medium">
           제목
           <span class="ml-1 text-destructive">*</span>
+
+          <button type="button" id="aiRecommendBtn" class="ml-auto flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors">
+         AI 추천받기
+  </button>
         </label>
         <input
           type="text"
@@ -883,6 +887,57 @@
         submitBtn.textContent = isEditMode ? '수정 완료' : '상품 등록하기';
       });
     }); // 폼 제출 이벤트 끝나는 괄호
+
+    document.getElementById('aiRecommendBtn').addEventListener('click', async function() {
+      const title = document.getElementById('title').value;
+      
+      if (!title) {
+        alert('상품 제목을 먼저 입력해주세요! 제목과 사진을 보고 분석합니다.');
+        document.getElementById('title').focus();
+        return;
+      }
+
+      const btn = this;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✨ AI가 생각하는 중...';
+      btn.disabled = true;
+
+      try {
+        const imageBase64 = uploadedImages.length > 0 ? uploadedImages[0] : null;
+
+        const response = await fetch(`${API_BASE_URL}/api/ai-recommend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, imageBase64 })
+        });
+
+        if (!response.ok) throw new Error('AI 추천 실패');
+
+        const data = await response.json();
+
+        const categorySelect = document.getElementById('category');
+        for (let i = 0; i < categorySelect.options.length; i++) {
+          if (categorySelect.options[i].value === data.category) {
+            categorySelect.selectedIndex = i;
+            break;
+          }
+        }
+
+        if (data.price) {
+           const priceInput = document.getElementById('price');
+           priceInput.value = new Intl.NumberFormat('ko-KR').format(parseInt(data.price));
+        }
+
+        alert(`분석 완료! 👀\n추천 카테고리: [${data.category}]\n적정 중고가: [${new Intl.NumberFormat('ko-KR').format(data.price)}원]이 입력되었습니다.`);
+
+      } catch (error) {
+        console.error(error);
+        alert('AI 분석 중 서버 오류가 발생했습니다. 잠시 후 시도해주세요.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
 
     populateTargetCollegeOptions();
     initializeLocationMap();
