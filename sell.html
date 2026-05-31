@@ -952,6 +952,8 @@
           throw new Error(errorData.message || 'AI 추천 실패');
         }
 
+        const data = await response.json();
+
         const categorySelect = document.getElementById('category');
             for (let i = 0; i < categorySelect.options.length; i++) {
   if (categorySelect.options[i].value === data.category) {
