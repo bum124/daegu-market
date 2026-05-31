@@ -1494,7 +1494,7 @@ app.post('/api/ai-recommend', upload.single('image'), async (req, res) => {
 
     // 1. Gemini AI 준비
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
 
     // 2. AI를 가스라이팅(?)할 강력한 프롬프트
     const prompt = `
