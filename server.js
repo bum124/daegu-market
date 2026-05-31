@@ -1493,76 +1493,48 @@ app.post('/api/ai-recommend', async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
-    // 💡 핵심: 구글이 서버 위치에 따라 허락해 주는 모델이 다릅니다.
-    // 구글의 모든 모델 이름을 순서대로 찔러보는 무적의 배열입니다!
-    const modelsToTry = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash-8b',
-      'gemini-1.5-flash',
-      'gemini-1.0-pro'
-    ];
+
+    // 1. 모델 설정 (v1beta 명시)
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      apiVersion: 'v1beta' 
+    });
 
     const prompt = `
     너는 대구대학교 학생 전용 중고거래 마켓의 똑똑한 AI 어시스턴트야.
-    사용자가 입력한 상품 제목과 첨부된 사진(있는 경우)을 분석해서, 
-    가장 알맞은 카테고리와 대학생 기준 적정 중고 거래 가격을 추천해줘.
+    사용자의 상품 정보를 분석해 JSON 형식으로 카테고리와 가격을 추천해줘.
+    [카테고리 목록] 전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
     
-    [대구마켓 카테고리 목록]
-    전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
-    
-    사용자 입력 제목: "${title}"
-    
-    반드시 아래의 JSON 형식으로만 대답해. 마크다운(\`\`\`json 등)이나 다른 인사말은 절대 쓰지마. 가격은 숫자만 적어.
-    {
-      "category": "추천 카테고리명",
-      "price": 15000
-    }
+    제목: "${title}"
+    형식: {"category": "카테고리명", "price": 0}
     `;
 
     const parts = [prompt];
 
+    // 2. 이미지 처리 (Base64 파싱 단순화)
     if (imageBase64 && imageBase64.includes('base64,')) {
-      try {
-        const mimeType = imageBase64.substring(imageBase64.indexOf(':') + 1, imageBase64.indexOf(';'));
-        const base64Data = imageBase64.substring(imageBase64.indexOf(',') + 1);
-        parts.push({ inlineData: { data: base64Data, mimeType: mimeType } });
-      } catch (parseError) {
-        console.error('🚨 이미지 파싱 에러:', parseError);
-      }
+      const base64Data = imageBase64.split(',')[1];
+      const mimeType = imageBase64.split(';')[0].split(':')[1];
+      
+      parts.push({
+        inlineData: { data: base64Data, mimeType: mimeType }
+      });
     }
 
-    let result = null;
-    let successfulModel = '';
-
-    // 💡 여러 모델을 순서대로 테스트 (하나라도 성공하면 즉시 빠져나옴)
-    for (const modelName of modelsToTry) {
-      try {
-        console.log(`🔍 [${modelName}] 모델 테스트 중...`);
-        const model = genAI.getGenerativeModel({ model: modelName });
-        result = await model.generateContent(parts);
-        successfulModel = modelName;
-        console.log(`✅ 성공! 사용된 AI 모델: ${successfulModel}`);
-        break; // 성공했으므로 반복문 탈출!
-      } catch (err) {
-        console.log(`⚠️ [${modelName}] 접근 불가 (다음 모델로 넘어갑니다)`);
-      }
-    }
-
-    // 모든 모델이 다 튕겨냈다면 (100% Render 서버 리전 문제)
-    if (!result) {
-      throw new Error('모든 AI 모델 접근이 차단되었습니다. (Render 서버 리전 EU 차단 문제)');
-    }
-
-    const responseText = result.response.text();
-    const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const aiData = JSON.parse(cleanedText);
-
-    res.json(aiData);
+    // 3. 실행
+    const result = await model.generateContent(parts);
+    const text = result.response.text().replace(/```json|```/g, '').trim();
+    
+    res.json(JSON.parse(text));
 
   } catch (error) {
-    console.error('🚨 Gemini AI 최종 에러:', error.message || error);
-    res.status(500).json({ message: 'AI 추천을 불러오는 중 오류가 발생했습니다.' });
+    console.error('🚨 AI 추천 에러 상세:', error);
+    // 404 에러일 경우 구체적인 메시지 전달
+    if (error.status === 404) {
+      res.status(500).json({ message: '현재 리전에서 해당 AI 모델을 사용할 수 없습니다. (구글 정책)' });
+    } else {
+      res.status(500).json({ message: 'AI 분석 중 오류가 발생했습니다.' });
+    }
   }
 });
 
