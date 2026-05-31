@@ -1482,7 +1482,7 @@ app.put('/api/products/:id', (req, res) => {
   });
 });
 
-/app.post('/api/ai-recommend', async (req, res) => {
+app.post('/api/ai-recommend', async (req, res) => {
   try {
     const { title, imageBase64 } = req.body;
 
@@ -1502,7 +1502,6 @@ app.put('/api/products/:id', (req, res) => {
     [카테고리 목록] 전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
     `;
 
-    // 🚨 파츠 배열을 구글 SDK 최신 권장 규격(객체 형태)으로 맞춥니다.
     const parts = [
       { text: prompt },
       { text: `상품 제목: "${title}"` }
@@ -1525,22 +1524,19 @@ app.put('/api/products/:id', (req, res) => {
       }
     });
 
-    // 정규식 없이 깔끔하게 바로 파싱이 가능해집니다.
     const text = result.response.text();
     res.json(JSON.parse(text));
 
   } catch (error) {
     console.error('🚨 AI 추천 에러 상세:', error);
     
-    // 404 에러가 나면 프론트엔드로 정확한 원인을 알려줍니다.
     if (error.status === 404) {
-      res.status(500).json({ message: '현재 Render 서버 지역에서 구글 AI를 사용할 수 없습니다. 서버 지역을 US(Oregon)로 변경해주세요.' });
+      res.status(500).json({ message: '현재 Render 서버 지역에서 구글 AI를 사용할 수 없습니다. 서버 지역을 변경해주세요.' });
     } else {
       res.status(500).json({ message: 'AI 분석 중 오류가 발생했습니다.' });
     }
   }
 });
-
 // 신고 접수: 신고자/대상/중복 여부를 검증하고 reports 테이블에 저장합니다.
 app.post('/api/reports', (req, res) => {
   const { reporter_id, reporter_email, target_type, target_id, reason, detail } = req.body || {};
