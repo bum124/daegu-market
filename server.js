@@ -1484,70 +1484,61 @@ app.put('/api/products/:id', (req, res) => {
 
 // ✨ [대구마켓] Gemini 1.5 Flash 기반 AI 카테고리/가격 추천 API
 // 기존에 만들어두신 upload.single('image')를 그대로 사용해 사진을 받습니다!
-app.post('/api/ai-recommend', upload.single('image'), async (req, res) => {
+app.post('/api/ai-recommend', async (req, res) => {
   try {
-    const { title } = req.body;
-    
+    const { title, imageBase64 } = req.body;
+
     if (!title) {
       return res.status(400).json({ message: '상품 제목을 먼저 입력해주세요.' });
     }
 
-    // 1. Gemini AI 준비
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // 💡 가장 빠르고 안정적인 flash 모델 고정!
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // 2. AI를 가스라이팅(?)할 강력한 프롬프트
     const prompt = `
     너는 대구대학교 학생 전용 중고거래 마켓의 똑똑한 AI 어시스턴트야.
     사용자가 입력한 상품 제목과 첨부된 사진(있는 경우)을 분석해서, 
     가장 알맞은 카테고리와 대학생 기준 적정 중고 거래 가격을 추천해줘.
     
     [대구마켓 카테고리 목록]
-    디지털기기, 가구/인테리어, 유아용품, 여성의류, 여성잡화, 남성패션/잡화, 생활가전, 생활/주방, 가공식품, 스포츠/레저, 취미/게임/음반, 뷰티/미용, 식물, 반려동물용품, 티켓/교환권, 도서, 기타 중고물품
+    전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
     
     사용자 입력 제목: "${title}"
     
-    반드시 아래의 JSON 형식으로만 대답해. 마크다운(\`\`\`json 등)이나 다른 인사말은 절대 쓰지마.
+    반드시 아래의 JSON 형식으로만 대답해. 마크다운(\`\`\`json 등)이나 다른 인사말은 절대 쓰지마. 가격은 숫자만 적어.
     {
       "category": "추천 카테고리명",
-      "price_range": "예상 적정가 (예: 15,000원 ~ 20,000원)",
-      "reason": "왜 이 가격을 추천했는지 1줄 설명"
+      "price": 15000
     }
     `;
 
-    // 3. AI에게 보낼 데이터 포장
     const parts = [prompt];
 
-    // 📸 사진이 같이 전송되었다면?
-    if (req.file) {
-      // 업로드된 파일을 읽어서 AI가 볼 수 있게 Base64(텍스트 형태의 이미지)로 변환
-      const fileData = fs.readFileSync(req.file.path);
-      const base64Image = fileData.toString('base64');
-      
-      parts.push({
-        inlineData: {
-          data: base64Image,
-          mimeType: req.file.mimetype // 예: image/jpeg
-        }
-      });
-      
-      // AI가 분석을 끝냈으면, 서버 용량 확보를 위해 임시 저장된 사진은 지워줍니다 (선택)
-      fs.unlinkSync(req.file.path); 
+    // 📸 이미지 데이터 안전하게 파싱 (정규식 제거)
+    if (imageBase64 && imageBase64.includes('base64,')) {
+      try {
+        const mimeType = imageBase64.substring(imageBase64.indexOf(':') + 1, imageBase64.indexOf(';'));
+        const base64Data = imageBase64.substring(imageBase64.indexOf(',') + 1);
+        
+        parts.push({
+          inlineData: { data: base64Data, mimeType: mimeType }
+        });
+      } catch (parseError) {
+        console.error('🚨 이미지 파싱 에러:', parseError);
+      }
     }
 
-    // 4. AI에게 질문 발사 및 답변 받기
     const result = await model.generateContent(parts);
     const responseText = result.response.text();
-    
-    // 5. AI가 혹시라도 ```json 마크다운을 붙여서 줄 경우를 대비한 깔끔한 정제
     const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    // JSON으로 예쁘게 파싱해서 프론트엔드로 전송!
     const aiData = JSON.parse(cleanedText);
+
     res.json(aiData);
 
   } catch (error) {
-    console.error('🚨 Gemini AI 추천 에러:', error);
+    // 🕵️‍♂️ 서버가 터진 정확한 이유를 Render 로그에 쾅 찍어줍니다!
+    console.error('🚨 Gemini AI 서버 내부 에러 상세:', error.message || error);
     res.status(500).json({ message: 'AI 추천을 불러오는 중 오류가 발생했습니다.' });
   }
 });
