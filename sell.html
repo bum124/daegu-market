@@ -948,27 +948,27 @@
         });
 
         if (!response.ok) {
-  const errorData = await response.json();
-  throw new Error(errorData.message || 'AI 추천 실패');
-}
-
-        const data = await response.json();
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'AI 추천 실패');
+        }
 
         const categorySelect = document.getElementById('category');
-        for (let i = 0; i < categorySelect.options.length; i++) {
-          if (categorySelect.options[i].value === data.category) {
-            categorySelect.selectedIndex = i;
-            break;
-          }
-        }
+            for (let i = 0; i < categorySelect.options.length; i++) {
+  if (categorySelect.options[i].value === data.category) {
+    categorySelect.selectedIndex = i;
+    break;
+  }
+}
 
-        if (data.price) {
-           const priceInput = document.getElementById('price');
-           priceInput.value = new Intl.NumberFormat('ko-KR').format(parseInt(data.price));
-        }
-
-        alert(`분석 완료! 👀\n추천 카테고리: [${data.category}]\n적정 중고가: [${new Intl.NumberFormat('ko-KR').format(data.price)}원]이 입력되었습니다.`);
-
+if (data.minPrice && data.maxPrice) {
+  // 최소~최대 가격의 평균값을 기본으로 세팅해줍니다.
+        const suggestedPrice = Math.floor((data.minPrice + data.maxPrice) / 2);
+        const priceInput = document.getElementById('price');
+        priceInput.value = new Intl.NumberFormat('ko-KR').format(suggestedPrice);
+  
+          // 사용자에게는 분석 이유와 가격 범위를 친절하게 보여줍니다.
+          alert(`✨ AI 사진 분석 완료!\n\n💡 분석 결과: ${data.reason}\n📊 추천 가격대: ${new Intl.NumberFormat('ko-KR').format(data.minPrice)}원 ~ ${new Intl.NumberFormat('ko-KR').format(data.maxPrice)}원\n\n(평균가인 ${new Intl.NumberFormat('ko-KR').format(suggestedPrice)}원이 자동 입력되었습니다.)`);
+         }
       } catch (error) {
         console.error(error);
         alert('AI 분석 중 서버 오류가 발생했습니다. 잠시 후 시도해주세요.');
