@@ -660,9 +660,8 @@
         const response = await fetch(`${API_BASE_URL}/api/products/${encodeURIComponent(editProductId)}`);
 
         if (!response.ok) {
-  const errorData = await response.json();
-  throw new Error(errorData.message || 'AI 추천 실패');
-}
+          throw new Error('상품 정보를 불러오지 못했습니다.');
+        }
 
         const item = await response.json();
 
@@ -948,7 +947,10 @@
           body: JSON.stringify({ title, imageBase64 })
         });
 
-        if (!response.ok) throw new Error('AI 추천 실패');
+        if (!response.ok) {
+  const errorData = await response.json();
+  throw new Error(errorData.message || 'AI 추천 실패');
+}
 
         const data = await response.json();
 
