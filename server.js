@@ -1482,10 +1482,7 @@ app.put('/api/products/:id', (req, res) => {
   });
 });
 
-// ✨ [대구마켓] Gemini 1.5 Flash 기반 AI 카테고리/가격 추천 API
-// 기존에 만들어두신 upload.single('image')를 그대로 사용해 사진을 받습니다!
-// ✨ [대구마켓] Gemini 1.5 Flash 기반 AI 카테고리/가격 추천 API
-app.post('/api/ai-recommend', async (req, res) => {
+/app.post('/api/ai-recommend', async (req, res) => {
   try {
     const { title, imageBase64 } = req.body;
 
@@ -1495,34 +1492,32 @@ app.post('/api/ai-recommend', async (req, res) => {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // 1. 모델 설정 (안정적인 gemini-1.5-flash 사용)
+    // 🚨 apiVersion 강제 설정을 지우고 기본값으로 사용합니다.
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // 2. 프롬프트를 명확하게 수정
     const prompt = `
-    너는 대구대학교 학생 전용 중고거래 마켓의 AI 어시스턴트야.
-    사용자의 상품 제목과 이미지를 분석해 가장 적절한 카테고리와 중고 거래 가격을 추천해줘.
-    반드시 다음 키를 가진 JSON 객체 하나만 반환해: "category", "price"
+    너는 대구대학교 학생 전용 중고거래 마켓의 똑똑한 AI 어시스턴트야.
+    사용자의 상품 정보를 분석해 JSON 형식으로 카테고리와 가격을 추천해줘.
+    반드시 "category"와 "price" 키만 가지는 순수 JSON 객체를 반환해.
     [카테고리 목록] 전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
     `;
 
-    // 3. 메시지 파츠 배열 생성
+    // 🚨 파츠 배열을 구글 SDK 최신 권장 규격(객체 형태)으로 맞춥니다.
     const parts = [
       { text: prompt },
       { text: `상품 제목: "${title}"` }
     ];
 
-    // 4. 이미지 파싱 및 파츠 추가
     if (imageBase64 && imageBase64.includes('base64,')) {
       const base64Data = imageBase64.split(',')[1];
       const mimeType = imageBase64.split(';')[0].split(':')[1];
-
+      
       parts.push({
         inlineData: { data: base64Data, mimeType: mimeType }
       });
     }
 
-    // 5. 핵심: responseMimeType을 사용하여 무조건 JSON으로만 답하게 강제함
+    // 🚨 JSON으로만 응답하도록 강제하는 설정을 추가합니다.
     const result = await model.generateContent({
       contents: [{ role: 'user', parts }],
       generationConfig: {
@@ -1530,16 +1525,18 @@ app.post('/api/ai-recommend', async (req, res) => {
       }
     });
 
-    // 마크다운 제거 정규식 없이도 깨끗한 JSON 문자열이 바로 나옵니다.
+    // 정규식 없이 깔끔하게 바로 파싱이 가능해집니다.
     const text = result.response.text();
     res.json(JSON.parse(text));
 
   } catch (error) {
     console.error('🚨 AI 추천 에러 상세:', error);
+    
+    // 404 에러가 나면 프론트엔드로 정확한 원인을 알려줍니다.
     if (error.status === 404) {
-      res.status(500).json({ message: '현재 리전에서 해당 AI 모델을 사용할 수 없습니다.' });
+      res.status(500).json({ message: '현재 Render 서버 지역에서 구글 AI를 사용할 수 없습니다. 서버 지역을 US(Oregon)로 변경해주세요.' });
     } else {
-      res.status(500).json({ message: 'AI 분석 중 오류가 발생했습니다. 로그를 확인해주세요.' });
+      res.status(500).json({ message: 'AI 분석 중 오류가 발생했습니다.' });
     }
   }
 });
