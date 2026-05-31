@@ -1493,14 +1493,14 @@ app.post('/api/ai-recommend', async (req, res) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     // 🚨 apiVersion 강제 설정을 지우고 기본값으로 사용합니다.
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
-    너는 대구대학교 학생 전용 중고거래 마켓의 똑똑한 AI 어시스턴트야.
-    사용자의 상품 정보를 분석해 JSON 형식으로 카테고리와 가격을 추천해줘.
-    반드시 "category"와 "price" 키만 가지는 순수 JSON 객체를 반환해.
-    [카테고리 목록] 전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
-    `;
+너는 대구대학교 학생 전용 중고거래 마켓의 똑똑한 AI 어시스턴트야.
+사용자의 상품 정보를 분석해 JSON 형식으로 카테고리와 가격을 추천해줘.
+반드시 "category"와 "price" 키만 가지는 순수 JSON 개체를 반환해.
+[카테고리 목록] 전자기기, 도서/문구, 의류/잡화, 생활용품, 가구/인테리어, 스포츠/레저, 뷰티/미용, 기타
+`;
 
     const parts = [
       { text: prompt },
