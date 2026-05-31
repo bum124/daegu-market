@@ -1227,9 +1227,59 @@ app.post('/api/change-password', (req, res) => {
 });
 
 // 상품 등록: 판매자와 입력값을 확인한 뒤 products 테이블에 저장합니다.
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => { // 🚨 async 추가
   const { seller_id, seller_email, title, category, target_college, target_department, condition, price, description, location, location_lat, location_lng, images } = req.body;
 
+  // ==========================================
+  // 🛡️ [AI 필수 검열 로직 시작] 
+  // ==========================================
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const prompt = `
+    너는 대구대학교 학생 전용 중고거래 마켓의 깐깐한 AI 보안 요원이야.
+    사용자가 올리려는 상품 제목과 사진을 분석해서 주류, 담배, 마약류, 의약품, 무기류, 성인용품, 암표 등 중고거래 정책에 위배되는 판매 금지 물품인지 판단해.
+    반드시 "isProhibited", "reason" 두 개의 키를 가진 순수 JSON 객체만 반환해.
+    위배된다면 isProhibited를 true로, reason에 차단 이유를 짧고 명확하게 적어.
+    정상적인 물품이라면 isProhibited를 false로 반환해.
+    `;
+
+    const parts = [
+      { text: prompt },
+      { text: `상품 제목: "${title}"` }
+    ];
+
+    // 이미지가 여러 장이어도 제일 첫 번째(대표) 이미지로 검열
+    if (images && images.length > 0 && images[0].includes('base64,')) {
+      const base64Data = images[0].split(',')[1];
+      const mimeType = images[0].split(';')[0].split(':')[1];
+      parts.push({ inlineData: { data: base64Data, mimeType: mimeType } });
+    }
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const aiAnalysis = JSON.parse(result.response.text());
+
+    // 🚨 AI가 판매 금지 물품으로 판단하면, DB 저장 함수를 실행하지 않고 바로 에러 반환!
+    if (aiAnalysis.isProhibited) {
+      console.log(`[AI 차단됨] 제목: ${title} / 사유: ${aiAnalysis.reason}`);
+      return res.status(400).json({ 
+        message: `🚨 AI 검열 시스템에 의해 차단되었습니다.\n사유: ${aiAnalysis.reason}` 
+      });
+    }
+  } catch (aiError) {
+    console.error('🚨 AI 검열 중 에러 발생 (일단 등록은 허용):', aiError);
+    // 구글 서버가 잠깐 아플 때는 학생들이 등록을 못 하면 안 되니까 그냥 통과시키도록 처리
+  }
+  // ==========================================
+  // 🛡️ [AI 필수 검열 로직 끝] 
+  // ==========================================
+
+  // 원래 있던 DB 저장 로직 (이 아래로는 똑같습니다)
   const insertProduct = (resolvedSellerId) => {
     if (!resolvedSellerId) {
       return res.status(400).json({ message: '판매자 정보를 확인하지 못했습니다. 다시 로그인해주세요.' });
