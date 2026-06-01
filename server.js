@@ -29,7 +29,7 @@ const SERIOUS_REPORT_REASONS = ['scam', 'prohibited'];
 const USER_REVIEW_REPORT_COUNT = 2;
 const USER_WARN_REPORT_COUNT = 3;
 const USER_RESTRICT_SERIOUS_COUNT = 2;
-const SERIOUS_USER_REPORT_REASONS = ['scam', 'abuse', 'no_show'];
+const SERIOUS_USER_REPORT_REASONS = ['scam', 'abuse', 'no_show', 'external_trade'];
 
 const app = express();
 
@@ -562,6 +562,8 @@ function getReportReasonWeight(reason) {
     abuse: 2,
     no_show: 3,
     prohibited: 4,
+    misleading: 3,
+    external_trade: 3,
     spam: 2,
     other: 1
   };
@@ -1603,7 +1605,7 @@ app.post('/api/ai-recommend', async (req, res) => {
 app.post('/api/reports', (req, res) => {
   const { reporter_id, reporter_email, target_type, target_id, reason, detail } = req.body || {};
   const allowedTypes = ['product', 'user', 'chat'];
-  const allowedReasons = ['scam', 'abuse', 'no_show', 'prohibited', 'spam', 'other'];
+  const allowedReasons = ['scam', 'abuse', 'no_show', 'prohibited', 'misleading', 'external_trade', 'spam', 'other'];
 
   if (!allowedTypes.includes(target_type) || !target_id || !allowedReasons.includes(reason)) {
     return res.status(400).json({ message: '신고 대상과 사유를 확인해주세요.' });
@@ -2024,7 +2026,7 @@ app.get('/api/admin/reports', (req, res) => {
             FROM reports userReports
             WHERE userReports.target_type = 'user'
               AND userReports.target_id = r.target_id
-              AND userReports.reason IN ('scam', 'abuse', 'no_show')
+              AND userReports.reason IN ('scam', 'abuse', 'no_show', 'external_trade')
               AND userReports.status <> 'rejected'
           )
           ELSE 0

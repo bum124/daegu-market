@@ -375,16 +375,16 @@
       <form id="reportForm" class="mt-5 space-y-4">
         <div class="grid grid-cols-2 gap-2">
           <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
-            <input type="radio" name="reason" value="scam" class="mr-2" checked>사기 의심
+            <input type="radio" name="reason" value="scam" class="mr-2" checked>사기 의심 상품
           </label>
           <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
-            <input type="radio" name="reason" value="prohibited" class="mr-2">부적절한 상품
+            <input type="radio" name="reason" value="prohibited" class="mr-2">금지/부적절한 상품
           </label>
           <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
-            <input type="radio" name="reason" value="abuse" class="mr-2">욕설/비매너
+            <input type="radio" name="reason" value="misleading" class="mr-2">상품 정보가 실제와 다름
           </label>
           <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
-            <input type="radio" name="reason" value="spam" class="mr-2">스팸/홍보
+            <input type="radio" name="reason" value="spam" class="mr-2">중복/스팸 상품
           </label>
           <label class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
             <input type="radio" name="reason" value="other" class="mr-2">기타
@@ -393,7 +393,7 @@
 
         <div>
           <label for="reportDetail" class="text-sm font-medium text-gray-700">상세 내용</label>
-          <textarea id="reportDetail" rows="4" class="mt-2 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="상황을 간단히 적어주세요. 선택 입력입니다."></textarea>
+          <textarea id="reportDetail" rows="4" class="mt-2 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="상품 사진, 설명, 가격, 거래 상황 중 문제가 된 부분을 적어주세요. 선택 입력입니다."></textarea>
         </div>
 
         <div class="flex justify-end gap-2">
