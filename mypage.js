@@ -146,6 +146,7 @@ function normalizeProduct(item) {
   const images = parseImages(item.images);
   const createdAt = item.createdAt || item.created_at || new Date().toISOString();
   const status = normalizeStatus(item.status || item.condition);
+  const moderationStatus = item.moderation_status || item.moderationStatus || 'visible';
 
   return {
     id: item.id,
@@ -161,6 +162,8 @@ function normalizeProduct(item) {
     seller: item.seller || item.seller_nickname || item.seller_name || (item.seller_id ? `판매자 ${item.seller_id}` : '판매자'),
     image: item.image || item.image_url || images[0] || PLACEHOLDER_IMAGE,
     status,
+    moderationStatus,
+    hiddenByReport: moderationStatus === 'hidden',
     createdAt,
     sellerId: item.seller_id || item.sellerId || null,
     showClubBadge: Number(item.show_club_badge || 0) // ✨ [추가] 온오프 상태값 저장 (0:숨김, 1:노출)
@@ -366,30 +369,42 @@ function renderItems() {
 
   itemList.innerHTML = items.map(item => {
     const sold = isSold(item);
+    const hiddenByReport = item.hiddenByReport;
+    const dimmed = sold || hiddenByReport;
+    const statusBadgeClass = item.status === '판매완료'
+      ? 'bg-slate-200 text-slate-700'
+      : item.status === '예약중'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-green-100 text-green-700';
 
     return `
     <article
-      class="mypage-item flex cursor-pointer gap-4 rounded-2xl border border-slate-200 bg-white p-3 ${sold ? 'opacity-80' : ''}"
+      class="mypage-item flex cursor-pointer gap-4 rounded-2xl border border-slate-200 bg-white p-3 ${dimmed ? 'opacity-85' : ''} ${hiddenByReport ? 'border-red-100 bg-red-50/40' : ''}"
       data-product-id="${item.id}"
       role="link"
       tabindex="0"
       aria-label="${item.title} 상세 보기"
     >
       <div class="relative h-24 w-24 overflow-hidden rounded-xl bg-slate-100">
-        <img src="${item.image}" alt="${item.title}" class="h-full w-full object-cover ${sold ? 'grayscale opacity-45' : ''}">
+        <img src="${item.image}" alt="${item.title}" class="h-full w-full object-cover ${sold ? 'grayscale opacity-45' : hiddenByReport ? 'opacity-50' : ''}">
         ${sold ? '<div class="absolute inset-0 bg-white/50"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-white">완료</span></div>' : ''}
+        ${!sold && hiddenByReport ? '<div class="absolute inset-0 bg-red-50/60"></div><div class="absolute inset-0 flex items-center justify-center"><span class="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white">숨김</span></div>' : ''}
       </div>
-      <div class="min-w-0 flex-1 ${sold ? 'text-slate-500' : ''}">
+      <div class="min-w-0 flex-1 ${dimmed ? 'text-slate-500' : ''}">
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-xs font-medium text-slate-500">${item.category}</p>
             <h3 class="mt-1 line-clamp-2 text-sm font-semibold text-slate-900">${item.title}</h3>
           </div>
-          <span class="rounded-full px-2.5 py-1 text-xs font-medium ${item.status === '판매완료' ? 'bg-slate-200 text-slate-700' : item.status === '예약중' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}">${item.status}</span>
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <span class="rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass}">${item.status}</span>
+            ${hiddenByReport ? '<span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">신고 검토 중</span>' : ''}
+          </div>
         </div>
         <p class="mt-2 text-base font-bold text-slate-900">${formatPrice(item.price)}</p>
         <p class="mt-1 text-xs text-slate-500">${item.location} · ${item.posted}</p>
         <p class="mt-1 text-xs text-slate-500">관련 ${item.college}${item.targetDepartment ? ` · ${item.targetDepartment}` : ''}</p>
+        ${hiddenByReport ? '<p class="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-700">신고 누적으로 임시 숨김 처리되었습니다. 관리자 확인 후 다시 공개될 수 있습니다.</p>' : ''}
         <div class="mt-2 flex gap-3 text-xs text-slate-400">
           <span>관심 ${item.likes}</span>
           <span>조회 ${item.views}</span>
