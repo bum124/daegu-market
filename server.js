@@ -26,6 +26,10 @@ const ADMIN_EMAILS = ['qkrrjs0131@daegu.ac.kr', 'hye70301@daegu.ac.kr', 'bears01
 const AUTO_HIDE_PRODUCT_REPORT_COUNT = 3;
 const AUTO_HIDE_PRODUCT_SERIOUS_COUNT = 2;
 const SERIOUS_REPORT_REASONS = ['scam', 'prohibited'];
+const USER_REVIEW_REPORT_COUNT = 2;
+const USER_WARN_REPORT_COUNT = 3;
+const USER_RESTRICT_SERIOUS_COUNT = 2;
+const SERIOUS_USER_REPORT_REASONS = ['scam', 'abuse', 'no_show'];
 
 const app = express();
 
@@ -1982,7 +1986,49 @@ app.get('/api/admin/reports', (req, res) => {
         targetUser.nickname AS target_user_nickname,
         targetUser.email AS target_user_email,
         targetProduct.title AS target_product_title,
-        targetProduct.seller_id AS target_product_seller_id
+        targetProduct.seller_id AS target_product_seller_id,
+        CASE
+          WHEN r.target_type = 'product' THEN (
+            SELECT COUNT(*)
+            FROM reports productReports
+            WHERE productReports.target_type = 'product'
+              AND productReports.target_id = r.target_id
+              AND productReports.status <> 'rejected'
+          )
+          WHEN r.target_type = 'user' THEN (
+            SELECT COUNT(*)
+            FROM reports userReports
+            WHERE userReports.target_type = 'user'
+              AND userReports.target_id = r.target_id
+              AND userReports.status <> 'rejected'
+          )
+          ELSE (
+            SELECT COUNT(*)
+            FROM reports chatReports
+            WHERE chatReports.target_type = r.target_type
+              AND chatReports.target_id = r.target_id
+              AND chatReports.status <> 'rejected'
+          )
+        END AS target_active_report_count,
+        CASE
+          WHEN r.target_type = 'product' THEN (
+            SELECT COUNT(*)
+            FROM reports productReports
+            WHERE productReports.target_type = 'product'
+              AND productReports.target_id = r.target_id
+              AND productReports.reason IN ('scam', 'prohibited')
+              AND productReports.status <> 'rejected'
+          )
+          WHEN r.target_type = 'user' THEN (
+            SELECT COUNT(*)
+            FROM reports userReports
+            WHERE userReports.target_type = 'user'
+              AND userReports.target_id = r.target_id
+              AND userReports.reason IN ('scam', 'abuse', 'no_show')
+              AND userReports.status <> 'rejected'
+          )
+          ELSE 0
+        END AS target_serious_report_count
       FROM reports r
       LEFT JOIN Users reporter ON reporter.user_id = r.reporter_id
       LEFT JOIN Users targetUser ON r.target_type = 'user' AND targetUser.user_id = r.target_id
