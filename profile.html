@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>판매자 프로필 - 대구마켓</title>
+  <title>판매자 프로필 - 대구대마켓</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -41,7 +41,7 @@
             <path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/>
           </svg>
         </div>
-        <span class="text-xl font-bold text-primary">대구마켓</span>
+        <span class="text-xl font-bold text-primary">대구대마켓</span>
       </a>
       <a href="index.html" class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">목록으로</a>
     </div>
@@ -431,7 +431,7 @@
       const sold = products.filter(isSold);
       const totalLikes = products.reduce((sum, product) => sum + Number(product.likes || 0), 0);
 
-      document.title = `${displayName} 프로필 - 대구마켓`;
+      document.title = `${displayName} 프로필 - 대구대마켓`;
       document.getElementById('profileInitial').textContent = getInitial(displayName);
       document.getElementById('profileName').textContent = displayName;
       document.getElementById('profileDepartment').textContent = [user.college, user.department].filter(Boolean).join(' · ') || '학과 정보 없음';

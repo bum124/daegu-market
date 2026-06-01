@@ -3503,7 +3503,7 @@ io.on('connection', (socket) => {
               // 여러 기기에 동시에 알림을 보낼 수 있습니다!
               const multicastMessage = {
                 notification: {
-                  title: '대구마켓 새 채팅 💬',
+                  title: '대구대마켓 새 채팅 💬',
                   body: data.text
                 },
                 tokens: tokens // 토큰 배열을 그대로 넣어줍니다.

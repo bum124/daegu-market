@@ -19,7 +19,7 @@ messaging.onBackgroundMessage(function(payload) {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/logo.png' // 나중에 대구마켓 로고 이미지 경로로 바꾸시면 됩니다.
+    icon: '/logo.png' // 나중에 대구대마켓 로고 이미지 경로로 바꾸시면 됩니다.
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
