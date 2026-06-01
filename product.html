@@ -817,7 +817,15 @@ async function updateOwnerActions() {
   document.querySelectorAll('.owner-action').forEach(button => {
     button.classList.toggle('hidden', !isOwner);
   });
-  document.getElementById('productReportButton').classList.toggle('hidden', Boolean(isOwner));
+
+  document.querySelectorAll('.chat-action').forEach(button => {
+    button.classList.toggle('hidden', Boolean(isOwner));
+  });
+
+  document.getElementById('mobileLikeBtn')?.classList.toggle('hidden', Boolean(isOwner));
+  document.getElementById('desktopLikeBtn')?.classList.toggle('hidden', Boolean(isOwner));
+
+  document.getElementById('productReportButton')?.classList.toggle('hidden', Boolean(isOwner));
 }
 
 // 현재 사용자가 이 상품을 관심등록했는지 확인해 하트 버튼 상태를 맞춥니다.
