@@ -1398,6 +1398,7 @@ app.get('/api/products', (req, res) => {
     `;
 
     queryWithTimeout(sql, (err, results) => {
+      console.error('🚨 상품 목록 조회 중 에러 발생:', err);
       if (err) return res.status(500).send(err);
       res.json(results);
     });
