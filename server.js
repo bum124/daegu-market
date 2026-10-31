@@ -5,8 +5,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-// const sgMail = require('@sendgrid/mail');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
@@ -990,14 +989,7 @@ const db = mysql.createPool({
 });
 
 // 이메일 설정 (금고에서 꺼내 쓰기)
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 
 //회원가입 및 이메일 발송 API
@@ -1033,27 +1025,28 @@ app.post('/api/register', (req, res) => {
             return res.status(500).json({ message: '회원가입 실패 (이미 가입된 학번일 수 있습니다.)' });
         }
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: "[대구대 마켓] 회원가입 인증번호입니다.",
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
-                    <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
-                    <p>안녕하세요, <strong>${name}</strong>님!</p>
-                    <p>요청하신 회원가입 인증번호는 아래와 같습니다.</p>
-                    <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
-                        ${verifyCode}
-                    </div>
-                    <p>이 번호를 가입 화면에 입력해 주세요.</p>
-                    <hr>
-                    <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다. 문의사항은 관리자에게 연락 바랍니다.</p>
-                </div>
-            `
-        };
-
-        // sgMail 대신 transporter 사용
-        transporter.sendMail(mailOptions)
+        const msg = {
+    to: email, 
+    from: {
+        name: '대구대 마켓',
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
+    },
+    subject: "[대구대 마켓] 회원가입 인증번호입니다.",
+    // text 대신 html을 사용해 보세요
+    html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
+            <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
+            <p>안녕하세요, <strong>${name}</strong>님!</p>
+            <p>요청하신 회원가입 인증번호는 아래와 같습니다.</p>
+            <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+                ${verifyCode}
+            </div>
+            <p>이 번호를 가입 화면에 입력해 주세요.</p>
+            <hr>
+            <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다. 문의사항은 관리자에게 연락 바랍니다.</p>
+        </div>
+    `};
+        sgMail.send(msg)
             .then(() => {
                 res.json({ message: '인증 메일이 성공적으로 발송되었습니다!' });
             })
@@ -1155,14 +1148,14 @@ app.post('/api/resend', (req, res) => {
         if (err) return res.status(500).json({ message: 'DB 에러' });
 
         // 메일 다시 쏘기 (기존 nodemailer 로직 활용)
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
+        const msg = {
+            from: '"대구대 마켓" <hye70301@gmail.com>',
             to: email,
             subject: "[대구대 마켓] 인증번호가 재발송되었습니다.",
             text: `새로운 인증번호: [ ${verifyCode} ]`
         };
 
-        transporter.sendMail(mailOptions)
+        sgMail.send(msg)
             .then(() => res.json({ message: '인증번호가 메일로 재발송되었습니다!' }))
             .catch((mailErr) => res.status(500).json({ message: '메일 발송 실패' }));
     });
@@ -1184,26 +1177,30 @@ app.post('/api/forgot-password', (req, res) => {
         db.query(updateSql, [verifyCode, email], (updateErr) => {
             if (updateErr) return res.status(500).json({ message: '인증번호 저장 실패' });
 
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
-                        <h2 style="color: #007bff;">대구대 마켓 비밀번호 재설정</h2>
-                        <p>안녕하세요, <strong>${user.name}</strong>님!</p>
-                        <p>요청하신 비밀번호 재설정을 위한 인증번호는 아래와 같습니다.</p>
-                        <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
-                            ${verifyCode}
-                        </div>
-                        <p>이 번호를 화면에 입력해 주세요.</p>
-                        <hr>
-                        <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다.</p>
-                    </div>
-                `
-            };
+            const msg = {
+    to: email, 
+    from: {
+        name: '대구대 마켓',
+        email: 'hye70301@gmail.com' // SendGrid에서 인증받은 메일
+    },
+    subject: "[대구대 마켓] 비밀번호 재설정 인증번호입니다.",
+    // text 대신 html을 사용해 보세요
+    html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
+            <h2 style="color: #007bff;">대구대 마켓 가입을 환영합니다!</h2>
+            <p>안녕하세요, <strong>${user.name}</strong>님!</p>
+            <p>요청하신 비밀번호 재설정을 위한 인증번호는 아래와 같습니다.</p>
+            <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+                ${verifyCode}
+            </div>
+            <p>이 번호를 가입 화면에 입력해 주세요.</p>
+            <hr>
+            <p style="font-size: 12px; color: #888;">본 메일은 발신 전용입니다. 문의사항은 관리자에게 연락 바랍니다.</p>
+        </div>
+    `
+};
 
-            transporter.sendMail(mailOptions)
+            sgMail.send(msg)
                 .then(() => res.json({ message: '인증번호가 메일로 발송되었습니다.' }))
                 .catch((mailErr) => res.status(500).json({ message: '메일 발송 실패' }));
         });
