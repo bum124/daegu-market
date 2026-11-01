@@ -288,7 +288,7 @@
         if (response.ok) {
           alert(result.message);
          if (postType === 'INTERNAL') {
-            window.location.href = 'club-admin.html'; // 내부 공지는 관리자 라운지로
+            window.location.href = `club-admin.html?id=${result.club_id}`; // 내부 공지는 관리자 라운지로
           } else {
             window.location.href = 'club-board.html'; // 전체 홍보는 소식통으로
           }

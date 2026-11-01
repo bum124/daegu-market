@@ -2584,7 +2584,7 @@ app.post('/api/club-posts', (req, res) => {
         console.error('게시글 등록 DB 에러:', insertErr);
         return res.status(500).json({ message: '글 등록 중 오류가 발생했습니다.' });
       }
-      res.json({ message: '동아리 소식이 성공적으로 등록되었습니다! 🎉' });
+        res.json({ message: '동아리 소식이 성공적으로 등록되었습니다! 🎉', club_id: clubId });
     });
   });
 });
